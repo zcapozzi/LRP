@@ -2,3 +2,4 @@
 appengine-generated/
 client_secrets.json
 gitignoretest.txt
+lib/
