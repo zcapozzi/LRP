@@ -1,0 +1,66 @@
+
+{% block body %}
+<SCRIPT>
+function edit_query(s){
+    var q = document.getElementById("query").value;
+    
+    
+}
+</SCRIPT>
+	<div class="container">
+
+	    <table width=100%>
+            <FORM action="/query" method="POST">
+            <tr>
+                <td colspan=2>
+                
+                    <textarea style='border:1px solid blue;' cols=140 rows=5 id='query' name='query'>{{ query }}</textarea>
+                </td>
+                
+            </tr>
+            {% if error %}
+            <tr>
+                <td colspan=2 style='color:red; font-size:18px;'>
+                    <b>{{ error }}</b>
+                </td>
+                
+            </tr>
+            {% endif %}
+            <tr>
+                <td style='font-size:18px;'>
+                    <button class="btn btn-default">Submit</button>
+                </td>
+                <td align=right style='font-size:18px;'>
+                    {{ cnt }} record(s)
+                </td>
+                
+            </tr>
+            </FORM>
+        </table>
+        <table class="datalist" >    
+            <tr>
+                {% for c in columns %}
+                    <th style='padding:5px;'>{{ c }}</th>
+                {% endfor %}
+            </tr>
+            <tr>
+                {% for c in types %}
+                    <th style='padding:5px; font-size:8px;'>{{ c }}</th>
+                {% endfor %}
+            </tr>
+            {% for d in data %}
+            <tr class="datalisttr">
+                {% for d_ in d %}
+                    <td style='padding:5px; font-size:10px;'>{{ d_ }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+	</div>
+
+  
+  <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"</script>
+
+  </body>
+</html>
+{% endblock %}

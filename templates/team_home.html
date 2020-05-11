@@ -1,0 +1,25 @@
+
+{% extends "layout_main.html" %}
+
+
+{% block body %}
+
+        <div class='col-12 dtop flex menu_header_bar'>
+            <div class='col-12'>
+                <a href='/' class='menu_link active'><span class='menu_link' style='padding-left:10px;'><span class='active_link'>Home</span></span></a>
+                <a href='/team_opponents' class='menu_link'><span class='menu_link' style='padding-left:10px;'><span class=''>My Opponents</span></span></a>
+                <a href='/team_my_team' class='menu_link'><span class='menu_link' style=''><span class=''>My Team</span></span></a>
+                <a href='/team_explore' class='menu_link'><span class='menu_link' style=''><span class=''>Explore</span></span></a>
+            </div>
+        </div>
+
+{% endblock %}
+<script>
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+</script>
+

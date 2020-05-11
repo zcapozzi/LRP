@@ -1,0 +1,30 @@
+
+{% extends "layout_main.html" %}
+
+
+{% block body %}
+
+        <div class='col-12 dtop flex'>
+            <div class='col-4'>
+                Registration Options
+            </div>
+            <div class='col-8'>
+                Registration Rationale Testimonials
+            </div>
+        </div>
+        <div class='col-12 mob flex'>
+            <div class='col-12'>
+                Registration Options
+            </div>
+        </div>
+{% endblock %}
+
+<script>
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+</script>
+

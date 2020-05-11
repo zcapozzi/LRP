@@ -1,0 +1,56 @@
+
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>
+        {% if misc.title %}
+            {{misc.title}}
+        {% else %}
+            LacrosseReference - PRO
+        {% endif %}
+    </title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Oswald">
+    <link rel="stylesheet" href="static/css/laxref.css" />
+    <link rel="stylesheet" href="static/css/laxrefpro.css?dt=1" />
+    <link rel="stylesheet" href="static/css/llg.css" />
+    
+    <script src="static/js/laxref.js"></script>
+    <script src="static/js/laxrefpro.js?dt=1"></script>
+    <script src="static/js/jquery.min.js"></script>
+
+  </head>
+  <body onclick='menu_toggle()'>
+  
+  <div class='col-12'>
+        <div class='col-12 flex site_header_bar no-padding' style='border-bottom:solid 1px black;'>
+            
+          
+            <div class='col-7-10'>
+                <span class='dtop bold' style='font:2em/.6em Oswald, sans-serif;'>LacrosseReference PRO</span>
+                <span class='mob bold' style='font:1.3em/.6em Oswald, sans-serif;'>LacrosseReference PRO</span>
+            </div>
+            <div class='col-5-2 right'>
+                <a href='/login'><span class=''>Login</span></a>
+                <a href='/register'><span class=''>Register</span></a>
+            </div>
+
+        </div>
+
+        {% block body %}{% endblock %}
+            
+  </div>
+  
+  </body>
+</html>
+
+<script>
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+</script>
