@@ -1,12 +1,12 @@
 
-{% extends "layout_no_auth.html" %}
+{% extends "layout_login.html" %}
 
 
 {% block body %}
 
     <div class='col-12 flex'>
-        <div class='col-5-1'></div>
-        <div class='col-2-10' style='background-color: #F9F9F9;'>
+        <div class='col-4-1'></div>
+        <div class='col-4-10' style='background-color: #F9F9F9;'>
             <FORM action='/' method=POST>
             <div class='col-12 centered'>
                 
@@ -16,17 +16,26 @@
                     <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
                 {% endif %}
                 <div class='col-12'><button type=submit id='submit_me' />Submit</button></div>
-                <div class='col-12'><a href='/forgot'><span class=''>Forgot Password</span></a></div>
-                
-                <div class='col-12'><a href='/register'><span class=''>Create Account</span></a></div>
+                <div class='col-12 centered' style='padding-top:15px;'>
+                    
+                    <a class='font-14' href='/forgot'><span class='font-14'>Forgot Password</span></a>
+                </div>
+                <div class='col-12 centered'>
+                    <a class='font-14' href='/register'><span class='font-14'>Create Account</span></a>
+                    
+                </div>
             </div>
             </FORM>
         </div>
-        <div class='col-5-1'></div>
+        <div class='col-4-1'></div>
     </div>
   
-{% endblock %}
-<script>
-    
+<script>   
+    finish_load();
 </script>
 
+
+
+
+
+{% endblock %}

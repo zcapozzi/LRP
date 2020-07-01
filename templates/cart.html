@@ -1,0 +1,85 @@
+
+{% extends "layout_lurker.html" %}
+
+
+{% block body %}
+    
+    {% if misc.error %}
+        <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
+    {% endif %}
+    {% if misc.msg %}
+        <div class='col-12 error'><span  class='msg' style='color:blue;' >{{misc.msg}}</span></div>
+    {% endif %}
+    
+    <div class='col-12 flex-block'>
+        <div class='col-4-12 no-padding'>
+            <div class='card' style='margin-bottom:10px;'>
+            <FORM action='/register_pay' method=POST>
+            <div class='col-12 bbottom'><span class='font-18 bold'>Cart Summary</span></div>
+            
+            
+            <div class='col-12 flex'>
+                <div class='col-6-8'><span class='font-15 bold' style='padding-left:10px;'>Cart Total:</span></div>
+                <div class='col-6-4 right'><span class='font-15' style='padding-right:10px;'>{{user_obj.cart_total_str}}</span></div>
+             </div>
+            
+            <div class='centered {{user_obj.cart_display_status}}' style='margin:20px 0px 0px 0px; padding-bottom:20px;'>
+                <button type=submit class='action-button' name='action' value='checkout'><span class='pointer font-15'>CHECKOUT</span></button>
+            </div>
+            </FORM>
+            </div>
+        </div>
+        <div class='col-1 dtop'></div>
+        <div class='col-7-12'>
+            {% if user_obj.cart_cnt == 0 %}
+                <div class='col-12' style='padding-top:30px;'>
+                    <span class='font-24'>This cart is empty. <a href='/'>Go back.</a></span>
+                </div>
+
+            {% else %}
+                {% for p in user_obj.current_cart %}
+                    <div class='col-12 {{p.bbottom}}'>
+                        <FORM action='/cart' method=POST><input type=hidden name='cart_ID' value='{{p.ID}}'><input type=hidden name='product_ID' value='{{p.product.ID}}'>
+                    
+                
+                        <div class='col-12 flex'>
+                            <div class='col-6-8'><span class='font-18 bold'>{{p.product.product_name}}</span></div>
+                            <div class='col-6-4 right'>
+                                {% if p.list_price_str != p.price_str %}
+                                    <span class='font-18 inline light' style='text-decoration: line-through;'>{{p.list_price_str}}</span>
+                                {% endif %}
+                                <span class='font-18 bold inline'>{{p.price_str}}</span>
+                            </div>
+                        </div>
+                        <div class='col-12 flex'>
+                            <div class='col-12'><span class='light font-15' style='display:block; padding: 0px 10px;'>{{p.product.product_desc}}</span></div>
+                        </div>
+                        
+                        <div class='col-12 flex-block'>
+                            <div class='col-8-12 flex'>
+                                <span class='font-15 light' style='padding-right:20px;'>Discount Code</span>
+                                <input type=text class='medium' id='discount_tag{{p.sequence}}' name='discount_tag' style='margin-right:20px;' />
+                                <button type=submit name='action' id='discount_button{{p.sequence}}' value='enter_discount' class='pointer action-button small light font-14' style=''>ADD</button>
+                            </div>
+                            <div class='col-4-12 right'><button type=submit name='action' id='remove_button{{p.sequence}}' value='remove_item_from_cart' class='text-button light font-14' style='display:inline; padding: 0px 10px;'><span class='dtop'>Remove</span><span class='mob'>Remove from Cart</span></button></div>
+                        </div>
+                        </FORM>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        
+    </div>
+
+
+<script>
+    
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load();
+</script>
+{% endblock %}

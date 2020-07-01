@@ -1,0 +1,62 @@
+
+{% extends "layout_lurker.html" %}
+    
+    
+{% block body %}
+    <!--TEMPLATE: REGISTER_CONFIG.HTML -->
+    {% if misc.error %}
+        <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
+    {% endif %}
+    {% if misc.msg %}
+        <div class='col-12 error'><span  class='msg' style='color:blue;' >{{misc.msg}}</span></div>
+    {% endif %}
+                
+    <div class='col-12 flex-block'>
+        {% for p in misc.products %}
+            <div class='col-4-11 tier card'>
+                <FORM action='/register_config' method=POST><input type=hidden name='product_ID' value='{{p.ID}}'>
+                <div class='col-12 flex no-padding tier-header' style=''>
+                    <div class='col-8'><span class='bold font-18'>{{p.product_name}}</span></div>
+                    <div class='col-4 right'><span class='font-18'>{{p.price_str}}</span></div>
+                </div>
+                <div class='tier-details'>
+                    <span class='font-15' style='display:inline-block;'>{{p.product_desc}}</span>
+                </div>
+                {% if p.in_cart %}
+                    <div class='centered' style='margin:25px 0px 0px 0px;'>
+                        <span class='pointer font-15 bold light'>Added to Cart</span>
+                    </div>
+                {% else %}
+                    <div id='add_button{{p.ID}}' class='centered' style='margin:20px 0px 0px 0px; padding-bottom:20px;'>
+                        <button type=submit class='action-button' name='action' value='add_item_to_cart'><span class='pointer font-15'>{{p.action}}</span></button>
+                    </div>
+                {% endif %}
+                </FORM>
+            </div>
+            
+        {% endfor %}
+    </div>
+    <div class='col-12 flex-block' id='testimonials'>
+        <div class='col-4-12 '>
+            
+        </div>
+        <div class='col-4-12'>
+            
+        </div>
+        <div class='col-4-12'>
+            
+        </div>
+    </div>
+
+
+<script>
+    
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load();
+</script>
+{% endblock %}

@@ -1,5 +1,5 @@
 
-{% extends "layout_main.html" %}
+{% extends "layout_lurker.html" %}
 
 
 {% block body %}
@@ -17,7 +17,7 @@
                 Registration Options
             </div>
         </div>
-{% endblock %}
+
 
 <script>
     $( "#threedot" ).click(function( event ) {
@@ -26,5 +26,6 @@
     $( "#personicon" ).click(function( event ) {
       event.stopPropagation(); menu_toggle();
     });
+    finish_load();
 </script>
-
+{% endblock %}

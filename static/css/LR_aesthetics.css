@@ -1,0 +1,34 @@
+
+span{ font-family:Arial; }
+a{ box-shadow:none!important; }
+img { cursor:pointer; padding:none; margin:none; }
+
+.red{ background-color:red; }
+.pink { background-color: #FEE; color:red; }
+
+.bold { font-weight:700; } 
+
+
+
+.error{ color:red; }
+
+.bbottom{ border-bottom:solid 1px black; }
+.bbottom{ border-bottom:solid 1px black; }
+.bbottom{ border-bottom:solid 1px black; }
+
+span.error{ color:red; display:inline-block; }
+span.msg{ display:inline-block; }
+
+span.light{ color: #888; }
+button.light{ color: #888; }
+
+.gradient-shaded{ 
+    background: rgb(24,154,211);
+    padding-left:20px;
+    border-radius:10px;
+    background: linear-gradient(90deg, rgba(113,199,236,1) 0%, rgba(255,255,255,1) 100%);
+}
+
+@media only screen and (max-width: 800px) {
+    
+}

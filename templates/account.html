@@ -1,0 +1,61 @@
+
+{% extends layout %}
+
+
+{% block body %}
+
+        <div class='col-12 page-title'>
+            <span class='font-24 pointer bold'>My Account</span>
+        </div>
+        <div class='col-12 flex-block'>
+            <div class='col-6-12'>
+                <div class='col-12 bbottom'><span class='font-18 bold pointer'>My Profile</div>
+                <div class='col-12'><span class='font-13 light'>Username</div>
+                <div class='col-12'><span class='font-15'>{{user_obj.username_str}}</div>
+                <div class='col-12'><span class='font-13 light'>Email</div>
+                <div class='col-12'><span class='font-15'>{{user_obj.email_str}}</div>
+                <div class='col-12'><span class='font-13 light'>Name</div>
+                <div class='col-12'><span class='font-15'>{{user_obj.name_str}}</div>
+                <div class='col-12'><span class='font-13 light'>Phone</div>
+                <div class='col-12'><span class='font-15'>{{user_obj.phone_str}}</div>
+
+                <div class='col-12 action-button'><a  href='/profile' class='action-button'><span class='action-button font-15'>EDIT PROFILE</span></a></div>
+
+            </div>
+            <div class='col-6-12'>
+                <div class='col-12 bbottom'><span class='font-18 bold pointer'>Preferences</div>
+                {{misc.preferences_html|safe}}
+
+                <div class='col-12 action-button'><a href='/preferences' class='action-button'><span class='action-button font-15'>EDIT PREFERENCES</span></a></div>
+
+            
+            </div>
+            
+        </div>
+        <div class='col-12 flex-block'>
+            <div class='col-6-12'>
+                <div class='col-12 bbottom'><span class='font-18 bold pointer'>Security</div>
+
+                <div class='col-12 action-button'><a href='/password' class='action-button'><span class='action-button font-15'>CHANGE PASSWORD</span></a></div>
+
+            </div>
+            <div class='col-6-12'>
+                <div class='col-12 bbottom'><span class='font-18 bold pointer'>Subscription Status</div>
+                
+                <div class='col-12 action-button'><a href='/subscription' class='action-button'><span class='action-button font-15'>UPDATE SUBSCRIPTION</span></a></div>
+            </div>
+        </div>
+
+
+
+
+<script>
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load();
+</script>
+{% endblock %}

@@ -1,3 +1,4 @@
+{% extends 'layout_error.html' %}
 {% block body %}
 
 <!doctype html>
@@ -14,10 +15,20 @@
   </head>
   <body>
 		<img id='user_adjustment_pixel' style='display:none; visibility:hidden; height:1px;' src=''/>
-    An error has occurred, we are on it!!!
+    <div class='col-12 dtop centered'><img src='static/img/500_dtop.png' /></div>
+    <div class='col-12 mob centered'><img src='static/img/500_mob.png' /></div>
     <script>
      
     </script>
   
 </body></html>
+<script>
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load();
+</script>
 {% endblock %}

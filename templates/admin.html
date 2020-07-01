@@ -1,0 +1,71 @@
+
+{% extends "layout_admin.html" %}
+
+
+{% block body %}
+
+        <div class='col-12 page-title'>
+            <span class='font-24 pointer bold'>LaxRef PRO: Admin</span>
+        </div>
+        {% if misc.error %}
+            <div class='col-12 error centered'><span class='error' >{{misc.error}}</span></div>
+        {% endif %}
+        {% if misc.msg %}
+            <div class='col-12 centered'><span class='msg' style='color:blue;' >{{misc.msg}}</span></div>
+        {% endif %}
+        <div class='col-12 block'>
+            <div class='col-12'>
+                <div class='col-12 bbottom'><span class='font-18 bold pointer'>Users</div>
+                
+                <div class='col-12'>
+                    
+                    <div class='panel col-12'>
+                        <div class='col-12 flex'>
+                            <div class='col-1'><span class='bold font-12'>ID</span></div>
+                            <div class='col-3'><span class='bold font-12'>Name</span></div>
+                            <div class='col-3'><span class='bold font-12'>Email</span></div>
+                            <div class='col-3'><span class='bold font-12'>Username</span></div>
+                            <div class='col-2'><span class='bold font-12'>Type</span></div>
+                        </div>
+                        {% for u in misc.display_users %}
+                            <div class='table-row col-12 flex'>
+                                <div class='col-1'><span class='font-12'>{{u.ID}}</span></div>
+                                <div class='col-3'><span class='font-12'>{{u.first_name}} {{u.last_name}}</span></div>
+                                <div class='col-3'><span class='font-12'>{{u.email}}</span></div>
+                                <div class='col-3'><span class='font-12'>{{u.username}}</span></div>
+                                <div class='col-2'><span class='font-12'>{{u.user_type}}</span></div>
+                            </div>
+                        {% endfor %}
+                        
+                      
+                    </div>
+                    <div class='col-12 centered action-button'><button type=submit name='action' value='create_standalone_user' class='action-button font-15'>SEE MORE</button></div>
+                </div>
+                
+
+            </div>
+            <div class='col-12'>
+                <div class='col-12 bbottom'><span class='font-18 bold pointer'>Create Group</div>
+                {{misc.preferences_html|safe}}
+
+                <div class='col-12 action-button'><a href='/preferences' class='action-button'><span class='action-button font-15'>EDIT PREFERENCES</span></a></div>
+
+            
+            </div>
+            
+        </div>
+        
+
+
+
+<script src="/static/js/create.js"></script>
+<script>
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load();
+</script>
+{% endblock %}

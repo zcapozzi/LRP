@@ -1,3 +1,5 @@
+{% extends 'layout_error.html' %}
+
 {% block body %}
 
 <!doctype html>
@@ -13,11 +15,23 @@
     
   </head>
   <body>
+    
 		<img id='user_adjustment_pixel' style='display:none; visibility:hidden; height:1px;' src=''/>
-    There should be a page here, apologies...
+    
+    <div class='col-12 dtop centered'><img src='static/img/404_dtop.png' /></div>
+    <div class='col-12 mob centered'><img src='static/img/404_mob.png' /></div>
     <script>
      
     </script>
   
 </body></html>
+<script>
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load();
+</script>
 {% endblock %}

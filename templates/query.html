@@ -1,4 +1,4 @@
-
+{% extends "layout_admin.html" %}
 {% block body %}
 <SCRIPT>
 function edit_query(s){
@@ -6,15 +6,41 @@ function edit_query(s){
     
     
 }
+
+ function toggle_to_insert(){
+     document.getElementById('query').value = document.getElementById('insert_query').value
+     document.getElementById('insert_query').visible = false;
+ }
+ function toggle_to_alter(){
+     document.getElementById('query').value = document.getElementById('alter_query').value
+     document.getElementById('alter_query').visible = false;
+ }
+ function toggle_to_update(){
+     document.getElementById('query').value = document.getElementById('update_query').value
+     document.getElementById('update_query').visible = false;
+ }
+
 </SCRIPT>
+<STYLE>
+tr.table-row:nth-child(even) {background-color: #EEE; }
+tr.table-row:nth-child(odd) {background-color: #FFF; }
+</STYLE>
+    <TITLE>LRP Query</TITLE>
 	<div class="container">
 
 	    <table width=100%>
             <FORM action="/query" method="POST">
-            <tr>
+            <tr style='padding-bottom:10px;'>
                 <td colspan=2>
+                    <a href='/query'><span class='font-15'>Back to Query</span></a>
+                </td>
                 
-                    <textarea style='border:1px solid blue;' cols=140 rows=5 id='query' name='query'>{{ query }}</textarea>
+            </tr><tr>
+                <td colspan=2>
+                    <input type=hidden id='insert_query' value='{{ misc.insert_query }}'>
+                    <input type=hidden id='alter_query' value='{{ misc.alter_query }}'>
+                    <input type=hidden id='update_query' value='{{ misc.update_query }}'>
+                    <textarea style='border:1px solid blue; width:100%;'  rows=5 id='query' name='query'>{{ misc.query }}</textarea>
                 </td>
                 
             </tr>
@@ -28,30 +54,30 @@ function edit_query(s){
             {% endif %}
             <tr>
                 <td style='font-size:18px;'>
-                    <button class="btn btn-default">Submit</button>
+                    <button class="">Submit</button>
                 </td>
                 <td align=right style='font-size:18px;'>
-                    {{ cnt }} record(s)
+                    <span class='font-15'>{{ misc.cnt }} record(s)</span>
                 </td>
                 
             </tr>
             </FORM>
         </table>
-        <table class="datalist" >    
-            <tr>
-                {% for c in columns %}
-                    <th style='padding:5px;'>{{ c }}</th>
+        <table class="" >    
+            <tr class='bbottom'>
+                {% for c in misc.columns %}
+                    <th style='padding:1px;' class='left'><span class='font-12 bold'>{{ c }}</span></th>
                 {% endfor %}
             </tr>
             <tr>
-                {% for c in types %}
-                    <th style='padding:5px; font-size:8px;'>{{ c }}</th>
+                {% for c in misc.types %}
+                    <th style='padding:1px;' class='left bbottom'><span style='color:#AAA;' class='font-12'>{{ c }}</span></th>
                 {% endfor %}
             </tr>
-            {% for d in data %}
-            <tr class="datalisttr">
+            {% for d in misc.data %}
+            <tr class="table-row">
                 {% for d_ in d %}
-                    <td style='padding:5px; font-size:10px;'>{{ d_ }}</td>
+                    <td style='padding:1px;' class='left'><span class='font-12'>{{ d_|safe }}</span></td>
                 {% endfor %}
             </tr>
             {% endfor %}

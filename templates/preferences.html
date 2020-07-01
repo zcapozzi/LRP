@@ -1,0 +1,37 @@
+
+{% extends layout %}
+
+
+{% block body %}
+
+    
+    <div class='col-12 page-title'>
+        <span class='font-24 pointer bold'>My Preferences</span>
+    </div>
+    <div class='col-12 flex'>
+    <div class='col-1 dtop'></div>
+    
+    <div id='top_container' class='col-10-11'>
+    
+    </div>
+    
+    <div class='col-1'></div>
+    </div>
+
+
+<script>
+
+    var preferences = {{user_obj.relevant_preferences|to_json2}};
+    var misc = {{misc|to_json2}};
+    
+    populate_preferences(preferences);    
+    
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load();
+</script>
+{% endblock %}

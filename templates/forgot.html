@@ -1,0 +1,29 @@
+
+{% extends "layout_no_auth.html" %}
+
+
+{% block body %}
+    <div class='col-12 flex'>
+        <div class='col-5-1'></div>
+        <div class='col-2-10' style='background-color: #F9F9F9;'>
+            <FORM action='/forgot' method=POST>
+            <div class='col-12 centered'>
+                
+                <div class='col-12'><input type=text name='username' id='username' value='{{misc.username}}' placeholder="Enter Username" /></div>
+                {% if misc.error %}
+                    <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
+                {% endif %}
+                <div class='col-12'><button type=submit id='submit_me' />Reset Password</button></div>
+            </div>
+            </FORM>
+        </div>
+        <div class='col-5-1'></div>
+    </div>
+
+
+<script>
+    
+    finish_load();
+</script>
+
+{% endblock %}

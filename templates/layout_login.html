@@ -2,8 +2,8 @@
 <!doctype html>
 <html>
   <head>
-    {% if user_obj.track_GA %}
-      <!-- Global site tag (gtag.js) - Google Analytics -->
+     {% if user_obj.track_GA %}
+     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-90014763-2"></script>
     <script> window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);}  gtag('js', new Date()); gtag('config', 'UA-90014763-2'); </script>
     {% endif %}
@@ -35,17 +35,15 @@
             
           
             <div class='col-7-8 no-padding flex'>
-                <span id='main_logo' class='dtop site-logo'><a class='menu-link' href='/'>LacrosseReference PRO</a></span>
+                <span id='main_logo' class='dtop site-logo' ><a class='menu-link' href='/'>LacrosseReference PRO</a></span>
                 <span class='mob site-logo'><a class='menu-link' href='/'>LacrosseReference PRO</a></span>
             </div>
             <div class='col-5-4 right menu-icon' style='padding-right:10px;'>
-                <a href='/login' style='text-decoration:none; color:inherit;'><span class='font-15'>Login</span></a>
-                <a href='/register' style='text-decoration:none; color:inherit;'><span class='font-15'>Register</span></a>
+                <a href='/register' class='site-header-bar'><span style='' class='font-15 site-header-bar'>Register</span></a>
             </div>
 
         </div>
 
-        
         
         {% if misc.banner_msg %}
             <div class='col-12 centered'>
@@ -57,6 +55,7 @@
                 {{misc.breadcrumbs}}
             </div>
         {% endif %}
+        
         {% block body %}{% endblock %}
         
   </div>

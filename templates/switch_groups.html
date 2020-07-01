@@ -1,0 +1,61 @@
+
+{% extends layout %}
+
+
+{% block body %}
+
+    <div class='col-12 dtop flex menu-header-bar'>
+        <div class='col-12'>
+            <a href='/' class='menu-link active'><span class='menu-link' style='padding-left:10px;'><span class='active-link font-15'>Home</span></span></a>
+            <a href='/team_opponents' class='menu-link'><span class='menu-link' style='padding-left:10px;'><span class='font-15'>My Opponents</span></span></a>
+            <a href='/team_my_team' class='menu-link'><span class='menu-link' style=''><span class='font-15'>My Team</span></span></a>
+            <a href='/team_explore' class='menu-link'><span class='menu-link' style=''><span class='font-15'>Explore</span></span></a>
+        </div>
+    </div> 
+  <div class='col-12 flex'>
+        <div class='col-4-1'></div>
+        <div class='col-4-10' style='background-color: #F9F9F9;'>
+
+            <div class='col-12'>
+                
+                <div class='col-12 flex'>
+                    <div class='col-6'><span class='font-15'>Active Group</span></div>
+                    <div class='col-6'><span class='font-15'>{{user_obj.active_group_name}}</span></div>
+                </div>
+                <div class='col-12'>
+                    <div class='col-12'><span class='font-18 bold'>Switch To...</span></div>
+                </div>
+                
+                {% for t in user_obj.active_groups %}
+                    {% if t.current == 0 %}
+                        <FORM id='switch{{t.ID}}' action='switch_groups' method=POST><input type=hidden name='switch_to_group_ID' value='{{t.ID}}'>
+                            <div class='col-12' style='padding-left:5px;'>
+                            <span class='font-15 pointer' onclick='document.getElementById("switch{{t.ID}}").submit();'>{{t.group_name}}</span>
+                            </div>
+                        </FORM>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if misc.error %}
+                    <div class='col-12 error centered'><span class='error' >{{misc.error}}</span></div>
+                {% endif %}
+                {% if misc.msg %}
+                    <div class='col-12 centered'><span class='msg' style='color:blue;' >{{misc.msg}}</span></div>
+                {% endif %}
+            </div>
+
+        </div>
+        <div class='col-4-1'></div>
+    </div>
+
+
+<script>
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load();
+</script>
+{% endblock %}
