@@ -16,6 +16,7 @@ from datetime import datetime, timedelta, date
 import sys
 import ast 
 
+
 from google.appengine.api import urlfetch
 
 import zack_inc_lite as zc
@@ -47,8 +48,10 @@ from google.appengine.ext.webapp import blobstore_handlers
 
 import uuid
 
+
 # Add any libraries installed in the "lib" folder.
-vendor.add('lib')
+
+
 
 from google.appengine.api.blobstore import create_gs_key
 from google.appengine.api.blobstore import create_gs_key
@@ -57,9 +60,18 @@ from google.appengine.ext.webapp.mail_handlers import InboundMailHandler
 from google.appengine.ext.webapp import template
 from webapp2 import RequestHandler
 import glob
+
+vendor.add('lib')
 import sqlalchemy
-   
+#sys.path.append('lib\mailin-api-python\V2.0')
+#from mailin import Mailin
+import requests
+#import ssl
+import cloudstorage
 template.register_template_library('tags.filters')
+
+from requests_toolbelt.adapters import appengine
+appengine.monkeypatch()
 
 def create_cipher():
     f = open('client_secrets.json', 'r')
@@ -313,6 +325,32 @@ def get_user_obj(creds=None):
     cursor.close(); conn.close()
     return user_obj
 
+def finalize_mail_send(msg):
+    API_KEY = client_secrets['web']['SendInBlueAPIKey']
+    
+    url = "https://api.sendinblue.com/v3/smtp/email"
+
+    msg['content_type'] = "textContent"
+    if msg['html_file']:
+        msg['content_type'] = "htmlContent"
+        
+    payload1 = "{\"sender\":{\"name\":\"LRP Admions\",\"email\":\"admin@lacrossereference.com\"},\"to\":[{\"email\":\"%s\"}],\"bcc\":[{\"email\":\"zcapozzi@gmail.com\",\"name\":\"BCC Zack\"}],\"%s\":\"%s\",\"subject\":\"%s\"}" % (msg['email'], msg['content_type'], msg['content'], msg['subject'])
+    
+    payload = "{\"sender\":{\"name\":\"LRP Admions\",\"email\":\"admin@lacrossereference.com\"},\"to\":[{\"email\":\"%s\"}],\"bcc\":[{\"email\":\"zcapozzi@gmail.com\",\"name\":\"BCC Zack\"}],\"%s\":\"Hi, Your password reset request has been processed. Your temporary password is below: [password] Please update your password at your earliest convenience. Your username ([username]) has not changed. Thank you, The LacrosseReference PRO Team\",\"subject\":\"%s\"}" % (msg['email'], msg['content_type'], msg['subject'])
+    
+    payload = "{\"sender\":{\"name\":\"LRP Admions\",\"email\":\"admin@lacrossereference.com\"},\"to\":[{\"email\":\"%s\"}],\"bcc\":[{\"email\":\"zcapozzi@gmail.com\",\"name\":\"BCC Zack\"}],\"%s\":\"%s\",\"subject\":\"%s\"}" % (msg['email'], msg['content_type'], msg['content'], msg['subject'])
+    
+    logging.info(payload == payload1)
+    headers = {
+        'accept': "application/json",
+        'content-type': "application/json",
+        'api-key': API_KEY
+        }
+
+    logging.info(payload)
+    response = requests.request("POST", url, data=payload, headers=headers)
+    logging.info(response.text)
+        
 class ImmutableDict(dict):
     def __setitem__(self, key, value):
         raise Exception("Attempted to alter the dictionary")
@@ -458,6 +496,7 @@ class QueryHandler(webapp2.RequestHandler):
 
         misc['insert_query'] = ""; insert_comma = ""; insert_ID_exists = False
         misc['update_query'] = ""; misc['alter_query'] = ""
+        reverse_sort = False
         for ie, query in enumerate(queries):
             query = query.replace("UDPATE ", "UPDATE ")
             query = query.replace("\t", ",")
@@ -726,7 +765,6 @@ class IndexHandler(webapp2.RequestHandler):
             self.response.out.write(template.render(path, tv))
     
     def get(self):
-        tmp = 10/0
         if False:
             mail.send_mail(sender="admin@lacrossereference.com",
                        to="zcapozzi@gmail.com",
@@ -963,6 +1001,7 @@ class AdminHandler(webapp2.RequestHandler):
     
     def get(self):
         
+        #finalize_mail_send()
         target_template = "admin.html"
         
         misc = {'error': None, 'msg': None}; user_obj = None
@@ -1027,6 +1066,11 @@ class LogoutHandler(webapp2.RequestHandler):
             
             user_obj['auth'] = False
             self.session['session_ID'] = 0               
+            
+            conn, cursor = mysql_connect()
+            cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [9, user_obj['ID'], datetime.now()]); conn.commit()
+            cursor.close(); conn.close()    
+                
             tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
             
@@ -1304,7 +1348,9 @@ class CartHandler(webapp2.RequestHandler):
                 
                 if self.request.get("action") == "remove_item_from_cart":
                     misc['cart_ID'] = int(self.request.get("cart_ID"))
-                    
+                    queries.append("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)")
+                    params.append([3, user_obj['ID'], datetime.now()])
+                
                     if misc['error'] is None:
                         
                         if misc['cart_ID'] in [z['ID'] for z in user_obj['cart']]:
@@ -1313,8 +1359,6 @@ class CartHandler(webapp2.RequestHandler):
                             param = [misc['cart_ID']]
                             queries.append(query); params.append(param)
                             
-                            ex_queries(queries, params)
-                            logging.info("Query %s w/  %s"% (query, param))
                             
                             user_obj = get_user_obj({'session_ID': session_ID})
                             misc['msg'] = "Item has been removed"
@@ -1323,6 +1367,9 @@ class CartHandler(webapp2.RequestHandler):
                         target_template = "cart.html"
                     
                 elif self.request.get("action") == "enter_discount":
+                    queries.append("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)")
+                    params.append([4, user_obj['ID'], datetime.now()])
+                    
                     misc['cart_ID'] = int(self.request.get("cart_ID"))
                     misc['product_ID'] = int(self.request.get("product_ID"))
                     misc['discount_tag'] = self.request.get("discount_tag").strip().upper()
@@ -1354,8 +1401,6 @@ class CartHandler(webapp2.RequestHandler):
                             param = [misc['discount_tag'].upper(), offer['offer_price'], misc['cart_ID']]
                             queries.append(query); params.append(param)
                             
-                            ex_queries(queries, params)
-                            logging.info("Query %s w/  %s"% (query, param))
                             
                             user_obj = get_user_obj({'session_ID': session_ID})
                             misc['msg'] = "Discount code has been applied."
@@ -1364,7 +1409,8 @@ class CartHandler(webapp2.RequestHandler):
                         target_template = "cart.html"
                     
              
-                    
+                ex_queries(queries, params)
+                           
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
                 path = os.path.join("templates", target_template)
                 self.response.out.write(template.render(path, tv))
@@ -1389,6 +1435,7 @@ class CartHandler(webapp2.RequestHandler):
             if user_obj['auth']:
                 
                 conn, cursor = mysql_connect()
+                cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [2, user_obj['ID'], datetime.now()]); conn.commit()
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
                 next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
@@ -1455,6 +1502,91 @@ class SubscriptionHandler(webapp2.RequestHandler):
                 target_template = "subscription.html"
                 
                 conn, cursor = mysql_connect()
+                cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [7, user_obj['ID'], datetime.now()]); conn.commit()
+                misc['products'] = get_products(cursor, "Data Subscriptions")
+                cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
+                next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
+                cursor.close(); conn.close()
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            else:
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
+                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        else: 
+            user_obj = get_user_obj()
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            
+class UploadHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+        misc = {'error': None, 'msg': 'N/A'}; user_obj = None; queries = []; params = []
+        
+        bucket_name = self.request.get("bucket")
+        
+        field_storage = self.request.POST.get("file", None)
+        input_data = field_storage.file.read()
+                            
+        full_file_list = self.request.POST.getall('file')
+        my_file = full_file_list[0]
+        
+        fname = str(my_file).split("u'")[-1][:-2]
+        
+        options = {'retry_params': cloudstorage.RetryParams(backoff_factor=1.1)}
+        
+        
+        #bucket_name = "svc_data_extraction/SVC_MDV_Models"
+        tmp_path = "%s/%s" % (bucket_name, fname)
+        path = "/capozziinc.appspot.com/%s" % (tmp_path)
+        logging.info("Attempting an upload to %s (%d chars)" % (path, len(input_data)))
+        if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+                
+            #conn, cursor = mysql_connect()
+            #conn.commit(); cursor.close(); conn.close()
+                
+            
+            f_ = cloudstorage.open(path, 'w')
+            try:
+                f_.write(input_data)   
+            except UnicodeDecodeError:
+                try:
+                    f_.write(input_data.encode('utf-8'))   
+                except UnicodeDecodeError:
+                    try:
+                        f_.write(input_data.encode('latin-1'))   
+                    except UnicodeDecodeError:
+                        misc['msg'] = ("Could not upload file using either utf-8 or latin-1")
+            f_.close()
+            misc['msg'] = "Success"
+        else:
+            misc['msg'] = "LocalHost-NoUpload"
+        ex_queries(queries, params)
+        
+        self.response.out.write(misc['msg'])
+        
+    def get(self):
+        
+        target_template = "index.html"
+        
+        misc = {'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        if session_ID is not None:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                target_template = "password.html"
+                
+                conn, cursor = mysql_connect()
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
                 next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
@@ -1518,13 +1650,20 @@ class PasswordHandler(webapp2.RequestHandler):
                 
                 if misc['error'] is None:
                     
+                    queries.append("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)")
+                    params.append([10, user_obj['ID'], datetime.now()])
+                    
                     query = "UPDATE LRP_Users set password=%s where ID=%s"
                     param = [encrypt(misc['new_password'], create_cipher()), user_obj['ID']]
                     queries.append(query); params.append(param)
                     logging.info("Query %s w/ %s" % (query, param))
                     ex_queries(queries, params)
                     misc['msg'] = "Password has been changed."
-                            
+                    
+                else:
+                    
+                    queries.append("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)")
+                    params.append([11, user_obj['ID'], datetime.now()])
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", target_template)
@@ -1595,6 +1734,7 @@ class SwitchGroupsHandler(webapp2.RequestHandler):
                 
                     conn, cursor = mysql_connect()
                     cursor.execute("UPDATE LRP_Users set active_group=%s", [switch_to_group_ID])
+                    cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [13, user_obj['ID'], datetime.now()])
                     conn.commit()
                     cursor.close(); conn.close()
                     user_obj = get_user_obj({'session_ID': session_ID})
@@ -1641,6 +1781,7 @@ class SwitchGroupsHandler(webapp2.RequestHandler):
                     target_template = get_template(user_obj)
                     
                 conn, cursor = mysql_connect()
+                cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [8, user_obj['ID'], datetime.now()]); conn.commit()
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
                 next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
@@ -1692,6 +1833,8 @@ class PreferencesHandler(webapp2.RequestHandler):
                     vals.append(self.request.get(r))
                     
                 
+                queries.append("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)")
+                params.append([12, user_obj['ID'], datetime.now()])
                 query = "UPDATE LRP_User_Preferences set %s" % ", ".join(["%s=%%s" % (z) for z in keys])
                 query += " where user_ID=%s"
                 param = vals + [user_obj['ID']]
@@ -1729,6 +1872,7 @@ class PreferencesHandler(webapp2.RequestHandler):
                 relevants = get_relevant_preferences(user_obj)
                 
                 conn, cursor = mysql_connect()
+                cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [5, user_obj['ID'], datetime.now()]); conn.commit()
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
                 next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
@@ -1822,6 +1966,7 @@ class ProfileHandler(webapp2.RequestHandler):
             if user_obj['auth']:
             
                 conn, cursor = mysql_connect()
+                cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [6, user_obj['ID'], datetime.now()]); conn.commit()
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
                 next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
@@ -1839,7 +1984,27 @@ class ProfileHandler(webapp2.RequestHandler):
             user_obj = get_user_obj()
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
-            
+
+def get_file(bucket, fname, specs = {}):       
+    if bucket is None:
+        server_path = "/capozziinc.appspot.com/%s" % (fname)
+        local_path = os.path.join("LocalDocs" , fname)
+    else:
+        server_path = "/capozziinc.appspot.com/%s/%s" % (bucket, fname)
+        local_path = os.path.join("LocalDocs", bucket , fname)
+        
+    if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+        
+        data = cloudstorage.open(server_path).read()
+        
+    else:
+        data = open(local_path, 'rb').read()
+    
+    if 'json' in specs:
+        data = json.loads(data)
+    
+    return data
+    
 class ForgotHandler(webapp2.RequestHandler):
     def dispatch(self):
         self.session_store = sessions.get_store(request=self.request)
@@ -1853,45 +2018,61 @@ class ForgotHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "register_start.html"
+        target_template = "forgot.html"
         misc = {'error': None}; user_obj = None; queries = []; params = []
         
-        conn, cursor = mysql_connect()
         
+        misc['username'] = self.request.get('username').strip().lower()
+        
+        conn, cursor = mysql_connect()
+        cursor.execute("SELECT * from LRP_Users")
+        users = zc.dict_query_results(cursor)
+        cursor.execute("SELECT * from LRP_Email_Templates where template_desc='Password Reset'")
+        msg = zc.dict_query_results(cursor)[0]
         cursor.close(); conn.close()
         
-        if "" == misc['username']:
-            misc['error'] = "You must enter a valid value for username."
-        elif sum([1 for z in misc['username'].lower() if 97 <= ord(z) <= 122 or 48 <= ord(z) <= 57]) != len(misc['username']):
-            misc['username'] = ""
-            misc['error'] = "Usernames can only include numbers and letters."
-        elif "" == misc['password']:
-            misc['error'] = "You must enter a valid value for password."
-        elif len(misc['password']) < 8:
-            misc['error'] = "Passwords must be at least 8 characters and include at least one of: UpperCase, Letter, Number"
-            misc['password'] = ""
-        elif len([1 for z in misc['password'] if 48 <= ord(z) <= 57]) == 0 or len([1 for z in misc['password'] if 97 <= ord(z) <= 122]) == 0 or len([1 for z in misc['password'] if 65 <= ord(z) <= 90]) == 0:
-            misc['error'] = "Passwords must be at least 8 characters and include at least one of: UpperCase, LowerCase, Number"
-            misc['password'] = ""
-        elif "" == misc['email']:
-            misc['error'] = "You must enter a valid value for email."
-        elif email_match is None:
-            misc['error'] = "You must enter a valid value for email."
-        elif misc['username'].lower() in [z['username'].lower() for z in existing_users if z['active'] == 1]:
-            misc['username'] = ""
-            misc['error'] = "Username is not available."
-        elif misc['email'].lower() in [z['email'].lower() for z in existing_users if z['active'] == 1]:
-            misc['email'] = ""
-            misc['error'] = "Email is already associated with an account."
-            
         
+        if "" == misc['username']:
+            misc['error'] = "You must enter a valid value for username/email."
+        elif misc['username'] not in [z['username'].strip().lower() for z in users] and misc['username'] not in [z['email'].strip().lower() for z in users]:
+            misc['error'] = "Could not find an account associated with your entry."
         
         if misc['error'] is None:
             
-            target_template = "lurker_home.html"
-            random.seed(time.time())
             
             
+            user = None
+            if misc['username'] in [z['username'].strip().lower() for z in users]:
+                user = users[ [z['username'].strip().lower() for z in users].index(misc['username']) ]
+            elif misc['username'] in [z['email'].strip().lower() for z in users]:
+                user = users[ [z['email'].strip().lower() for z in users].index(misc['username']) ]
+            
+            misc['msg'] = "Password has been reset; check your inbox for a password reset message."
+            chars = range(35, 37) + range(38, 39) + range(48,58) + range(65, 91) + range(97, 123)
+            tmp_len = 15; random.seed(time.time())
+            tmp_password = ""
+            while len(tmp_password) < tmp_len:
+                c = None
+                while c not in chars:
+                    c = int(random.random()*123)
+                tmp_password += chr(c)
+                
+            
+            msg['email'] = user['email']
+            msg['subject'] = "Password Reset"
+            
+            query = "UPDATE LRP_Users set password=%s where ID=%s"
+            param = [encrypt(tmp_password, create_cipher()), user['ID']]
+            queries.append(query); params.append(param)
+            
+            
+            msg['content'] = get_file(msg['bucket'], msg['fname'])
+            msg['content'] = msg['content'].replace("[password]", tmp_password)
+            msg['content'] = msg['content'].replace("[username]", user['username'])
+            msg['content'] = msg['content'].replace("\r\n", "\\n")
+            msg['content'] = msg['content'].replace("\n", "\\n")
+            
+            finalize_mail_send(msg)
             
             ex_queries(queries, params)
                     
@@ -2001,6 +2182,7 @@ class AccountHandler(webapp2.RequestHandler):
                 target_template = "account.html"
                 
                 conn, cursor = mysql_connect()
+                cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [1, user_obj['ID'], datetime.now()]); conn.commit()
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
                 next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
@@ -2054,6 +2236,22 @@ def handle_500(request, response, exception):
     logging.exception(exception)
     user_obj = get_user_obj()
     misc = {'error': None, 'msg': None}
+    if not os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+        misc['error'] = traceback.format_exc()
+        txt = misc['error'].split("File")[-1]
+        regexes = []
+        regexes.append({'regex': re.compile(r'\"(.*?.py)\", (line [0-9]+?), in ([^\s]+?)\s([\s\S]+)', re.IGNORECASE)})
+        for r in regexes:
+        
+            match = r['regex'].search(txt)
+            if match:
+                sections = []
+                sections.append("<div class='col-12' style='padding-bottom: 30px;'><span class='font-15' style='display:contents;'>%s</span></div>" % ("%s - %s" % (match.group(1).split("\\")[-1], match.group(2))))
+                sections.append("<div class='col-12' style='padding-bottom: 30px;'><span class='font-15' style='display:contents;'>%s</span></div>" % (match.group(3)))
+                sections.append("<div class='col-12' style='padding-bottom: 30px;'><span class='font-24' style='display:contents;'>%s</span></div>" % (match.group(4)))
+                sections.append("<div class='col-12' style='padding-top:50px;'><span class='font-12' style='display:contents;'>%s</span></div>" % ((misc['error'])))
+                misc['error'] = "".join(sections)
+                break
     tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_lurker.html"}
     response.set_status(500)
     path = os.path.join("templates", 'error_general.html'); response.out.write(template.render(path, tv))
@@ -2079,6 +2277,7 @@ app = webapp2.WSGIApplication([
     
     ,('/create', CreateHandler)
     ,('/admin', AdminHandler)
+    ,('/upload', UploadHandler)
     
     
     ,('/teamshome', TeamsHomeHandler)

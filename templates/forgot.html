@@ -4,20 +4,27 @@
 
 {% block body %}
     <div class='col-12 flex'>
-        <div class='col-5-1'></div>
-        <div class='col-2-10' style='background-color: #F9F9F9;'>
+        <div class='col-4-1'></div>
+        <div class='col-4-10' style='background-color: #F9F9F9;'>
             <FORM action='/forgot' method=POST>
             <div class='col-12 centered'>
                 
-                <div class='col-12'><input type=text name='username' id='username' value='{{misc.username}}' placeholder="Enter Username" /></div>
+                <div class='col-12'><span class='font-15 contents' style='padding:10px;'>Enter the username or email associated with the account and click 'Submit' to reset your password.</span></div>
+                <div class='col-12'><input type=text name='username' id='username' value='' placeholder="Enter Username/Email" /></div>
+                
                 {% if misc.error %}
                     <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
                 {% endif %}
-                <div class='col-12'><button type=submit id='submit_me' />Reset Password</button></div>
+                
+                {% if misc.msg %}
+                    <div class='col-12'><span style='color:blue;' class='font-15'>{{misc.msg}}</span></div>
+                {% else %}
+                    <div class='col-12'><button type=submit name='action' value='reset_password_username' id='submit_me' />Reset Password</button></div>
+                {% endif %}
             </div>
             </FORM>
         </div>
-        <div class='col-5-1'></div>
+        <div class='col-4-1'></div>
     </div>
 
 

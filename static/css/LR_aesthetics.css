@@ -28,6 +28,7 @@ button.light{ color: #888; }
     border-radius:10px;
     background: linear-gradient(90deg, rgba(113,199,236,1) 0%, rgba(255,255,255,1) 100%);
 }
+.contents { display:contents; }
 
 @media only screen and (max-width: 800px) {
     
