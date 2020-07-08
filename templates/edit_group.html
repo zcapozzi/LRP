@@ -1,0 +1,45 @@
+
+{% extends layout %}
+
+
+{% block body %}
+    <FORM action='/edit_group' method=POST><input type=hidden name='group_ID' value={{misc.group_ID}} />
+        
+        <div class='col-12 flex-block'>
+            
+            <div class='col-6-12'>
+                <div class='col-12'>
+                    <div class='col-12 bbottom'><span class='font-18 bold'>Manage Members</span></div>
+                    
+                    <div class='col-12 centered action-button'><button type=submit name='action' value='manage_members' class='action-button font-15'>SUBMIT</button></div>
+                </div>
+            </div>
+            <div class='col-6-12'>
+                <div class='col-12'>
+                    <div class='col-12 bbottom'><span class='font-18 bold'>Add Members</span></div>
+                    <div class='col-12'><span class='font-15'>Enter the list of email addresses you'd like to add to {{user_obj.active_group_name}}.</span></div>
+                    <div class='col-12'><textarea rows=10 style='font-family:Arial; width:94%; margin:3%;' name='emails'>{{misc.emails}}</textarea></div>
+                    
+                    {% if misc.add_members_error %}
+                        <div class='col-12 error'><span class='error' >{{misc.add_members_error}}</span></div>
+                    {% endif %}
+                    
+                    {% if misc.add_members_msg %}
+                        <div class='col-12'><span style='color:blue;' class='font-15'>{{misc.add_members_msg|safe}}</span></div>
+                    {% endif %}
+                    
+                    <div class='col-12 centered action-button'><button type=submit name='action' value='add_members' class='action-button font-15'>ADD</button></div>
+                </div>
+            </div>
+            
+        </div>
+    </FORM>
+        
+
+
+<script>
+    
+    finish_load();
+</script>
+
+{% endblock %}

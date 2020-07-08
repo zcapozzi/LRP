@@ -40,9 +40,16 @@
 
             </div>
             <div class='col-6-12'>
-                <div class='col-12 bbottom'><span class='font-18 bold pointer'>Subscription Status</div>
-                
-                <div class='col-12 action-button'><a href='/subscription' class='action-button'><span class='action-button font-15'>UPDATE SUBSCRIPTION</span></a></div>
+                {% if user_obj.user_type == "team" %}
+                    <div class='col-12 bbottom'><span class='font-18 bold pointer'>Group Account</div>
+                    <div class='col-12'><span class='font-13 light'>Group Members</div>
+                    <div class='col-12'><span class='font-15'>{{user_obj.active_group_num_members}}</div>
+                    {% if user_obj.group_admin %}
+                        <FORM action='/edit_group' method=POST><input type=hidden name='group_ID' value={{user_obj.active_group}} />
+                        <div class='col-12 action-button'><button type=submit class='action-button'><span class='action-button font-15'>EDIT GROUP MEMBERS</span></button></div>
+                        </FORM>
+                    {% endif %}
+                {% endif %}
             </div>
         </div>
 

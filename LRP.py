@@ -305,13 +305,14 @@ def get_user_obj(creds=None):
         elif user_obj['active_group'] not in [z['ID'] for z in user_obj['active_groups']] and user_obj['num_active_groups'] == 0:
             user_obj['active_group'] = None
         
-            
+        user_obj['active_group_num_members'] = None   
         if user_obj['active_group'] is None:
             user_obj['active_group_name'] = None
         else:
             for tmp in user_obj['active_groups']:
                 tmp['current'] = 0 if tmp['ID'] != user_obj['active_group'] else 1
             user_obj['active_group_name'] = user_obj['groups'][ [z['ID'] for z in user_obj['active_groups']].index(user_obj['active_group']) ]['group_name']
+            user_obj['active_group_num_members'] = len([1 for z in group_access if z['status'] == "active" and z['group_ID'] == user_obj['active_group']])
             
         cursor.execute("SELECT * from LRP_Cart", [])
         items = zc.dict_query_results(cursor)
@@ -334,20 +335,17 @@ def finalize_mail_send(msg):
     if msg['html_file']:
         msg['content_type'] = "htmlContent"
         
-    payload1 = "{\"sender\":{\"name\":\"LRP Admions\",\"email\":\"admin@lacrossereference.com\"},\"to\":[{\"email\":\"%s\"}],\"bcc\":[{\"email\":\"zcapozzi@gmail.com\",\"name\":\"BCC Zack\"}],\"%s\":\"%s\",\"subject\":\"%s\"}" % (msg['email'], msg['content_type'], msg['content'], msg['subject'])
-    
-    payload = "{\"sender\":{\"name\":\"LRP Admions\",\"email\":\"admin@lacrossereference.com\"},\"to\":[{\"email\":\"%s\"}],\"bcc\":[{\"email\":\"zcapozzi@gmail.com\",\"name\":\"BCC Zack\"}],\"%s\":\"Hi, Your password reset request has been processed. Your temporary password is below: [password] Please update your password at your earliest convenience. Your username ([username]) has not changed. Thank you, The LacrosseReference PRO Team\",\"subject\":\"%s\"}" % (msg['email'], msg['content_type'], msg['subject'])
-    
-    payload = "{\"sender\":{\"name\":\"LRP Admions\",\"email\":\"admin@lacrossereference.com\"},\"to\":[{\"email\":\"%s\"}],\"bcc\":[{\"email\":\"zcapozzi@gmail.com\",\"name\":\"BCC Zack\"}],\"%s\":\"%s\",\"subject\":\"%s\"}" % (msg['email'], msg['content_type'], msg['content'], msg['subject'])
-    
-    logging.info(payload == payload1)
+    if msg['email'] != "zcapozzi@gmail.com":
+        payload = "{\"sender\":{\"name\":\"LRP Admin\",\"email\":\"admin@lacrossereference.com\"},\"to\":[{\"email\":\"%s\"}],\"bcc\":[{\"email\":\"zcapozzi@gmail.com\",\"name\":\"BCC Zack\"}],\"%s\":\"%s\",\"subject\":\"%s\"}" % (msg['email'], msg['content_type'], msg['content'], msg['subject'])
+    else:
+        payload = "{\"sender\":{\"name\":\"LRP Admin\",\"email\":\"admin@lacrossereference.com\"},\"to\":[{\"email\":\"%s\"}],\"%s\":\"%s\",\"subject\":\"%s\"}" % (msg['email'], msg['content_type'], msg['content'], msg['subject'])
+        
     headers = {
         'accept': "application/json",
         'content-type': "application/json",
         'api-key': API_KEY
         }
 
-    logging.info(payload)
     response = requests.request("POST", url, data=payload, headers=headers)
     logging.info(response.text)
         
@@ -1020,11 +1018,18 @@ class AdminHandler(webapp2.RequestHandler):
                 misc['access'] = zc.dict_query_results(cursor)
                 cursor.close(); conn.close()
                 
+                for u in misc['groups']:   
+                    tmp = [z for z in misc['access'] if z['group_ID'] ==  u['ID']]
+                    u['num_users'] = len(tmp)
+                    #u['num_active_users'] = len([1 for z in tmp if z['status'] == "active"])
+                    
                 for u in misc['users']:
+                    u['decrypted_password'] = decrypt_local(u['password'], create_cipher())
                     u['current_group_obj'] = None
                     if u['active_group'] is not None:
                         u['current_group_obj'] = misc['groups'][ [z['ID'] for z in misc['groups']].index(u['active_group']) ]
-                misc['display_users'] = sorted(misc['users'], key=lambda x:x['ID'],  reverse=True)[0:10]
+                misc['display_users'] = sorted(misc['users'], key=lambda x:x['ID'],  reverse=True)[0:15]
+                misc['display_groups'] = sorted(misc['groups'], key=lambda x:x['ID'],  reverse=True)[0:15]
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
                 path = os.path.join("templates", target_template)
                 self.response.out.write(template.render(path, tv))
@@ -2004,7 +2009,19 @@ def get_file(bucket, fname, specs = {}):
         data = json.loads(data)
     
     return data
+
+def create_temporary_password(seq = ""):
+    chars = range(35, 37) + range(38, 39) + range(48,58) + range(65, 91) + range(97, 123)
+    tmp_len = 17; random.seed(time.time())
+    tmp_password = "%s%s" % (seq, int(datetime.now().second))
+    while len(tmp_password) < tmp_len:
+        c = None
+        while c not in chars:
+            c = int(random.random()*123)
+        tmp_password += chr(c)
     
+    return tmp_password
+                
 class ForgotHandler(webapp2.RequestHandler):
     def dispatch(self):
         self.session_store = sessions.get_store(request=self.request)
@@ -2048,16 +2065,8 @@ class ForgotHandler(webapp2.RequestHandler):
                 user = users[ [z['email'].strip().lower() for z in users].index(misc['username']) ]
             
             misc['msg'] = "Password has been reset; check your inbox for a password reset message."
-            chars = range(35, 37) + range(38, 39) + range(48,58) + range(65, 91) + range(97, 123)
-            tmp_len = 15; random.seed(time.time())
-            tmp_password = ""
-            while len(tmp_password) < tmp_len:
-                c = None
-                while c not in chars:
-                    c = int(random.random()*123)
-                tmp_password += chr(c)
-                
             
+            tmp_password = create_temporary_password()
             msg['email'] = user['email']
             msg['subject'] = "Password Reset"
             
@@ -2107,6 +2116,176 @@ class ForgotHandler(webapp2.RequestHandler):
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
             
         
+
+class EditGroupHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+        target_template = "edit_group.html"
+        
+        misc = {'emails': "", 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
+        misc['add_members_msg'] = None
+        misc['add_members_error'] = None
+        session_ID = self.session.get('session_ID')
+        if session_ID is not None:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+        
+                misc['group_ID'] = int(self.request.get('group_ID'))
+                
+                req = dict_request(self.request)
+                if 'action' in req:
+                    if req['action'] == "add_members":
+                        conn, cursor = mysql_connect()
+                        cursor.execute("SELECT * from LRP_Users")
+                        users = zc.dict_query_results(cursor)
+                        #cursor.execute("SELECT * from LRP_Groups")
+                        #groups = zc.dict_query_results(cursor)
+                        cursor.execute("SELECT * from LRP_Group_Access")
+                        access = zc.dict_query_results(cursor)
+                        cursor.close(); conn.close()
+                        
+                        next_user_ID = max([z['ID'] + 1 for z in users]) if len(users) > 0 else 1
+                    
+                        email_regex = re.compile(r'([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,63})[\s,;\n\r><]', re.IGNORECASE)
+                        matches = [{'seq': i, 'email': z.strip().lower()} for i, z in enumerate(list(set(re.findall(email_regex, req['emails']))))]
+                        for m in matches:
+                            m['user_exists'] = 1 if m['email'] in [z['email'].strip().lower() for z in users] else 0
+                            m['user_ID'] = None; m['access_exists'] = 0; m['access_active'] = 0
+                            if m['user_exists']:
+                            
+                                tmp_user = users[ [z['email'].strip().lower() for z in users].index(m['email']) ] 
+                                m['user_ID'] = tmp_user['ID'] 
+                                m['access_exists'] = 1 if m['user_ID'] in [z['user_ID'] for z in access if z['group_ID'] == misc['group_ID']] else 0
+                                m['access_active'] = 1 if m['user_ID'] in [z['user_ID'] for z in access if z['status'] == "active" and z['group_ID'] == misc['group_ID']] else 0
+                            else:
+                                random.seed(time.time() + m['seq'])
+                                m['ab_group'] = min(47, int(random.random()*48.))
+                                m['tmp_password'] = create_temporary_password(m['seq'])
+                                m['username'] = m['email'].split("@")[0]
+                                if m['username'] in [z['username'] for z in users]:
+                                    orig = m['username']; seq = 1
+                                    while "%s%s" % (orig,seq) in [z['username'] for z in users]:
+                                        seq += 1
+                                    m['username'] = "%s%s" % (orig,seq)
+                            if not m['user_exists']:
+                                m['activation_code'] = "%s%s" % (create_temporary_password(), create_temporary_password())
+                                
+                        misc['users_created'] = len([1 for z in matches if not z['user_exists']])
+                        misc['users_added'] = len([1 for z in matches if z['user_exists'] and not z['access_exists']])
+                        misc['users_readded'] = len([1 for z in matches if z['user_exists'] and z['access_exists'] and not z['access_active']])
+                        misc['users_confirmed'] = len([1 for z in matches if z['user_exists'] and z['access_exists'] and z['access_active']])
+                        for m in matches:
+                            if m['user_exists']:
+                                if m['access_exists']:
+                                    queries.append("UPDATE LRP_Group_Access set status='active' where user_ID=%s and group_ID=%s")
+                                    params.append([m['user_ID'], misc['group_ID']])
+                                    
+                                    
+                                else:
+                                    queries.append("INSERT INTO LRP_Group_Access (ID, user_ID, group_ID, status, active) VALUES ((SELECT IFNULL(max(ID), 1) from LRP_Group_Access fds), %s, %s, %s, %s)")
+                                    params.append([m['user_ID'], misc['group_ID'], 'active', 1])
+                                    
+                                    
+                                    queries.append("UPDATE LRP_Users set active_group=%s where ID=%s")
+                                    params.append([misc['group_ID'], m['user_ID']])
+                            else:
+                                
+                                queries.append("INSERT INTO LRP_Users (ID, email, active, logins, user_type, password, username, AB_group, date_created, track_GA, active_group, is_admin, activation_code) VALUES ((SELECT IFNULL(max(ID), 1) from LRP_Group_Access fds), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+                                params.append([next_user_ID, m['email'], 1, 0, 'team', m['tmp_password'], m['username'], m['ab_group'], datetime.now(), 1, misc['group_ID'], 0, m['activation_code']])
+                                
+                                queries.append("INSERT INTO LRP_Group_Access (ID, user_ID, group_ID, status, active) VALUES ((SELECT IFNULL(max(ID), 1) from LRP_Group_Access fds), %s, %s, %s, %s)")
+                                params.append([next_user_ID, misc['group_ID'], 'active', 1])
+                                
+                                next_user_ID += 1
+                                    
+                        misc['add_members_msg'] = zc.print_dict(matches).replace("\n", "<BR>")
+
+                conn, cursor = mysql_connect()
+                cursor.execute("SELECT * from LRP_Email_Templates where active=1")
+                email_templates = zc.dict_query_results(cursor)
+                cursor.close(); conn.close()
+                
+                for m in matches:
+                    if not m['user_exists']:
+                        msg = email_templates[ [z['template_desc'] for z in email_templates].index('Activate Account') ]
+                        msg['email'] = m['email']
+                        msg['subject'] = "Your LacrosseReference PRO account is ready"
+                        
+                        msg['content'] = get_file(msg['bucket'], msg['fname'])
+                        msg['content'] = msg['content'].replace("[activation_link]", "https://pro.lacrossereference.com/activate?c=%s" % (m['activation_code']))
+                        
+                        finalize_mail_send(msg)
+                    
+                    
+                    if not m['access_active']:
+                        msg = email_templates[ [z['template_desc'] for z in email_templates].index('Added User to Group') ]
+                        msg['email'] = m['email']
+                        msg['subject'] = "You've been added to %s" % (user_obj['active_group_name'])
+                        
+                        
+                        msg['content'] = get_file(msg['bucket'], msg['fname'])
+                        msg['content'] = msg['content'].replace("[group_name]", user_obj['active_group_name']))
+                        
+                        finalize_mail_send(msg)
+                
+                if misc['add_members_error'] is None:
+                    pass
+                else:
+                    misc['emails'] = req['emails']
+                #ex_queries(queries, params)
+                            
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", target_template)
+                self.response.out.write(template.render(path, tv))
+
+            
+            else:
+                target_template = "index.html"
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
+                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        else: 
+            target_template = "index.html"
+            user_obj = get_user_obj()
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        
+        
+    
+    def get(self):
+        
+        target_template = "index.html"
+        
+        default_get(self)
+
+def default_get(self):
+    misc = {'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+    session_ID = self.session.get('session_ID')
+    if session_ID is not None:
+        user_obj = get_user_obj({'session_ID': session_ID})
+        if user_obj['auth']:
+            target_template = "index.html"
+            
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        else:
+            tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
+            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+    else: 
+        user_obj = get_user_obj()
+        tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+        path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        
+                
 
 class TeamsHomeHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -2275,6 +2454,7 @@ app = webapp2.WSGIApplication([
     ,('/subscription', SubscriptionHandler)
     
     
+    ,('/edit_group', EditGroupHandler)
     ,('/create', CreateHandler)
     ,('/admin', AdminHandler)
     ,('/upload', UploadHandler)
