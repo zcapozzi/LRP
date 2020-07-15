@@ -1,0 +1,111 @@
+
+{% extends layout %}
+
+
+{% block body %}
+
+    
+
+    <div class='col-12'>
+
+    
+    <div class='col-12 flex-block'>
+        
+        <div class='col-9-12 flex'>
+            <div class='col-1'></div>
+            <div class='col-10 centered' style='padding-top:60px; padding-bottom:40px;'>
+                <div class='col-12'>
+                    <span class='font-36 bold' style='color:#008;'>Follow your team at a whole new level.</span>
+                </div>
+
+            </div>
+            <div class='col-1'></div>
+        </div>
+ 
+        <div class='col-3-12 flex' style='border: solid 2px #AAA; border-radius:10px;'>
+            
+                <div class='col-1'></div>
+                <div class='col-10'>
+                    <FORM action='/product-summary-basic' method=POST>
+                    <input type=hidden name='user_ID' value={{misc.user_ID}} />
+                    <input type=hidden name='AB_group' value={{misc.AB_group}} />
+                    <input type=hidden name='hash' value={{misc.hash}} />
+                    <input type=hidden name='request_type' value='pre-product-notification' />
+                    
+                    <div class='col-12 centered' style='border-bottom: solid 2px #88F;'>
+                        <span class='font-15 contents bold'>Pre-Register</span>  
+                    </div>
+                    <div class='col-12' style='padding-top:20px'>
+                        <span class='font-15 contents'>This product is not quite ready yet, but enter your email to get notified when it's ready.</span>  
+                    </div>
+
+                    <div class='col-12'>
+                        <div class='col-12'><span class='font-13 light'>Email</div>
+                        <div class='col-12'>
+                            <input type=text value='{{misc.email}}'  placeholder="Enter Email" name='email' class='font-15 col-12' />
+                        </div>
+                        
+                    </div>
+                    {% if misc.error %}
+                        <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
+                    {% endif %}
+                    {% if misc.msg %}
+                        <div class='col-12 centered'><span style='color:blue;' class='font-15'>{{misc.msg|safe}}</span></div>
+                    {% else %}
+                        <div class='col-12 centered' style='padding-top:20px;'>
+                            
+                            <button type=submit class='action-button' name='action' value='product_request'><span class='pointer font-15'>GET NOTIFIED</span></button>
+                   
+                        </div>
+                    {% endif %}
+                    </FORM>
+                </div>
+                <div class='col-1'></div>
+            
+        
+        </div>
+        
+    </div>
+    
+
+    </div>
+
+    <div class='col-12 flex-block'>
+        <div class='col-4-12'>
+            <div class='tier card'>
+                <div class='col-12 tier-header centered' style=''><span class='font-18 bold'><span class='dtop'>More Advanced Stats</span><span class='mob'>Deeper Stats</span></span></div>
+                <div class='centered text-container medium'><span class='font-15 contents'>
+                    The public site has always been about introducing a broad array of statistics to a general audience. The goal of PRO is to get into the nuts and bolts for users that want that extra layer of content.
+                </span></div>
+            </div>
+            
+        </div>
+        <div class='col-4-12 flex'>
+            <div class='tier card'>
+                <div class='col-12 tier-header centered' style=''><span class='font-18 bold'><span class='dtop'>Favorite Players</span><span class='mob'>Favorite Players</span></span></div>
+                <div class='centered text-container medium'><span class='font-15 contents'>
+                    Have a favorite player, or two? Specify up to 3 players and get extra analyses around their usage patterns, offensive or defensive profiles, and evolution over time.
+                </span></div>
+            </div>
+        </div>
+        <div class='col-4-12 flex'>
+            <div class='tier card'>
+                <div class='col-12 tier-header centered' style=''><span class='font-18 bold'><span class='dtop'>Rapid Reports</span><span class='mob'>Rapid Reports</span></span></div>
+                <div class='centered text-container medium'><span class='font-15 contents'>
+                    Get the LacrosseReference perspective sent straight to your phone or email at within minutes of halftime and/or the final whistle. You'll know, what happened, as soon as it happened.
+                </span></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load();
+</script>
+{% endblock %}

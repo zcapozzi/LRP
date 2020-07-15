@@ -1,5 +1,5 @@
 
-{% extends "layout_lurker.html" %}
+{% extends layout %}
 
 
 {% block body %}
@@ -61,7 +61,7 @@
                                 <input type=text class='medium' id='discount_tag{{p.sequence}}' name='discount_tag' style='margin-right:20px;' />
                                 <button type=submit name='action' id='discount_button{{p.sequence}}' value='enter_discount' class='pointer action-button small light font-14' style=''>ADD</button>
                             </div>
-                            <div class='col-4-12 right'><button type=submit name='action' id='remove_button{{p.sequence}}' value='remove_item_from_cart' class='text-button light font-14' style='display:inline; padding: 0px 10px;'><span class='dtop'>Remove</span><span class='mob'>Remove from Cart</span></button></div>
+                            <div class='col-4-12 right'><button type=submit name='action' id='remove_button{{p.sequence}}' value='remove_item_from_cart' class='text-button light font-14' style='display:inline; padding: 0px 10px;'><span class='mob'>Remove</span><span class='dtop'>Remove from Cart</span></button></div>
                         </div>
                         </FORM>
                     </div>

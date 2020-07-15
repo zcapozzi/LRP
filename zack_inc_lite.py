@@ -118,7 +118,7 @@ def print_dict(d):
             for k, v in zip(d_.keys(), d_.values()):
                 s += ("\n%s: %s" % (k, v))
             s += ("\n---------------------------")
-    print s
+    
     return s
 
 def num_to_val(s):

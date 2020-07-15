@@ -39,8 +39,13 @@
                 <span class='mob site-logo'><a class='menu-link' href='/'>LacrosseReference PRO</a></span>
             </div>
             <div class='col-5-4 right menu-icon' style='padding-right:10px;'>
+                <a href='/cart' class='cart-cnt'>
+                    {% if user_obj.cart_cnt > 0 %}
+                        <span id='cart_cnt_span' class='cart-cnt'>{{user_obj.cart_cnt}}</span>
+                    {% endif %}
+                    <img class='menu-icon' style=' ' src='/static/img/cart30.png'>
+                </a>
                 <a href='/login' style='text-decoration:none; color:inherit;'><span class='font-15'>Login</span></a>
-                <a href='/register' style='text-decoration:none; color:inherit;'><span class='font-15'>Register</span></a>
             </div>
 
         </div>

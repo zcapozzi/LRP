@@ -1,0 +1,56 @@
+
+{% extends 'layout_inactive.html' %}
+
+
+{% block body %}
+
+    
+
+    <div class='col-12'>
+
+    
+    <div class='col-12 flex'>
+        <div class='col-2-1'></div>
+        <div class='col-8-10'>
+            <FORM action='/resend' method=POST><input type=hidden name='ID' value={{user_obj.ID}} />
+                <div class='col-12'>
+                    <span class='font-15 contents'>When you registered this account, we sent an email to {{user_obj.email}} with a link to complete account activation and set-up. The main features of the site are not available until activation is complete.</span>  
+                </div>
+                <div class='col-12' style='padding-top:20px;'>
+                    <span class='font-15 contents'>It is possible that the email, which had the subject line "Your LacrosseReference PRO account is ready", ended up in a Spam folder. If you would like for the email to be resent with a new activation code,  click the button below.</span>  
+                </div>
+                {% if misc.msg %}
+                    <div class='col-12 centered'><span style='color:blue;' class='font-15'>{{misc.msg|safe}}</span></div>
+                {% else %}
+                    <div class='col-12 centered' style='padding-top:20px;'>
+                        
+                        <button type=submit class='action-button' name='action' value='resend_activation'><span class='pointer font-15'>RESEND</span></button>
+               
+                    </div>
+                {% endif %}
+                
+            </FORM>
+        </div>
+        <div class='col-2-1'></div>
+    </div>
+    
+
+    </div>
+
+
+<script>
+
+    var preferences = {{user_obj.relevant_preferences|to_json2}};
+    var misc = {{misc|to_json2}};
+    
+    populate_preferences(preferences);    
+    
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load();
+</script>
+{% endblock %}

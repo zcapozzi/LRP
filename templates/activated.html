@@ -1,0 +1,35 @@
+
+{% extends layout %}
+
+
+{% block body %}
+
+    
+
+    <div class='col-12'>
+
+    
+    <div class='col-12'>
+        <span class='font-36 bold'>Your account has been activated.</span>
+    </div>
+    
+
+    </div>
+
+
+<script>
+
+    var preferences = {{user_obj.relevant_preferences|to_json2}};
+    var misc = {{misc|to_json2}};
+    
+    populate_preferences(preferences);    
+    
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load();
+</script>
+{% endblock %}

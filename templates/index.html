@@ -1,76 +1,83 @@
 
-{% extends "layout_no_auth.html" %}
+{% extends layout %}
 
 
 {% block body %}
 
-    <div class='col-12 flex-block'>
-        <div class='col-10-12' style='padding:50px 20px 5px 0px;'>
-            <div class='col-12'>
-                <span class='font-30' style='display:contents;'>Make LacrosseReferencePRO your personal analytics expert.</span>
-            </div>
-            <div class='col-12 flex' style='padding-top:60px;'>
-                <div class='col-1'></div>
-                <div class='col-11'>
-                <div class='col-11 gradient-shaded'><span class='font-18'>Access to all our advanced data, above and beyond what is on the public site.</span></div></div>
-            </div>
-            <div class='col-12 flex'>
-                <div class='col-1'></div>
-                <div class='col-11'>
-                <div class='col-11 gradient-shaded'><span class='font-18'>Automatic, timely reports that get you what you need when you need it.</span></div></div>
-            </div>
-            <div class='col-12 flex'>
-                <div class='col-1'></div>
-                <div class='col-11'>
-                <div class='col-11 gradient-shaded'><span class='font-18'>Increased efficiency through automation and customizable content tailored to you.</span></div></div>
-            </div>
+    <div class='col-12'>
+        <div class='col-12 centered' style='padding: 40px 0px 40px 0px;'>
+            <span class='font-30 bold' style=''>LacrosseReference PRO</span>
         </div>
-        <div class='col-2-12 centered' style='border-radius:10px; background-color:#EEE;'>
-            <div class='bbottom' style='width:90%; margin:0% 5%;'>
-                <div class='col-12'>
-                    <span class='font-24 bold'>Basic</span>
-                </div>
-                <div class='col-12'>
-                    <span class='font-15'>$25</span>
-                </div>
-                <div class='col-12'>
-                    <span class='font-15'>What is Basic?</span>
-                </div>
-                <div class='col-12'>
-                    <span class='font-15'>Add to Cart</span>
-                </div>
-            </div>
-            <div class='bbottom' style='width:90%; margin:0% 5%;'>
-                <div class='col-12'>
-                    <span class='font-24 bold'>Media</span>
-                </div>
-                <div class='col-12'>
-                    <span class='font-15'>$50</span>
-                </div>
-                <div class='col-12'>
-                    <span class='font-15'>What is Media?</span>
-                </div>
-                <div class='col-12'>
-                    <span class='font-15'>Add to Cart</span>
-                </div>
-            </div>
-            <div class='' style='width:90%; margin:0% 5%;'>
-                <div class='col-12'>
-                    <span class='font-24 bold'>Team</span>
-                </div>
-                <div class='col-12'>
-                    <span class='font-15'>What is Team?</span>
-                </div>
-                <div class='col-12'>
-                    <span class='font-15'>Request a Quote</span>
-                </div>
-            </div>
+        <div class='col-12 centered' style='padding: 10px 0px 20px 0px;'>
+            <span class='font-24 bold light' style=''>The best lacrosse statistics. Period.</span>
         </div>
     </div>
-  
+
+
+
+    <div class='col-12'>
+        <div class=' centered bbottom' style='padding-top:30px; padding-bottom:20px;'>
+        <span class='font-36 bold'>Products</span>
+        </div>
+    </div>
+    <div class='col-12 flex-block'>
+        <div class='col-4-12 flex'>
+            <div class='col-1'></div>
+            
+            <div class='col-10'>
+                <a href='/product-summary-basic' style='text-decoration:none; color:inherit;'>
+                    <div class='col-12 centered'><img class='' style=' ' src='/static/img/fan_icon.png'></div>
+                    <div class='centered' style=''><span class='font-18 bold'>For Fans</span></div>
+                    <div class='centered text-container medium'><span class='font-15 contents'>
+                        Follow your team closer than ever with more in-depth team and individual player statistics as well as post-game (and half) rapid statistical reports delivered straight to your phone or email.
+                    </span></div>
+                </a>
+            </div>
+            
+            <div class='col-1'></div>
+            
+        </div>
+        <div class='col-4-12 flex'>
+            <div class='col-1'></div>
+            <div class='col-10'>
+            <a href='/product-summary-media' style='text-decoration:none; color:inherit;'>
+                <div class='col-12 centered'><img class='' style=' ' src='/static/img/media_icon.png'></div>
+                <div class='col-12 centered' style=''><span class='font-18 bold'>For Media</span></div>
+                <div class='centered text-container medium'><span class='font-15 contents'>
+                    Make your game prep a snap with the LacrosseReference previews and statistical trends at your fingertips. Everything you need to know about the players, the teams, and what drives the match-up.
+                </span></div>
+            </a>
+            </div>
+            <div class='col-1'></div>
+        </div>
+        
+        <div class='col-4-12 flex'>
+           
+            
+            
+            <div class='col-1'></div>
+            <div class='col-10'>
+            <a href='/product-summary-team' style='text-decoration:none; color:inherit;'>
+                <div class='col-12 centered'><img class='' style=' ' src='/static/img/team_icon.png'></div>
+                <div class='col-12 centered' style=''><span class='font-18 bold'>For Teams</span></div>
+                <div class='centered text-container medium'><span class='font-15 contents'>
+                    Scout faster, coach smarter. LacrosseReference PRO gives you what you need to gain that extra competitive edge. Opponent match-ups, in-depth player profiles, and access to our entire database.
+                </span></div>
+            </a>
+            </div>
+            <div class='col-1'></div>
+        </div>
+        
+    </div>
+
 
 <script>
-    
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
     finish_load();
     
 </script>

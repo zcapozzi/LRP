@@ -1,0 +1,112 @@
+
+{% extends layout %}
+
+
+{% block body %}
+
+    
+
+    <div class='col-12'>
+
+    
+    <div class='col-12 flex-block'>
+        
+        <div class='col-9-12 flex'>
+            <div class='col-1'></div>
+            <div class='col-10 centered' style='padding-top:60px; padding-bottom:40px;'>
+                <div class='col-12'>
+                    <span class='font-36 bold' style='color:#008;'>Your lacrosse prep assistant.</span>
+                </div>
+
+            </div>
+            <div class='col-1'></div>
+        </div>
+ 
+        <div class='col-3-12 flex' style='border: solid 2px #AAA; border-radius:10px;'>
+            
+                <div class='col-1'></div>
+                <div class='col-10'>
+                    <FORM action='/product-summary-media' method=POST>
+                    <input type=hidden name='user_ID' value={{misc.user_ID}} />
+                    <input type=hidden name='AB_group' value={{misc.AB_group}} />
+                    <input type=hidden name='hash' value={{misc.hash}} />
+                    <input type=hidden name='request_type' value='pre-product-notification' />
+                    
+                    <div class='col-12 centered' style='border-bottom: solid 2px #88F;'>
+                        <span class='font-15 contents bold'>Pre-Register</span>  
+                    </div>
+                    <div class='col-12' style='padding-top:20px'>
+                        <span class='font-15 contents'>This product is not quite ready yet, but enter your email to get notified when it's ready.</span>  
+                    </div>
+
+                    <div class='col-12'>
+                        <div class='col-12'><span class='font-13 light'>Email</div>
+                        <div class='col-12'>
+                            <input type=text value='{{misc.email}}'  placeholder="Enter Email" name='email' class='font-15 col-12' />
+                        </div>
+                        
+                    </div>
+                    {% if misc.error %}
+                        <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
+                    {% endif %}
+                    {% if misc.msg %}
+                        <div class='col-12 centered'><span style='color:blue;' class='font-15'>{{misc.msg|safe}}</span></div>
+                    {% else %}
+                        <div class='col-12 centered' style='padding-top:20px;'>
+                            
+                            <button type=submit class='action-button' name='action' value='product_request'><span class='pointer font-15'>GET NOTIFIED</span></button>
+                   
+                        </div>
+                    {% endif %}
+                    </FORM>
+                </div>
+                <div class='col-1'></div>
+            
+        
+        </div>
+        
+    </div>
+    
+
+    </div>
+
+    <div class='col-12 flex-block'>
+        <div class='col-4-12'>
+            <div class='tier card'>
+                <div class='col-12 tier-header centered' style=''><span class='font-18 bold'><span class='dtop'>Match-up History</span><span class='mob'>Match-up History</span></span></div>
+                <div class='centered text-container medium'><span class='font-15 contents'>
+                    A lacrosse game isn't played in a vacuum. Every game brings the context of previous match-ups between the two teams and the implications of a win or loss. You'll get all that information clearly presented so can absorb what is at stake in each game.
+                </span></div>
+            </div>
+            
+        </div>
+        <div class='col-4-12 flex'>
+            <div class='tier card'>
+                <div class='col-12 tier-header centered' style=''><span class='font-18 bold'><span class='dtop'>Team/Player Trends</span><span class='mob'>Trends</span></span></div>
+                <div class='centered text-container medium'><span class='font-15 contents'>
+                    It's important to have a good sense of how teams and players are playing coming into any game. You'll get visually presented season-by-season and game-by-game trend information to help you highlight the most important stories.
+                </span></div>
+            </div>
+        </div>
+        <div class='col-4-12 flex'>
+            <div class='tier card'>
+                <div class='col-12 tier-header centered' style=''><span class='font-18 bold'><span class='dtop'>Full Database Access</span><span class='mob'>Database</span></span></div>
+                <div class='centered text-container medium'><span class='font-15 contents'>
+                    Our database has years worth of data on every play, shot, possession, and game that has happened in college lacrosse. Access to the database gives you the ability to do your own research quickly and easily.
+                </span></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+  
+    
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load();
+</script>
+{% endblock %}

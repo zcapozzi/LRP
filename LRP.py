@@ -73,6 +73,10 @@ template.register_template_library('tags.filters')
 from requests_toolbelt.adapters import appengine
 appengine.monkeypatch()
 
+
+## STANDARD REGEXES
+
+email_regex = re.compile(r'([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,63})(?:[\s,;\n\r><]|$)', re.IGNORECASE)
 def create_cipher():
     f = open('client_secrets.json', 'r')
     client_secrets = json.loads(f.read())
@@ -293,8 +297,9 @@ def get_user_obj(creds=None):
             
         cursor.execute("SELECT * from LRP_Groups", [])
         groups = zc.dict_query_results(cursor)
-        cursor.execute("SELECT * from LRP_Group_Access where active=1 and user_ID=%s", [user_obj['ID']])
-        group_access = zc.dict_query_results(cursor)
+        cursor.execute("SELECT * from LRP_Group_Access where active=1", [])
+        all_group_access = zc.dict_query_results(cursor)
+        group_access = [z for z in all_group_access if z['user_ID'] == user_obj['ID']]
         user_obj['groups'] = [z for z in groups if z['ID'] in [y['group_ID'] for y in group_access]]
         user_obj['active_groups'] = [z for z in groups if z['ID'] in [y['group_ID'] for y in group_access if y['status'] == "active"]]
         user_obj['num_active_groups'] = len(user_obj['active_groups'])
@@ -305,15 +310,21 @@ def get_user_obj(creds=None):
         elif user_obj['active_group'] not in [z['ID'] for z in user_obj['active_groups']] and user_obj['num_active_groups'] == 0:
             user_obj['active_group'] = None
         
-        user_obj['active_group_num_members'] = None   
+        user_obj['active_group_members'] = [] 
+        user_obj['active_group_num_members'] = None  
+        user_obj['active_group_admin'] = None          
         if user_obj['active_group'] is None:
             user_obj['active_group_name'] = None
         else:
             for tmp in user_obj['active_groups']:
                 tmp['current'] = 0 if tmp['ID'] != user_obj['active_group'] else 1
             user_obj['active_group_name'] = user_obj['groups'][ [z['ID'] for z in user_obj['active_groups']].index(user_obj['active_group']) ]['group_name']
-            user_obj['active_group_num_members'] = len([1 for z in group_access if z['status'] == "active" and z['group_ID'] == user_obj['active_group']])
+            user_obj['active_group_num_members'] = len([1 for z in all_group_access if z['status'] == "active" and z['group_ID'] == user_obj['active_group']])
             
+            user_obj['active_group_admin'] = 1 if len([1 for z in group_access if z['admin'] and z['user_ID'] == user_obj['ID'] and z['status'] == "active" and z['group_ID'] == user_obj['active_group']]) > 0 else 0
+            user_obj['active_group_members'] = [z for z in all_group_access if z['status'] == "active" and z['group_ID'] == user_obj['active_group']]
+            user_obj['inactive_group_members'] = [z for z in all_group_access if z['status'] != "active" and z['group_ID'] == user_obj['active_group']]
+                
         cursor.execute("SELECT * from LRP_Cart", [])
         items = zc.dict_query_results(cursor)
         cursor.execute("SELECT * from LRP_Products", [])
@@ -329,12 +340,15 @@ def get_user_obj(creds=None):
 def finalize_mail_send(msg):
     API_KEY = client_secrets['web']['SendInBlueAPIKey']
     
+    
     url = "https://api.sendinblue.com/v3/smtp/email"
 
     msg['content_type'] = "textContent"
     if msg['html_file']:
         msg['content_type'] = "htmlContent"
-        
+
+    msg['content'] = msg['content'].replace("\r\n", "\\r\\n").replace("\n", "\\n")
+    
     if msg['email'] != "zcapozzi@gmail.com":
         payload = "{\"sender\":{\"name\":\"LRP Admin\",\"email\":\"admin@lacrossereference.com\"},\"to\":[{\"email\":\"%s\"}],\"bcc\":[{\"email\":\"zcapozzi@gmail.com\",\"name\":\"BCC Zack\"}],\"%s\":\"%s\",\"subject\":\"%s\"}" % (msg['email'], msg['content_type'], msg['content'], msg['subject'])
     else:
@@ -346,8 +360,14 @@ def finalize_mail_send(msg):
         'api-key': API_KEY
         }
 
-    response = requests.request("POST", url, data=payload, headers=headers)
-    logging.info(response.text)
+    #logging.info("Send mail with subject %s to %s" % (msg['subject'], msg['email']))
+    #logging.info(msg['content'])
+    if '--no-mail' not in client_secrets['local'] or client_secrets['local']['--no-mail'] not in ["Y", 'y', 'yes']: 
+        response = requests.request("POST", url, data=payload, headers=headers, timeout=2.0)
+        logging.info(response.text)
+    else:
+        logging.info("\n\n\tNO MAIL SEND!!!\n\n")
+    
         
 class ImmutableDict(dict):
     def __setitem__(self, key, value):
@@ -439,7 +459,7 @@ class QueryHandler(webapp2.RequestHandler):
     def post(self):
         misc = {'error': None, 'msg': None}
         session_ID = self.session.get('session_ID')
-        if True or session_ID is not None:
+        if True or session_ID not in [None, 0]:
             user_obj = None #get_user_obj({'session_ID': session_ID})
             if True or ('ID' in user_obj and user_obj['ID'] == 1):
                 
@@ -458,7 +478,7 @@ class QueryHandler(webapp2.RequestHandler):
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
             target_template = "index.html"
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
     def process_queries(self, misc, queries, table=None):
@@ -642,7 +662,7 @@ class QueryHandler(webapp2.RequestHandler):
     def get(self):
         misc = {'error': None, 'msg': None}
         session_ID = self.session.get('session_ID')
-        if True or session_ID is not None:
+        if True or session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if True or user_obj['ID'] == 1:
                 
@@ -672,7 +692,7 @@ class QueryHandler(webapp2.RequestHandler):
             else:
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}; path = os.path.join("templates", "index.html"); self.response.out.write(template.render(path, tv))
         else:
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", 'index.html'); self.response.out.write(template.render(path, tv))
@@ -698,7 +718,9 @@ def process_profile(profile):
     return profile
 
 def get_template(user_obj):
-    if user_obj['user_type'] == "individual":
+    if user_obj['activated'] != 1:
+        target_template = "activation_reminder.html"
+    elif user_obj['user_type'] == "individual":
         target_template = "individual_home.html"
     elif user_obj['user_type'] == "team":
         target_template = "team_home.html"
@@ -707,7 +729,9 @@ def get_template(user_obj):
     elif user_obj['user_type'] == "master":
         target_template = "master_home.html"
     else:
-        target_template = "register_config.html"
+        target_template = "index.html"
+        
+    #logging.info("Target Template: %s" % target_template)
     return target_template
 
 def get_relevant_preferences(user_obj):
@@ -740,6 +764,7 @@ class IndexHandler(webapp2.RequestHandler):
             user_obj = get_user_obj({'username': self.request.get("username"), 'password': self.request.get("password")})
             if user_obj['auth']:
                 self.session['session_ID'] = user_obj['session_ID']
+                user_obj['user_cookie'] = self.session['cart_cookie']
                 
                 target_template = get_template(user_obj)
                 
@@ -749,17 +774,17 @@ class IndexHandler(webapp2.RequestHandler):
                 next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
                 cursor.close(); conn.close()
                 
-                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"  }
                 path = os.path.join("templates", target_template)
                 self.response.out.write(template.render(path, tv))
             else:
                 target_template = "login.html"
                 misc['error'] = "We could not find your username/password combination."
-                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
                 path = os.path.join("templates", target_template)
                 self.response.out.write(template.render(path, tv))
         else:
-            tv = {'user_obj': None, 'misc': {}}; path = os.path.join("templates", "index.html")
+            tv = {'user_obj': None, 'misc': {}, 'layout': 'layout_no_auth.html'}; path = os.path.join("templates", "index.html")
             self.response.out.write(template.render(path, tv))
     
     def get(self):
@@ -795,15 +820,16 @@ class IndexHandler(webapp2.RequestHandler):
                 target_template = get_template(user_obj)
                 
                     
-                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html" }
                 path = os.path.join("templates", target_template)
                 self.response.out.write(template.render(path, tv))
             else:
-                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+                user_obj = process_non_auth(self)        
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
-            user_obj = get_user_obj()
-            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
             
 class LoginHandler(webapp2.RequestHandler):
@@ -829,17 +855,18 @@ class LoginHandler(webapp2.RequestHandler):
         
         misc = {'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
                 path = os.path.join("templates", "index.html")
                 self.response.out.write(template.render(path, tv))
             else:
+                user_obj = process_non_auth(self)
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
 
@@ -874,7 +901,7 @@ class CreateHandler(webapp2.RequestHandler):
         misc['standalone_user_types'] = [{'val': 'team', 'desc': 'Team'}, {'val': None, 'desc': 'Lurker'}, {'val': 'media', 'desc': 'Media'}, {'val': 'individual', 'desc': 'Individual'}]
         
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth'] and user_obj['is_admin']:
                 req = dict_request(self.request)
@@ -895,7 +922,7 @@ class CreateHandler(webapp2.RequestHandler):
                 if req['action'] == "create_standalone_user":
                     misc['create_group_user_display'] = "hidden";  misc['create_standalone_user_display'] = "visible"
                     misc['create_group_user_tag_display'] = "tag-off";  misc['create_standalone_user_tag_display'] = "tag-on"
-                    logging.info(zc.print_dict(req))
+                    
                     map_fields = ["standalone_email", "standalone_user_type", "standalone_username", "standalone_first_name", "standalone_last_name", "standalone_phone", "standalone_password", "standalone_is_admin"]
                     for m in map_fields:
                         misc[m] = None
@@ -929,12 +956,15 @@ class CreateHandler(webapp2.RequestHandler):
                     if go_on:
                         ab_group = min(47, int(random.random()*48.))
                         
-                        query = ("INSERT INTO LRP_Users (ID,email,active,logins,user_type,password,username,AB_group,first_name,last_name,phone,date_created,track_GA,is_admin) VALUES ((SELECT count(1)+1 from LRP_Users fds), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
-                        param = [req['standalone_email'], 1, 0, req['standalone_user_type'], req['standalone_password'], req['standalone_username'], ab_group, req['standalone_first_name'], req['standalone_last_name'], req['standalone_phone'], datetime.now(), 1, is_admin]
+                        query = ("INSERT INTO LRP_Users (ID,email,active,logins,user_type,password,username,AB_group,first_name,last_name,phone,date_created,track_GA,is_admin, activated) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Users fds), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+                        param = [req['standalone_email'], 1, 0, req['standalone_user_type'], req['standalone_password'], req['standalone_username'], ab_group, req['standalone_first_name'], req['standalone_last_name'], req['standalone_phone'], datetime.now(), 1, is_admin, 1]
                         #logging.info(query)
                         #logging.info(param)
                         queries.append(query)
                         params.append(param)
+                        
+                        queries.append("INSERT INTO LRP_User_Preferences (ID, user_ID, active) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_User_Preferences fds), (SELECT max(ID) from  LRP_Users fdsa), %s)")
+                        params.append([1])
                         
                 ex_queries(queries,params)
                 
@@ -948,7 +978,7 @@ class CreateHandler(webapp2.RequestHandler):
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
     
@@ -962,7 +992,7 @@ class CreateHandler(webapp2.RequestHandler):
         
         misc['standalone_user_types'] = [{'val': 'team', 'desc': 'Team'}, {'val': None, 'desc': 'Lurker'}, {'val': 'media', 'desc': 'Media'}, {'val': 'individual', 'desc': 'Individual'}]
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth'] and user_obj['is_admin']:
                 target_template = "create.html"
@@ -975,7 +1005,7 @@ class CreateHandler(webapp2.RequestHandler):
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
             
@@ -999,13 +1029,12 @@ class AdminHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        #finalize_mail_send()
         target_template = "admin.html"
         
         misc = {'error': None, 'msg': None}; user_obj = None
         
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth'] and user_obj['is_admin']:
       
@@ -1039,10 +1068,144 @@ class AdminHandler(webapp2.RequestHandler):
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
             
+class ActivateHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+    
+        misc = {'error': None, 'code_error': None, 'msg': None}; user_obj = None
+        queries = []; params = []
+        
+        target_template = "activated.html"
+        
+        
+        misc['user_ID'] = int(self.request.get('user_ID').strip())
+        misc['username'] = self.request.get('username').strip()
+        misc['password'] = self.request.get('password').strip()
+        misc['phone'] = self.request.get('phone').strip()
+        
+        conn, cursor = mysql_connect()
+        cursor.execute("SELECT * from LRP_Users where ID!=%s", [misc['user_ID']])
+        existing_users = zc.dict_query_results(cursor)
+        cursor.close(); conn.close()
+        
+        if "" == misc['username']:
+            misc['error'] = "You must enter a valid value for username."
+        elif sum([1 for z in misc['username'].lower() if 97 <= ord(z) <= 122 or 48 <= ord(z) <= 57]) != len(misc['username']):
+            misc['username'] = ""
+            misc['error'] = "Usernames can only include numbers and letters."
+        elif "" == misc['password']:
+            misc['error'] = "You must enter a valid value for password."
+        elif len(misc['password']) < 8:
+            misc['error'] = "Passwords must be at least 8 characters and include at least one of: UpperCase, Letter, Number"
+            misc['password'] = ""
+        elif len([1 for z in misc['password'] if 48 <= ord(z) <= 57]) == 0 or len([1 for z in misc['password'] if 97 <= ord(z) <= 122]) == 0 or len([1 for z in misc['password'] if 65 <= ord(z) <= 90]) == 0:
+            misc['error'] = "Passwords must be at least 8 characters and include at least one of: UpperCase, LowerCase, Number"
+            misc['password'] = ""
+        elif misc['username'].lower() in [z['username'].lower() for z in existing_users if z['active'] == 1]:
+            misc['username'] = ""
+            misc['error'] = "Username is not available."
+            
+        
+        
+        if misc['error'] is None:
+            
+       
+            query = "UPDATE LRP_Users set username=%s, password=%s, activated=%s, phone=%s where ID=%s"
+            param = [misc['username'], encrypt(misc['password'], create_cipher()), 1, misc['phone'], misc['user_ID']]
+            session_ID = "%d%09d" % ((datetime.now() - datetime(1970,1,1)).total_seconds()*1000.0, misc['user_ID'])
+            self.session['session_ID'] = session_ID
+            
+            queries.append(query); params.append(param)
+            
+            ex_queries(queries, params)
+            
+            user_obj = get_user_obj({'session_ID': session_ID})      
+            
+            layout = "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"       
+        else:
+            layout = "layout_no_auth.html"   
+            target_template = "finalize_activation.html"         
+            
+
+        tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
+        path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+    
+    def get(self):
+        
+       
+        misc = {'error': None, 'code_error': None, 'msg': None}; user_obj = None
+        queries = []; params = []
+        
+        
+        
+        
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+            
+                user_obj = logout(self, user_obj)
+                
+        misc['activation_code'] = self.request.get('c')        
+        
+        
+        conn, cursor = mysql_connect()
+        cursor.execute("SELECT * from LRP_Users where activation_code=%s", [misc['activation_code']])
+        users = zc.dict_query_results(cursor)
+        cursor.close(); conn.close()
+        
+        if len(users) == 0:
+            misc['code_error'] = "Your activation code did not match our records."
+            target_template = "finalize_activation.html"
+        else:
+            user = users[0]
+            misc['user_ID'] = user['ID']
+            if user['activation_type'] == "full":
+                target_template = "finalize_activation.html"
+            elif user['activation_type'] == "final":
+                target_template = "activated.html"
+                conn, cursor = mysql_connect()
+                cursor.execute("UPDATE LRP_Users set activated=1 where ID=%s", [misc['user_ID']])
+                conn.commit(); cursor.close(); conn.close()
+            else:
+                target_template = "activated.html"
+                conn, cursor = mysql_connect()
+                cursor.execute("UPDATE LRP_Users set activated=1 where ID=%s", [misc['user_ID']])
+                conn.commit(); cursor.close(); conn.close()
+                
+            self.session['session_ID'] = "%d%09d" % ((datetime.now() - datetime(1970,1,1)).total_seconds()*1000.0, user['ID'])
+            
+        layout = "layout_main.html" #if user_obj['user_type'] is not None else "layout_lurker.html"       
+        if misc['error'] is not None or misc['code_error'] is not None:
+            layout = "layout_no_auth.html"
+            
+        user_obj = process_non_auth(self)
+        tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
+        path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        
+def logout(self, user_obj):
+    user_obj['auth'] = False
+    self.session['session_ID'] = 0               
+    
+    conn, cursor = mysql_connect()
+    cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [9, user_obj['ID'], datetime.now()]); conn.commit()
+    cursor.close(); conn.close()
+    return user_obj    
+    
 class LogoutHandler(webapp2.RequestHandler):
     def dispatch(self):
         self.session_store = sessions.get_store(request=self.request)
@@ -1066,22 +1229,17 @@ class LogoutHandler(webapp2.RequestHandler):
         
         misc = {'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             
-            user_obj['auth'] = False
-            self.session['session_ID'] = 0               
-            
-            conn, cursor = mysql_connect()
-            cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [9, user_obj['ID'], datetime.now()]); conn.commit()
-            cursor.close(); conn.close()    
+            user_obj = logout(self, user_obj)
                 
-            tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
+            tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
             
         else: 
-            user_obj = get_user_obj()
-            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
 
 def ex_queries(queries, params, desc=None):
@@ -1091,8 +1249,13 @@ def ex_queries(queries, params, desc=None):
         conn, cursor = mysql_connect();
         cursor.execute("START TRANSACTION")
         for i, (q, p) in enumerate(zip(queries, params)):
+            logging.info(q)
+            logging.info(p)
             cursor.execute(q, p)
-        cursor.execute("COMMIT")
+        if '--no-commit' not in client_secrets['local'] or client_secrets['local']['--no-commit'] not in ["Y", 'y', 'yes']: 
+            cursor.execute("COMMIT")
+        else:
+            logging.info("\n\n\tNO COMMIT!!!\n\n")
         cursor.close(); conn.close()
             
 class RegisterHandler(webapp2.RequestHandler):
@@ -1117,6 +1280,8 @@ class RegisterHandler(webapp2.RequestHandler):
         misc['products'] = get_products(cursor, "Data Subscriptions")
         cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
         next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
+        cursor.execute("SELECT * from LRP_Email_Templates where active=1")
+        email_templates = zc.dict_query_results(cursor)
         cursor.close(); conn.close()
         next_ID = len(existing_users) + 1
         
@@ -1125,7 +1290,7 @@ class RegisterHandler(webapp2.RequestHandler):
         misc['password'] = self.request.get('password').strip()
         misc['email'] = self.request.get('email').strip()
         misc['phone'] = self.request.get('phone').strip()
-        email_regex = re.compile(r'^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,63}$', re.IGNORECASE)
+        
         email_match = email_regex.search(misc['email'])
         
         if "" == misc['username']:
@@ -1156,24 +1321,44 @@ class RegisterHandler(webapp2.RequestHandler):
         
         if misc['error'] is None:
             
-            target_template = "register_config.html"
-            random.seed(time.time())
+            target_template = "register_start.html"
+            
+            tmp1 = create_temporary_password()
+            tmp2 = create_temporary_password()
+            activation_code = "%s%s" % (tmp1, tmp2)
+            random.seed(time.time() + 110935)
+            
             dt = datetime.now()
-            query = "INSERT INTO LRP_Users (ID, active, logins, email, username, password, AB_group, date_created) VALUES  (%s, %s, %s, %s, %s, %s, %s, %s)"
-            param = [next_ID, 1, 0, misc['email'], misc['username'], encrypt(misc['password'], create_cipher()), min(47, int(random.random()*48.)), dt]
+            
+            query = "INSERT INTO LRP_Users (ID, active, logins, email, username, password, AB_group, date_created, activation_code, activated, activation_type) VALUES  (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+            param = [next_ID, 1, 0, misc['email'], misc['username'], encrypt(misc['password'], create_cipher()), min(47, int(random.random()*48.)), dt, activation_code, 0, 'final']
+            queries.append(query); params.append(param)
+
             user_obj = {'date_created': dt, 'auth': False, 'last_log_in': None, 'logins': 0, 'user_type': None, 'ID': next_ID, 'email': misc['email'], 'password': misc['password'], 'phone': misc['phone'], 'username': misc['username']}
             user_obj['session_ID'] = "%d%09d" % ((datetime.now() - datetime(1970,1,1)).total_seconds()*1000.0, user_obj['ID'])
             self.session['session_ID'] = user_obj['session_ID']
             
-            logging.info(query)
-            logging.info(param)
-            queries.append(query); params.append(param)
             
-            query = "INSERT INTO LRP_User_Preferences (ID, user_ID, active) VALUES ((SELECT count(1) + 1 from LRP_User_Preferences fds), %s, %s)"
+            
+            query = "INSERT INTO LRP_User_Preferences (ID, user_ID, active) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_User_Preferences fds), %s, %s)"
             param = [next_ID, 1]
             queries.append(query); params.append(param)
             ex_queries(queries, params)
-                    
+                        
+            msg = email_templates[ [z['template_desc'] for z in email_templates].index('Activate Account') ]
+            msg['email'] = misc['email']
+            msg['subject'] = "Your LacrosseReference PRO account is ready"
+            
+            msg['content'] = get_file(msg['bucket'], msg['fname'])
+            msg['content'] = msg['content'].replace("[activation_link]", "https://pro.lacrossereference.com/activate?c=%s" % (url_escape(activation_code)))
+            
+            finalize_mail_send(msg)
+            
+            misc['msg'] = "An account activation link has been sent to the email account specified."
+            misc['username'] = ""
+            misc['password'] = ""
+            misc['email'] = ""
+            misc['phone'] = ""
             
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
         path = os.path.join("templates", target_template)
@@ -1189,7 +1374,7 @@ class RegisterHandler(webapp2.RequestHandler):
         
         misc = {'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
                 target_template = "index.html"
@@ -1201,7 +1386,7 @@ class RegisterHandler(webapp2.RequestHandler):
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
       
@@ -1246,7 +1431,7 @@ class RegisterConfigHandler(webapp2.RequestHandler):
         
         
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
                 conn, cursor = mysql_connect()
@@ -1268,10 +1453,10 @@ class RegisterConfigHandler(webapp2.RequestHandler):
                             price = tmp_product['price']
                             list_price = price
                             
-                            query = "INSERT INTO LRP_Cart (ID, user_ID, product_ID, status, date_added, price, discount_tag, list_price, active) VALUES ((SELECT count(1)+1 from LRP_Cart fds), %s, %s, %s, %s, %s, %s, %s, %s)"
+                            query = "INSERT INTO LRP_Cart (ID, user_ID, product_ID, status, date_added, price, discount_tag, list_price, active) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Cart fds), %s, %s, %s, %s, %s, %s, %s, %s)"
                             param = [user_obj['ID'], misc['product_ID'], 'added', datetime.now(), price, None, list_price, 1]
                             queries.append(query); params.append(param)
-                            logging.info("Query %s w/ %s" % (query, param))
+                            
                             ex_queries(queries, params)
                             
                             
@@ -1291,7 +1476,7 @@ class RegisterConfigHandler(webapp2.RequestHandler):
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
             target_template = "index.html"
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
             
@@ -1307,7 +1492,7 @@ class RegisterConfigHandler(webapp2.RequestHandler):
         cursor.close(); conn.close()
         
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
                 
@@ -1319,11 +1504,21 @@ class RegisterConfigHandler(webapp2.RequestHandler):
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
 def pd(d):
     logging.info("\n\n%s\n\n" % zc.print_dict(d))
+
+def create_cart_cookie():
+    random.seed(time.time())
+    user_cookie = "%d" % time.time()
+    for ij in range(5):
+        random.seed(time.time())
+        user_cookie += create_temporary_password()
+        time.sleep(.05)
+    return user_cookie
+    
 class CartHandler(webapp2.RequestHandler):
     def dispatch(self):
         self.session_store = sessions.get_store(request=self.request)
@@ -1340,94 +1535,93 @@ class CartHandler(webapp2.RequestHandler):
         target_template = "cart.html"
         misc = {'error': None}; user_obj = None; queries = []; params = []
         
+        
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
-                conn, cursor = mysql_connect()
-                misc['products'] = get_products(cursor, "Data Subscriptions")
-                cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
-                next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
-                cursor.close(); conn.close()
-
-                
-                if self.request.get("action") == "remove_item_from_cart":
-                    misc['cart_ID'] = int(self.request.get("cart_ID"))
-                    queries.append("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)")
-                    params.append([3, user_obj['ID'], datetime.now()])
-                
-                    if misc['error'] is None:
-                        
-                        if misc['cart_ID'] in [z['ID'] for z in user_obj['cart']]:
-                            
-                            query = "UPDATE LRP_Cart set status='removed' where ID=%s"
-                            param = [misc['cart_ID']]
-                            queries.append(query); params.append(param)
-                            
-                            
-                            user_obj = get_user_obj({'session_ID': session_ID})
-                            misc['msg'] = "Item has been removed"
-                        else:
-                            misc['error'] = "Cart could not be updated."
-                        target_template = "cart.html"
-                    
-                elif self.request.get("action") == "enter_discount":
-                    queries.append("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)")
-                    params.append([4, user_obj['ID'], datetime.now()])
-                    
-                    misc['cart_ID'] = int(self.request.get("cart_ID"))
-                    misc['product_ID'] = int(self.request.get("product_ID"))
-                    misc['discount_tag'] = self.request.get("discount_tag").strip().upper()
-                    
-                    logging.info("Tag: %s" % misc['discount_tag'])
-                    tmp_product = misc['products'][ [z['ID'] for z in misc['products']].index(misc['product_ID']) ]
-                    pd(tmp_product)
-                    
-                    if misc['discount_tag'] in [ z['discount_tag'].upper() for z in tmp_product['offers'] if z['product_ID'] == misc['product_ID'] and z['good_until'] is not None and z['good_until'] < datetime.now()]: # It has expired
-                        misc['error'] = "Offer has already expired."
-                    elif misc['discount_tag'] in [ z['discount_tag'].upper() for z in tmp_product['offers'] if z['product_ID'] != misc['product_ID']]: # It is for a different product
-                        misc['error'] = "Unknown discount code/product combination."
-                    elif misc['discount_tag'] in [ z['discount_tag'].upper() for z in tmp_product['offers'] if z['specific_to_user_ID'] not in [None, user_obj['ID']]]: # It's specific to a different user
-                        misc['error'] = "Unknown discount code/product combination."
-                    elif misc['discount_tag'] not in [ z['discount_tag'].upper() for z in tmp_product['offers']]: # not in the active list at all
-                        misc['error'] = "Unknown discount code/product combination."
-                    else:
-                        offer = [z for z in tmp_product['offers'] if z['active'] and (z['good_until'] is None or z['good_until'] >= datetime.now()) and z['specific_to_user_ID'] in [None, user_obj['ID']] and z['product_ID'] == misc['product_ID'] and misc['discount_tag'] == z['discount_tag'].upper()]
-                        if len(offer) == 0:
-                            misc['error'] = "Unknown discount code/product combination."
-                        else:
-                            offer = offer[0]
-                        
-                    if misc['error'] is None:
-                        
-                        if misc['cart_ID'] in [z['ID'] for z in user_obj['cart']]:
-                            
-                            query = "UPDATE LRP_Cart set discount_tag=%s, price=%s where ID=%s"
-                            param = [misc['discount_tag'].upper(), offer['offer_price'], misc['cart_ID']]
-                            queries.append(query); params.append(param)
-                            
-                            
-                            user_obj = get_user_obj({'session_ID': session_ID})
-                            misc['msg'] = "Discount code has been applied."
-                        else:
-                            misc['error'] = "Discount code could not be applied."
-                        target_template = "cart.html"
-                    
-             
-                ex_queries(queries, params)
-                           
-                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template)
-                self.response.out.write(template.render(path, tv))
+                layout = "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"
             else:
-                target_template = "index.html"
-                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                user_obj = process_non_auth(self)
+                layout = "layout_no_auth.html"
         else: 
-            target_template = "index.html"
-            user_obj = get_user_obj()
-            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            user_obj = process_non_auth(self)
+            layout = "layout_no_auth.html"
+        
+        conn, cursor = mysql_connect()
+        misc['products'] = get_products(cursor, "Data Subscriptions")
+        cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
+        next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
+        cursor.close(); conn.close()
+
+        
+        if self.request.get("action") == "remove_item_from_cart":
+            misc['cart_ID'] = int(self.request.get("cart_ID"))
+            if 'ID' in user_obj:
+                queries.append("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)")
+                params.append([3, user_obj['ID'], datetime.now()])
+        
+            if misc['error'] is None:
+                
+                if misc['cart_ID'] in [z['ID'] for z in user_obj['cart']]:
+                    
+                    query = "UPDATE LRP_Cart set status='removed' where ID=%s"
+                    param = [misc['cart_ID']]
+                    queries.append(query); params.append(param)
+                    
+                    misc['msg'] = "Item has been removed"
+                else:
+                    misc['error'] = "Cart could not be updated."
+                target_template = "cart.html"
+            
+        elif self.request.get("action") == "enter_discount":
+            queries.append("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)")
+            params.append([4, user_obj['ID'], datetime.now()])
+            
+            misc['cart_ID'] = int(self.request.get("cart_ID"))
+            misc['product_ID'] = int(self.request.get("product_ID"))
+            misc['discount_tag'] = self.request.get("discount_tag").strip().upper()
+            
+            
+            tmp_product = misc['products'][ [z['ID'] for z in misc['products']].index(misc['product_ID']) ]
+            pd(tmp_product)
+            
+            if misc['discount_tag'] in [ z['discount_tag'].upper() for z in tmp_product['offers'] if z['product_ID'] == misc['product_ID'] and z['good_until'] is not None and z['good_until'] < datetime.now()]: # It has expired
+                misc['error'] = "Offer has already expired."
+            elif misc['discount_tag'] in [ z['discount_tag'].upper() for z in tmp_product['offers'] if z['product_ID'] != misc['product_ID']]: # It is for a different product
+                misc['error'] = "Unknown discount code/product combination."
+            elif misc['discount_tag'] in [ z['discount_tag'].upper() for z in tmp_product['offers'] if z['specific_to_user_ID'] not in [None, user_obj['ID']]]: # It's specific to a different user
+                misc['error'] = "Unknown discount code/product combination."
+            elif misc['discount_tag'] not in [ z['discount_tag'].upper() for z in tmp_product['offers']]: # not in the active list at all
+                misc['error'] = "Unknown discount code/product combination."
+            else:
+                offer = [z for z in tmp_product['offers'] if z['active'] and (z['good_until'] is None or z['good_until'] >= datetime.now()) and z['specific_to_user_ID'] in [None, user_obj['ID']] and z['product_ID'] == misc['product_ID'] and misc['discount_tag'] == z['discount_tag'].upper()]
+                if len(offer) == 0:
+                    misc['error'] = "Unknown discount code/product combination."
+                else:
+                    offer = offer[0]
+                
+            if misc['error'] is None:
+                
+                if misc['cart_ID'] in [z['ID'] for z in user_obj['cart']]:
+                    
+                    query = "UPDATE LRP_Cart set discount_tag=%s, price=%s where ID=%s"
+                    param = [misc['discount_tag'].upper(), offer['offer_price'], misc['cart_ID']]
+                    queries.append(query); params.append(param)
+                    
+                    misc['msg'] = "Discount code has been applied."
+                else:
+                    misc['error'] = "Discount code could not be applied."
+                target_template = "cart.html"
+            
+     
+        ex_queries(queries, params)
+        if user_obj['auth']:
+            user_obj = get_user_obj({'session_ID': session_ID})
+        else:
+            user_obj = process_non_auth(self)
+        tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
+        path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         
     def get(self):
         
@@ -1435,7 +1629,7 @@ class CartHandler(webapp2.RequestHandler):
         
         misc = {'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
                 
@@ -1449,16 +1643,16 @@ class CartHandler(webapp2.RequestHandler):
                 misc['current_items'] = [z for z in misc['products'] if z['ID'] in [y['product_ID'] for y in user_obj['cart'] if y['active'] and y['status'] == "added"]]
                 
                 
-                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_lurker.html'}
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
             else:
-                target_template = "index.html"
-                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
+            
+                user_obj = process_non_auth(self)
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"
-            user_obj = get_user_obj()
-            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
             
 class SubscriptionHandler(webapp2.RequestHandler):
@@ -1501,7 +1695,7 @@ class SubscriptionHandler(webapp2.RequestHandler):
         
         misc = {'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
                 target_template = "subscription.html"
@@ -1519,7 +1713,7 @@ class SubscriptionHandler(webapp2.RequestHandler):
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
             
@@ -1586,7 +1780,7 @@ class UploadHandler(webapp2.RequestHandler):
         
         misc = {'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
                 target_template = "password.html"
@@ -1603,7 +1797,7 @@ class UploadHandler(webapp2.RequestHandler):
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
             
@@ -1624,7 +1818,7 @@ class PasswordHandler(webapp2.RequestHandler):
         misc = {'error': None}; user_obj = None; queries = []; params = []
         
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
                 user_obj['password'] = decrypt_local(user_obj['password'], create_cipher())
@@ -1680,7 +1874,7 @@ class PasswordHandler(webapp2.RequestHandler):
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
             target_template = "index.html"
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
 
@@ -1690,7 +1884,7 @@ class PasswordHandler(webapp2.RequestHandler):
         
         misc = {'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
                 target_template = "password.html"
@@ -1707,7 +1901,402 @@ class PasswordHandler(webapp2.RequestHandler):
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            
+class ReviewQuoteHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        self.price_type_options = []
+        self.price_type_options.append({'desc': 'Annual', 'value': 'annual'})
+        self.price_type_options.append({'desc': 'One-Time', 'value': 'one-time'})
+        self.price_type_options.append({'desc': 'Monthly', 'value': 'monthly'})
+        
+        self.trial_options = []
+        self.trial_options.append({'desc': 'Yes', 'value': 1})
+        self.trial_options.append({'desc': 'No', 'value': 0})
+        
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+        target_template = "review_quote.html"
+        misc = {'error': None}; user_obj = None; queries = []; params = []
+        
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth'] and user_obj['is_admin']:
+                
+                misc = dict_request(self.request); misc['error'] = None
+                pd(misc)
+                misc['request_ID'] = int(misc['request_ID'])
+                misc['product_ID'] = int(misc['product_ID'])
+                misc['trial'] = int(misc['trial'])
+                misc['trial_str'] = "Yes" if misc['trial'] else "No"
+                
+                if misc['trial']:
+                    try:
+                        trial_end_dt = datetime.strptime(misc['trial_end_str'].replace(" ", "").replace("/", "-").strip(), "%Y-%m-%d")
+                        misc['trial_end_formatted'] = datetime.strptime(misc['trial_end_str'].replace(" ", "").replace("/", "-").strip(), "%Y-%m-%d").strftime("%b %d, %Y")
+                        if trial_end_dt < datetime.now():
+                            misc['error'] = "Trial End date can't be in the past."
+                    except Exception:
+                        #logging.info(traceback.format_exc())
+                        misc['error'] = "Trial End date must be YYYY-MM-DD."
+            
+                misc['msg_body_html'] = misc['msg_body'].replace("\n", "<BR>")
+                
+                conn, cursor = mysql_connect()
+                misc['products'] = get_products(cursor, "Data Subscriptions")
+                cursor.execute("SELECT * from LRP_Product_Requests where status='active'", [])
+                misc['product_requests'] = zc.dict_query_results(cursor)
+                cursor.execute("SELECT * from LRP_Groups where active=1 order by group_name asc", [])
+                groups = zc.dict_query_results(cursor)
+                cursor.close(); conn.close()
+                
+                misc['product_name'] = misc['products'][ [z['ID'] for z in misc['products']].index(misc['product_ID']) ]['product_name']
+                
+                
+                misc['context'] = ""
+                if misc['request_ID'] != -1:
+                    request = misc['product_requests'][ [z['ID'] for z in misc['product_requests']].index(misc['request_ID']) ]
+                    misc['context'] = request['email']
+                    misc['request_team_ID'] = request['team_ID']
+                    if misc['request_team_ID'] is not None:
+                        misc['context'] += " (team: %s)" % (groups[ [z['team_ID'] for z in groups].index(misc['request_team_ID'])]['group_name'])
+                
+                
+                for p in misc['product_requests']:
+                    p['selected'] = " selected" if p['ID'] == misc['request_ID'] else ""
+                
+                misc['price_type_options'] = self.price_type_options
+                for p in misc['price_type_options']:
+                    p['selected'] = " selected" if p['value'] == misc['price_type'] else ""
+                
+                misc['trial_options'] = self.trial_options
+                for p in misc['trial_options']:
+                    p['selected'] = " selected" if p['value'] == misc['trial'] else ""
+                
+                for p in misc['products']:
+                    p['selected'] = " selected" if p['ID'] == misc['product_ID'] else ""
+                
+      
+                misc['price_str'] = "%.2f" % float(misc['price'])
+                if misc['action'] == "edit_quote":
+                    target_template = "create_quote.html"
+                elif misc['action'] == "send_quote":
+                    cur_dt = "%d" % time.time()
+                    misc['hash'] = ""
+                    for ij in range(10):
+                        misc['hash'] += "%s%s" % (cur_dt[ij], create_temporary_password())
+                    
+                    logging.info("Send the template to the user and record the quote in the DB with hash: %s." % misc['hash'])
+                    
+                    misc['msg_body_div'] = "<div style=''><span style='display:contents;'>{}</span></div>".format(misc['msg_body'])
+                    
+                    quote_content = []
+                    quote_content.append({'label': '%s Price' % misc['price_type'].title(), 'value': "$%s" % misc['price_str']}) 
+                    quote_content.append({'label': 'Number of Users', 'value': "50"}) 
+                    if misc['trial']:
+                        quote_content.append({'label': 'Trial Period Ends', 'value': misc['trial_end_formatted']}) 
+                    
+                    
+                    misc['msg_quote_div'] = "".join(["<div style='display:flex; background-color:{};'><div style='width:49%;  margin-left:1%;'><span style='display:contents;'>{}</span></div><div style=''><span style='display:contents;'>{}</span></div></div>".format("#EEE" if i % 2 == 0 else "#FFF", z['label'],  z['value']) for i, z in enumerate(quote_content)])
+                    misc['msg_html'] = "\n\n".join([misc['msg_body_div'], misc['msg_quote_div']])
+                    misc['msg_html_safe'] = misc['msg_html'].replace("\n", "<BR>")
+                    
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj),}
+                path = os.path.join("templates", target_template)
+                self.response.out.write(template.render(path, tv))
+        
+            else:
+                target_template = "index.html"
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        else: 
+            target_template = "index.html"
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+
+    def get(self):
+        
+        target_template = "index.html"
+        
+        misc = {'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth'] and user_obj['is_admin']:
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            else:
+                target_template = "index.html"; user_obj = process_non_auth(self)
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        else: 
+            target_template = "index.html"; user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            
+class CreateQuoteHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        self.price_type_options = []
+        self.price_type_options.append({'desc': 'Annual', 'value': 'annual'})
+        self.price_type_options.append({'desc': 'One-Time', 'value': 'one-time'})
+        self.price_type_options.append({'desc': 'Monthly', 'value': 'monthly'})
+        
+        self.trial_options = []
+        self.trial_options.append({'desc': 'Yes', 'value': 1})
+        self.trial_options.append({'desc': 'No', 'value': 0})
+        
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+        target_template = "create_quote.html"
+        misc = {'error': None}; user_obj = None; queries = []; params = []
+        
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth'] and user_obj['is_admin']:
+                trial_end_dt = None
+                
+                conn, cursor = mysql_connect()
+                misc['products'] = get_products(cursor, "Data Subscriptions")
+                cursor.execute("SELECT * from LRP_Product_Requests where status='active'", [])
+                misc['product_requests'] = zc.dict_query_results(cursor)
+                cursor.execute("SELECT * from LRP_Groups where active=1 order by group_name asc", [])
+                groups = zc.dict_query_results(cursor)
+                cursor.close(); conn.close()
+                
+                
+                misc['request_ID'] = int(self.request.get('request_ID'))
+                misc['context'] = ""
+                if misc['request_ID'] != -1:
+                    request = misc['product_requests'][ [z['ID'] for z in misc['product_requests']].index(misc['request_ID']) ]
+                    misc['context'] = request['email']
+                    misc['request_team_ID'] = request['team_ID']
+                    if misc['request_team_ID'] is not None:
+                        misc['context'] += " (team: %s)" % (groups[ [z['team_ID'] for z in groups].index(misc['request_team_ID'])]['group_name'])
+                for p in misc['product_requests']:
+                    p['selected'] = " selected" if p['ID'] == misc['request_ID'] else ""
+                    
+                misc['email'] = self.request.get('email').strip()
+                misc['trial'] = int(self.request.get('trial'))
+                misc['product_ID'] = int(self.request.get('product_ID'))
+                misc['product_name'] = misc['products'][ [z['ID'] for z in misc['products']].index(misc['product_ID']) ]['product_name']
+                misc['msg_body'] = self.request.get('msg_body').strip()
+                misc['msg_body_html'] = misc['msg_body'].replace("\n", "<BR>")
+                misc['price_str'] = self.request.get('price')
+                misc['trial_end_str'] = self.request.get('trial_end')
+                misc['price_type'] = self.request.get('price_type')
+                misc['trial_str'] = "Yes" if misc['trial'] else "No"
+                
+                
+                misc['price_type_options'] = self.price_type_options
+                
+                for p in misc['price_type_options']:
+                    p['selected'] = " selected" if p['value'] == misc['price_type'] else ""
+                
+                for p in misc['products']:
+                    p['selected'] = " selected" if p['ID'] == misc['product_ID'] else ""
+                
+                misc['trial_options'] = self.trial_options
+                for p in misc['trial_options']:
+                    p['selected'] = " selected" if p['value'] == misc['trial'] else ""
+                
+                
+                if misc['email'] in [None, ''] and misc['request_ID'] in [-1, "-1", "", None]:
+                    misc['error'] = "You must specify a recipient or a quote request."
+                elif misc['msg_body'] in [None, '']:
+                    misc['error'] = "The content of the email is empty."
+                elif misc['email'] not in ['', None] and email_regex.search(misc['email']) is None:
+                    misc['error'] = "The email address you entered is invalid."
+                elif misc['product_ID'] in [-1, "-1", "", None]:
+                    misc['error'] = "You must specify which product this relates to."
+                misc['trial_end_formatted'] = "N/A"
+                if misc['error'] is None:
+                    try:
+                       misc['price'] = float(misc['price_str'].replace("$", "").replace(",", "").strip())
+                    except Exception:
+                        misc['error'] = "Price must be a valid number."
+                    if misc['trial']:
+                        try:
+                            trial_end_dt = datetime.strptime(misc['trial_end_str'].replace(" ", "").replace("/", "-").strip(), "%Y-%m-%d")
+                            misc['trial_end_formatted'] = datetime.strptime(misc['trial_end_str'].replace(" ", "").replace("/", "-").strip(), "%Y-%m-%d").strftime("%b %d, %Y")
+                            if trial_end_dt < datetime.now():
+                                misc['error'] = "Trial End date can't be in the past."
+                        except Exception:
+                            #logging.info(traceback.format_exc())
+                            misc['error'] = "Trial End date must be YYYY-MM-DD."
+                
+                if misc['error'] in ['', None]:
+                    target_template = "review_quote.html"
+                    
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj),}
+                path = os.path.join("templates", target_template)
+                self.response.out.write(template.render(path, tv))
+        
+            else:
+                target_template = "index.html"
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        else: 
+            target_template = "index.html"
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+
+    def get(self):
+        
+        target_template = "create_quote.html"
+        
+        misc = {'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth'] and user_obj['is_admin']:
+                
+                conn, cursor = mysql_connect()
+                misc['products'] = get_products(cursor, "Data Subscriptions")
+                cursor.execute("SELECT * from LRP_Product_Requests where status='active'", [])
+                misc['product_requests'] = zc.dict_query_results(cursor)
+                cursor.close(); conn.close()
+                
+                misc['price_type_options'] = self.price_type_options
+                misc['trial_options'] = self.trial_options
+                
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            else:
+                target_template = "index.html"; user_obj = process_non_auth(self)
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        else: 
+            target_template = "index.html"; user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            
+class ViewQuoteHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+        target_template = "view_quote.html"
+        misc = {'error': None}; user_obj = None; queries = []; params = []
+        
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                user_obj['password'] = decrypt_local(user_obj['password'], create_cipher())
+        
+                
+                
+                conn, cursor = mysql_connect()
+                misc['products'] = get_products(cursor, "Data Subscriptions")
+                cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
+                next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
+                cursor.close(); conn.close()
+        
+                misc['password'] = self.request.get('password').strip()
+                misc['new_password'] = self.request.get('new_password').strip()
+                misc['repeat_password'] = self.request.get('repeat_password').strip()
+                
+                if misc['password'] != user_obj['password']:
+                    misc['error'] = "Current password did not match."
+                elif misc['new_password'] != misc['repeat_password']:
+                    misc['error'] = "New password duplicate did not match original."
+                elif "" in [misc['new_password'], misc['new_password'], misc['repeat_password']]:
+                    misc['error'] = "All three values must be entered."
+                elif len(misc['new_password']) < 8:
+                    misc['error'] = "Passwords must be at least 8 characters and include at least one of: UpperCase, Letter, Number"
+                elif len([1 for z in misc['new_password'] if 48 <= ord(z) <= 57]) == 0 or len([1 for z in misc['new_password'] if 97 <= ord(z) <= 122]) == 0 or len([1 for z in misc['new_password'] if 65 <= ord(z) <= 90]) == 0:
+                    misc['error'] = "Passwords must be at least 8 characters and include at least one of: UpperCase, LowerCase, Number"
+        
+                
+                if misc['error'] is None:
+                    
+                    queries.append("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)")
+                    params.append([10, user_obj['ID'], datetime.now()])
+                    
+                    query = "UPDATE LRP_Users set password=%s where ID=%s"
+                    param = [encrypt(misc['new_password'], create_cipher()), user_obj['ID']]
+                    queries.append(query); params.append(param)
+                    logging.info("Query %s w/ %s" % (query, param))
+                    ex_queries(queries, params)
+                    misc['msg'] = "Password has been changed."
+                    
+                else:
+                    
+                    queries.append("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)")
+                    params.append([11, user_obj['ID'], datetime.now()])
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", target_template)
+                self.response.out.write(template.render(path, tv))
+        
+            else:
+                target_template = "index.html"
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
+                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        else: 
+            target_template = "index.html"
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+
+    def get(self):
+        
+        target_template = "view_quote.html"
+        
+        misc = {'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                
+                conn, cursor = mysql_connect()
+                misc['products'] = get_products(cursor, "Data Subscriptions")
+                cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
+                next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
+                cursor.close(); conn.close()
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            else:
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
+                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        else: 
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
             
@@ -1728,7 +2317,7 @@ class SwitchGroupsHandler(webapp2.RequestHandler):
         misc = {'error': None}; user_obj = None; queries = []; params = []
         
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
         
@@ -1765,7 +2354,7 @@ class SwitchGroupsHandler(webapp2.RequestHandler):
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
             target_template = "index.html"
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
 
@@ -1775,7 +2364,7 @@ class SwitchGroupsHandler(webapp2.RequestHandler):
         
         misc = {'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
                 target_template = "switch_groups.html"
@@ -1798,7 +2387,7 @@ class SwitchGroupsHandler(webapp2.RequestHandler):
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
             
@@ -1819,7 +2408,7 @@ class PreferencesHandler(webapp2.RequestHandler):
         
         misc = {'error': None, 'msg': None}; user_obj = None; queries = []; params = []
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
             
@@ -1861,7 +2450,7 @@ class PreferencesHandler(webapp2.RequestHandler):
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
             target_template = "index.html"
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         
@@ -1871,7 +2460,7 @@ class PreferencesHandler(webapp2.RequestHandler):
         
         misc = {'error': None, 'msg': None}; user_obj = None; queries = []; params = []
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
                 relevants = get_relevant_preferences(user_obj)
@@ -1892,7 +2481,7 @@ class PreferencesHandler(webapp2.RequestHandler):
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
             target_template = "index.html"
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
             
@@ -1913,7 +2502,7 @@ class ProfileHandler(webapp2.RequestHandler):
         
         misc = {'error': None, 'msg': None}; user_obj = None; queries = []; params = []
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
             
@@ -1931,7 +2520,6 @@ class ProfileHandler(webapp2.RequestHandler):
                     keys.append(r)
                     vals.append(self.request.get(r))
                 
-                email_regex = re.compile(r'^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,63}$', re.IGNORECASE)
                 email_match = email_regex.search(self.request.get('email'))
                 
                 if email_match is None:
@@ -1956,7 +2544,7 @@ class ProfileHandler(webapp2.RequestHandler):
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
             target_template = "index.html"
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         
@@ -1966,7 +2554,7 @@ class ProfileHandler(webapp2.RequestHandler):
         
         misc = {'error': None, 'msg': None}; user_obj = None; queries = []; params = []
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
             
@@ -1986,7 +2574,7 @@ class ProfileHandler(webapp2.RequestHandler):
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
             target_template = "index.html"
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
 
@@ -2011,15 +2599,17 @@ def get_file(bucket, fname, specs = {}):
     return data
 
 def create_temporary_password(seq = ""):
+    random.seed(time.time() + 9324158)
     chars = range(35, 37) + range(38, 39) + range(48,58) + range(65, 91) + range(97, 123)
-    tmp_len = 17; random.seed(time.time())
+    tmp_len = 17;
     tmp_password = "%s%s" % (seq, int(datetime.now().second))
     while len(tmp_password) < tmp_len:
         c = None
         while c not in chars:
+            
             c = int(random.random()*123)
         tmp_password += chr(c)
-    
+    time.sleep(.02)
     return tmp_password
                 
 class ForgotHandler(webapp2.RequestHandler):
@@ -2099,7 +2689,7 @@ class ForgotHandler(webapp2.RequestHandler):
         
         misc = {'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
                 target_template = "index.html"
@@ -2111,11 +2701,162 @@ class ForgotHandler(webapp2.RequestHandler):
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
-            
+
+def process_non_auth(self):
+    # If we ever have issues with this, it's possible that because we aren't returning the self object, the actual cookie is not getting set
+    user_cookie = self.session.get('cart_cookie')
+    if user_cookie in [None, '']:
+        user_cookie = create_cart_cookie()
+        self.session['cart_cookie'] = user_cookie
+    user_obj = {'user_cookie': user_cookie, 'auth': 0}
+    
+    conn, cursor = mysql_connect()
+    cursor.execute("SELECT * from LRP_Cart", [])
+    items = zc.dict_query_results(cursor)
+    cursor.execute("SELECT * from LRP_Products", [])
+    products = zc.dict_query_results(cursor)
+    cursor.close(); conn.close()
+    
+    user_obj['cart'] = [z for z in items if z['user_cookie'] == user_cookie and z['active'] == 1]
+    for i, p in enumerate(user_obj['cart']):
+        p['product'] = products[ [z['ID'] for z in products].index(p['product_ID'])]
         
+    return user_obj    
+    
+class ProductSummaryHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        self.url_regex = re.compile(r'product\-summary\-?(.+)',re.IGNORECASE)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self, orig_url):
+    
+        url_match = self.url_regex.search(orig_url)
+        product_tag = url_match.group(1)
+        
+        misc = {'error': None, 'product_tag': product_tag,  'team_ID': None}; user_obj = None; queries = []; params = []
+        
+        
+        misc['email'] = self.request.get('email').strip().lower()
+        misc['request_type'] = self.request.get('request_type')
+        misc['AB_group'] = self.request.get('AB_group')
+        if product_tag == "team":
+            misc['team_ID'] = int(self.request.get('team_select'))
+        
+        
+        email_match = email_regex.search(misc['email'])
+        if email_match is None:
+            misc['error'] = "You must enter a valid email."
+        
+        """
+        conn, cursor = mysql_connect()
+        cursor.execute("SELECT * from LRP_Users")
+        users = zc.dict_query_results(cursor)
+        cursor.execute("SELECT * from LRP_Email_Templates where template_desc='Password Reset'")
+        msg = zc.dict_query_results(cursor)[0]
+        cursor.close(); conn.close()
+        """
+        
+        if misc['product_tag'] == "team":
+            if misc['team_ID'] in ["-1", -1,  None, '']:
+                misc['error'] = "You must select a team."
+
+        if misc['error'] is None:
+            misc['msg'] = "Request received."
+            query = "INSERT INTO LRP_Product_Requests (ID, datestamp, email, team_ID, product_tag, status, active, request_type, request_comments) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Product_Requests fds), %s, %s, %s, %s, %s, %s, %s, %s)"
+            param = [datetime.now(), misc['email'], misc['team_ID'], misc['product_tag'], 'active', 1, misc['request_type'], None]
+            queries.append(query); params.append(param)
+            ex_queries(queries, params)
+        
+          
+
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:       
+                layout = "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"
+            else:
+                layout = 'layout_no_auth.html'
+        else:
+            layout = 'layout_no_auth.html'
+            
+        conn, cursor = mysql_connect()
+        cursor.execute("SELECT * from LRP_Groups where active=1 order by group_name asc", [])
+        misc['groups'] = zc.dict_query_results(cursor)
+        cursor.close(); conn.close()
+        for g in misc['groups']:
+            g['selected'] = " selected" if misc['team_ID'] == g['team_ID'] else ""
+        tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
+        path = os.path.join("templates", "product_summary_%s%s.html" % (product_tag, misc['AB_group'])); self.response.out.write(template.render(path, tv))
+
+    
+        
+    def get(self, orig_url):
+        
+        misc = {'user_ID': None, 'email': "", "AB_group": None, 'hash': create_temporary_password()}; user_obj = None
+        random.seed(time.time()); misc['AB_group'] = "A" if random.random() < .5 else "B"
+        if self.request.get('v') != "": misc['AB_group'] = self.request.get('v')
+        url_match = self.url_regex.search(orig_url)
+        product_tag = url_match.group(1)
+        
+        
+        
+        
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                misc['user_ID'] = user_obj['ID']
+                misc['email'] = user_obj['email']
+                misc['AB_group'] = "A" if user_obj['AB_group'] < 24 else "B"
+                if self.request.get('v') != "": misc['AB_group'] = self.request.get('v')
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+
+            else:
+                user_obj = process_non_auth(self)
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+        else: 
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+        
+        conn, cursor = mysql_connect()
+        cursor.execute("SELECT * from LRP_Groups where active=1 order by group_name asc", [])
+        misc['groups'] = zc.dict_query_results(cursor)
+        
+        if datetime.now().strftime("%Y%m%d") == "20200709" or os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+        
+            cursor.execute("INSERT INTO LRP_Product_Views (datestamp, product_tag, AB_group, user_ID, active) VALUES (%s, %s, %s, %s, %s)", [datetime.now(), product_tag, misc['AB_group'], misc['user_ID'], 1])
+            conn.commit()
+        
+        cursor.close(); conn.close()
+        path = os.path.join("templates", "product_summary_%s%s.html" % (product_tag, misc['AB_group'])); self.response.out.write(template.render(path, tv))
+            
+def url_escape(url):
+    url = (url
+    .replace(" ", "%20")
+    .replace("!", "%21")
+    .replace('"', "%22")
+    .replace("#", "%23")
+    .replace("$", "%24")
+    .replace("%", "%25")
+    .replace("&", "%26")
+    .replace("'", "%27")
+    .replace("(", "%28")
+    .replace(")", "%29")
+    .replace("*", "%2A")
+    )
+    return url
 
 class EditGroupHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -2136,28 +2877,61 @@ class EditGroupHandler(webapp2.RequestHandler):
         misc['add_members_msg'] = None
         misc['add_members_error'] = None
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
         
                 misc['group_ID'] = int(self.request.get('group_ID'))
                 
                 req = dict_request(self.request)
+                req['admin'] = self.request.get_all('admin')
+                req['remove'] = self.request.get_all('remove')
+                req['reactivate'] = self.request.get_all('reactivate')
+                
                 if 'action' in req:
-                    if req['action'] == "add_members":
+                    if req['action'] == "manage_members":
+                        conn, cursor = mysql_connect()
+                        cursor.execute("SELECT * from LRP_Group_Access where group_ID=%s", [misc['group_ID']])
+                        access = zc.dict_query_results(cursor)
+                        cursor.close(); conn.close()
+                        
+                        req['admin'] = [int(z) for z in req['admin']]
+                        req['remove'] = [int(z) for z in req['remove']]
+                        req['reactivate'] = [int(z) for z in req['reactivate']]
+                        
+                        for a in access:
+                            # Reactivate
+                            if a['status'] == "inactive" and a['user_ID'] in req['reactivate']:
+                                queries.append("UPDATE LRP_Group_Access set status='active' where group_ID=%s and user_ID=%s")
+                                params.append([misc['group_ID'], a['user_ID']])
+                                
+                            if a['status'] == "active" and a['user_ID'] in req['remove'] and a['user_ID'] != user_obj['ID']:
+                                queries.append("UPDATE LRP_Group_Access set status='inactive' where group_ID=%s and user_ID=%s")
+                                params.append([misc['group_ID'], a['user_ID']])
+                            if a['status'] == "active" and a['admin'] == 0 and a['user_ID'] in req['admin']:
+                                logging.info("A) status=%s, admin=%s" % (a['status'], a['admin']))
+                                queries.append("UPDATE LRP_Group_Access set admin=1 where group_ID=%s and user_ID=%s")
+                                params.append([misc['group_ID'], a['user_ID']])
+                            elif a['status'] == "active" and a['admin'] == 1 and a['user_ID'] not in req['admin'] and a['user_ID'] != user_obj['ID']:
+                                logging.info("B) status=%s, admin=%s" % (a['status'], a['admin']))
+                                queries.append("UPDATE LRP_Group_Access set admin=0 where group_ID=%s and user_ID=%s")
+                                params.append([misc['group_ID'], a['user_ID']])
+                        ex_queries(queries, params)
+        
+                    elif req['action'] == "add_members":
                         conn, cursor = mysql_connect()
                         cursor.execute("SELECT * from LRP_Users")
                         users = zc.dict_query_results(cursor)
-                        #cursor.execute("SELECT * from LRP_Groups")
-                        #groups = zc.dict_query_results(cursor)
                         cursor.execute("SELECT * from LRP_Group_Access")
                         access = zc.dict_query_results(cursor)
                         cursor.close(); conn.close()
                         
                         next_user_ID = max([z['ID'] + 1 for z in users]) if len(users) > 0 else 1
                     
-                        email_regex = re.compile(r'([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,63})[\s,;\n\r><]', re.IGNORECASE)
+                        
                         matches = [{'seq': i, 'email': z.strip().lower()} for i, z in enumerate(list(set(re.findall(email_regex, req['emails']))))]
+                        if len(matches) == 0:
+                            misc['add_members_error'] = "No email addresses were detected in your entry."
                         for m in matches:
                             m['user_exists'] = 1 if m['email'] in [z['email'].strip().lower() for z in users] else 0
                             m['user_ID'] = None; m['access_exists'] = 0; m['access_active'] = 0
@@ -2168,7 +2942,7 @@ class EditGroupHandler(webapp2.RequestHandler):
                                 m['access_exists'] = 1 if m['user_ID'] in [z['user_ID'] for z in access if z['group_ID'] == misc['group_ID']] else 0
                                 m['access_active'] = 1 if m['user_ID'] in [z['user_ID'] for z in access if z['status'] == "active" and z['group_ID'] == misc['group_ID']] else 0
                             else:
-                                random.seed(time.time() + m['seq'])
+                                random.seed(time.time() + m['seq'] + 9518)
                                 m['ab_group'] = min(47, int(random.random()*48.))
                                 m['tmp_password'] = create_temporary_password(m['seq'])
                                 m['username'] = m['email'].split("@")[0]
@@ -2178,72 +2952,105 @@ class EditGroupHandler(webapp2.RequestHandler):
                                         seq += 1
                                     m['username'] = "%s%s" % (orig,seq)
                             if not m['user_exists']:
-                                m['activation_code'] = "%s%s" % (create_temporary_password(), create_temporary_password())
+                                tmp1 = create_temporary_password()
+                                tmp2 = create_temporary_password()
+                                m['activation_code'] = "%s%s" % (tmp1, tmp2)
                                 
                         misc['users_created'] = len([1 for z in matches if not z['user_exists']])
                         misc['users_added'] = len([1 for z in matches if z['user_exists'] and not z['access_exists']])
                         misc['users_readded'] = len([1 for z in matches if z['user_exists'] and z['access_exists'] and not z['access_active']])
                         misc['users_confirmed'] = len([1 for z in matches if z['user_exists'] and z['access_exists'] and z['access_active']])
+                        all_added = misc['users_created'] + misc['users_added'] + misc['users_readded']
+                        misc['add_members_msg'] = ""
+                        if all_added > 0:
+                            misc['add_members_msg'] += " %d users were added to the group." % all_added
+                        if misc['users_confirmed'] > 0:
+                            misc['add_members_msg'] += "  There were %d users who were already active members of the group." % misc['users_confirmed']
+                        misc['add_members_msg'] = misc['add_members_msg'].replace(" 1 users were added"," 1 user was added")  .replace("were 1 users who were already active members","was 1 user that was already an active member")   
                         for m in matches:
                             if m['user_exists']:
                                 if m['access_exists']:
                                     queries.append("UPDATE LRP_Group_Access set status='active' where user_ID=%s and group_ID=%s")
                                     params.append([m['user_ID'], misc['group_ID']])
                                     
-                                    
                                 else:
-                                    queries.append("INSERT INTO LRP_Group_Access (ID, user_ID, group_ID, status, active) VALUES ((SELECT IFNULL(max(ID), 1) from LRP_Group_Access fds), %s, %s, %s, %s)")
-                                    params.append([m['user_ID'], misc['group_ID'], 'active', 1])
-                                    
+                                    queries.append("INSERT INTO LRP_Group_Access (ID, user_ID, group_ID, status, active, admin) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Group_Access fds), %s, %s, %s, %s, %s)")
+                                    params.append([m['user_ID'], misc['group_ID'], 'active', 1, 0])
                                     
                                     queries.append("UPDATE LRP_Users set active_group=%s where ID=%s")
                                     params.append([misc['group_ID'], m['user_ID']])
                             else:
                                 
-                                queries.append("INSERT INTO LRP_Users (ID, email, active, logins, user_type, password, username, AB_group, date_created, track_GA, active_group, is_admin, activation_code) VALUES ((SELECT IFNULL(max(ID), 1) from LRP_Group_Access fds), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
-                                params.append([next_user_ID, m['email'], 1, 0, 'team', m['tmp_password'], m['username'], m['ab_group'], datetime.now(), 1, misc['group_ID'], 0, m['activation_code']])
+                                queries.append("INSERT INTO LRP_Users (ID, email, active, logins, user_type, password, username, AB_group, date_created, track_GA, active_group, is_admin, activation_code, activated, activation_type) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+                                params.append([next_user_ID, m['email'], 1, 0, 'team', m['tmp_password'], m['username'], m['ab_group'], datetime.now(), 1, misc['group_ID'], 0, m['activation_code'], 0, 'full'])
                                 
-                                queries.append("INSERT INTO LRP_Group_Access (ID, user_ID, group_ID, status, active) VALUES ((SELECT IFNULL(max(ID), 1) from LRP_Group_Access fds), %s, %s, %s, %s)")
-                                params.append([next_user_ID, misc['group_ID'], 'active', 1])
+                                queries.append("INSERT INTO LRP_Group_Access (ID, user_ID, group_ID, status, active, admin) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Group_Access fds), %s, %s, %s, %s, %s)")
+                                params.append([next_user_ID, misc['group_ID'], 'active', 1, 0])
+                                
+                                queries.append("INSERT INTO LRP_User_Preferences (ID, user_ID, active) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_User_Preferences fds), %s, %s)")
+                                params.append([next_user_ID, 1])
                                 
                                 next_user_ID += 1
-                                    
-                        misc['add_members_msg'] = zc.print_dict(matches).replace("\n", "<BR>")
-
-                conn, cursor = mysql_connect()
-                cursor.execute("SELECT * from LRP_Email_Templates where active=1")
-                email_templates = zc.dict_query_results(cursor)
-                cursor.close(); conn.close()
-                
-                for m in matches:
-                    if not m['user_exists']:
-                        msg = email_templates[ [z['template_desc'] for z in email_templates].index('Activate Account') ]
-                        msg['email'] = m['email']
-                        msg['subject'] = "Your LacrosseReference PRO account is ready"
-                        
-                        msg['content'] = get_file(msg['bucket'], msg['fname'])
-                        msg['content'] = msg['content'].replace("[activation_link]", "https://pro.lacrossereference.com/activate?c=%s" % (m['activation_code']))
-                        
-                        finalize_mail_send(msg)
+                        ex_queries(queries, params)
                     
-                    
-                    if not m['access_active']:
-                        msg = email_templates[ [z['template_desc'] for z in email_templates].index('Added User to Group') ]
-                        msg['email'] = m['email']
-                        msg['subject'] = "You've been added to %s" % (user_obj['active_group_name'])
+                        conn, cursor = mysql_connect()
+                        cursor.execute("SELECT * from LRP_Email_Templates where active=1")
+                        email_templates = zc.dict_query_results(cursor)
+                        cursor.close(); conn.close()
                         
-                        
-                        msg['content'] = get_file(msg['bucket'], msg['fname'])
-                        msg['content'] = msg['content'].replace("[group_name]", user_obj['active_group_name']))
-                        
-                        finalize_mail_send(msg)
-                
-                if misc['add_members_error'] is None:
-                    pass
-                else:
-                    misc['emails'] = req['emails']
-                #ex_queries(queries, params)
+                        for m in matches:
+                            if not m['user_exists']:
+                                msg = email_templates[ [z['template_desc'] for z in email_templates].index('Activate Account') ]
+                                msg['email'] = m['email']
+                                msg['subject'] = "Your LacrosseReference PRO account is ready"
+                                
+                                msg['content'] = get_file(msg['bucket'], msg['fname'])
+                                msg['content'] = msg['content'].replace("[activation_link]", "https://pro.lacrossereference.com/activate?c=%s" % (url_escape(m['activation_code'])))
+                                
+                                finalize_mail_send(msg)
                             
+                            
+                            if not m['access_active']:
+                                msg = email_templates[ [z['template_desc'] for z in email_templates].index('Added User to Group') ]
+                                msg['email'] = m['email']
+                                msg['subject'] = "You've been added to %s" % (user_obj['active_group_name'])
+                                
+                                msg['content'] = get_file(msg['bucket'], msg['fname'])
+                                msg['content'] = msg['content'].replace("[group_name]", user_obj['active_group_name'])
+                                
+                                finalize_mail_send(msg)
+                        
+                        
+                        if misc['add_members_error'] is None:
+                            pass
+                        else:
+                            misc['emails'] = req['emails']
+                
+                
+                conn, cursor = mysql_connect()
+                cursor.execute("SELECT * from LRP_Users")
+                users = zc.dict_query_results(cursor)
+                cursor.execute("SELECT * from LRP_Group_Access")
+                access = zc.dict_query_results(cursor)
+                cursor.close(); conn.close()
+            
+                user_obj = get_user_obj({'session_ID': session_ID})
+            
+                for u in user_obj['active_group_members']:
+                    user = users[ [z['ID'] for z in users].index(u['user_ID']) ]
+                    u['username'] = user['username']
+                    u['admin_checked'] = " checked" if u['admin']==1 else ""
+                user_obj['active_group_members'] = sorted(user_obj['active_group_members'], key=lambda x:x['username'])    
+                
+                if len(user_obj['inactive_group_members']) == 0:
+                    user_obj['inactive_group_members'] = None
+                else:
+                    for u in user_obj['inactive_group_members']:
+                        user = users[ [z['ID'] for z in users].index(u['user_ID']) ]
+                        u['username'] = user['username']
+                    user_obj['inactive_group_members'] = sorted(user_obj['inactive_group_members'], key=lambda x:x['username'])
+                
+                
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", target_template)
                 self.response.out.write(template.render(path, tv))
@@ -2255,7 +3062,85 @@ class EditGroupHandler(webapp2.RequestHandler):
                 path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         else: 
             target_template = "index.html"
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        
+        
+    
+    def get(self):
+        
+        target_template = "index.html"
+        
+        default_get(self)
+
+class ResendHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+        target_template = "activation_reminder.html"
+        
+        misc = {'emails': "", 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
+    
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                misc['user_ID'] = int(self.request.get('ID'))
+                conn, cursor = mysql_connect()
+                cursor.execute("SELECT * from LRP_Email_Templates where active=1")
+                email_templates = zc.dict_query_results(cursor)
+                cursor.execute("SELECT * from LRP_Users where ID=%s",[misc['user_ID']])
+                user = zc.dict_query_results(cursor)[0]
+                cursor.close(); conn.close()
+                
+                
+                
+                random.seed(time.time() + 110935)
+                tmp1 = create_temporary_password()
+                tmp2 = create_temporary_password()
+                activation_code = "%s%s" % (tmp1, tmp2)
+                
+               
+                
+                query = "UPDATE LRP_Users set activation_code=%s where ID=%s"
+                param = [activation_code, misc['user_ID']]
+                queries.append(query); params.append(param)
+                ex_queries(queries, params)
+
+                msg = email_templates[ [z['template_desc'] for z in email_templates].index('Activate Account') ]
+                msg['email'] = user['email']
+                msg['subject'] = "Your LacrosseReference PRO account is ready (Resend)"
+                
+                msg['content'] = get_file(msg['bucket'], msg['fname'])
+                msg['content'] = msg['content'].replace("[activation_link]", "https://pro.lacrossereference.com/activate?c=%s" % (url_escape(activation_code)))
+                
+                finalize_mail_send(msg)
+                
+                misc['msg'] = "Activation email has been resent to %s" % user['email']
+                
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+                path = os.path.join("templates", target_template)
+                self.response.out.write(template.render(path, tv))
+
+            
+            else:
+                target_template = "index.html"
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
+                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        else: 
+            target_template = "index.html"
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         
@@ -2270,7 +3155,7 @@ class EditGroupHandler(webapp2.RequestHandler):
 def default_get(self):
     misc = {'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
     session_ID = self.session.get('session_ID')
-    if session_ID is not None:
+    if session_ID not in [None, 0]:
         user_obj = get_user_obj({'session_ID': session_ID})
         if user_obj['auth']:
             target_template = "index.html"
@@ -2281,7 +3166,7 @@ def default_get(self):
             tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
     else: 
-        user_obj = get_user_obj()
+        user_obj = process_non_auth(self)
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
         path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         
@@ -2355,7 +3240,7 @@ class AccountHandler(webapp2.RequestHandler):
     def get(self):
         misc = {'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
-        if session_ID is not None:
+        if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
                 target_template = "account.html"
@@ -2385,7 +3270,7 @@ class AccountHandler(webapp2.RequestHandler):
         else: 
         
             target_template = "index.html"
-            user_obj = get_user_obj()
+            user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
         
@@ -2405,7 +3290,7 @@ else:
 
 def handle_404(request, response, exception):
     logging.exception(exception)
-    user_obj = get_user_obj()
+    user_obj = process_non_auth(self)
     misc = {'error': None, 'msg': None}
     tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_lurker.html"}
     response.set_status(404)
@@ -2454,13 +3339,20 @@ app = webapp2.WSGIApplication([
     ,('/subscription', SubscriptionHandler)
     
     
+    ,('/activate', ActivateHandler)
     ,('/edit_group', EditGroupHandler)
     ,('/create', CreateHandler)
     ,('/admin', AdminHandler)
     ,('/upload', UploadHandler)
+    ,('/resend', ResendHandler)
+    ,('/view-quote', ViewQuoteHandler)
+    ,('/create-quote', CreateQuoteHandler)
+    ,('/review-quote', ReviewQuoteHandler)
     
     
     ,('/teamshome', TeamsHomeHandler)
+    
+    ,('/(product-summary.+)', ProductSummaryHandler)
     
 ], config=config)
 

@@ -2,11 +2,12 @@
 <!doctype html>
 <html>
   <head>
-     {% if user_obj.track_GA %}
-     <!-- Global site tag (gtag.js) - Google Analytics -->
+    {% if user_obj.track_GA %}
+    <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-90014763-2"></script>
     <script> window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);}  gtag('js', new Date()); gtag('config', 'UA-90014763-2'); </script>
     {% endif %}
+
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
     <meta name="viewport" content="initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
@@ -34,12 +35,34 @@
         <div class='col-12 flex site-header-bar no-padding' style='border-bottom:solid 1px black;'>
             
           
-            <div class='col-7-8 no-padding flex'>
-                <span id='main_logo' class='dtop site-logo' ><a class='menu-link' href='/'>LacrosseReference PRO</a></span>
+            <div class='col-7 no-padding flex'>
+                <span id='main_logo' class='dtop site-logo'><a class='menu-link' href='/'>LacrosseReference PRO</a></span>
                 <span class='mob site-logo'><a class='menu-link' href='/'>LacrosseReference PRO</a></span>
             </div>
+            <div class='col-5 right dtop no-padding menu-icon' style=''>
+                
+                <img class='menu-icon' style=' ' title='{{user_obj.email}}' id='personicon' src='/static/img/person30.png'>
+               <div class='menu-holder'>
+                <div id="menu_modal_dtop" class="dropdown-content">
+                    <a id='home_link' href="/">Home</a>
+                    <a id='account_link' href="/account">My Account</a>
+                    <a id='signout_link' href="/logout">Sign Out</a>
+                </div>
+                </div>
+            </div>
+            <div class='col-5 right mob menu-icon' style=''>
+                
+                <img class='menu-icon' id='threedot' style='' src='/static/img/threedotmenu.png'>
+                <div class='menu-holder'>
+                    <div id="menu_modal_mob" class="dropdown-content">
+                        <a class='font-15' href="/">Home</a>
+                        <a class='font-15' href="/account">My Account</a>
+                        <a class='font-15' href="/logout">Sign Out</a>
+                    </div>
+                </div>
+            </div>
         </div>
-
+        
         
         {% if misc.banner_msg %}
             <div class='col-12 centered'>
@@ -53,7 +76,8 @@
         {% endif %}
         
         {% block body %}{% endblock %}
-        
+ 
+    
   </div>
   
   </body>

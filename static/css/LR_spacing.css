@@ -21,6 +21,8 @@ div.viewbox{ width:1024px; padding:0; margin:auto; }
 
 input.small{ width:40px; }
 input.medium{ width:100px; }
+select.small{ width:40px; }
+select.medium{ width:100px; }
 
 div.page-title{ padding-top:20px; }
 

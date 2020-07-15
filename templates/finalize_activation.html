@@ -1,0 +1,48 @@
+
+{% extends layout %}
+
+
+{% block body %}
+
+        <div class='col-12 page-title'>
+            <span class='font-24 pointer bold'>Account Activation</span>
+        </div>
+        <div class='col-12 flex'>
+        <div class='col-4-1'></div>
+        <div class='col-4-10' style='background-color: #F9F9F9;'>
+            <FORM action='/activate' method=POST><input type=hidden name='user_ID' value='{{misc.user_ID}}'>
+            <div class='col-12 centered'>
+                {% if misc.code_error %}
+                    <div class='col-12 error'><span class='error' >{{misc.code_error}}</span></div>
+                {% else %}
+                    <div class='col-12'><input type=text name='username' id='username' value='{{misc.username}}' placeholder="Username" /></div>
+                    <div class='col-12'><input type=password name='password' id='password'  value='{{misc.password}}'placeholder="Password" /></div>
+                    <div class='col-12'><input type=text name='phone' id='phone' value='{{misc.phone}}'  placeholder="Phone (optional)" /></div>
+                    {% if misc.error %}
+                        <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
+                    {% endif %}
+                    {% if misc.msg %}
+                        <div class='col-12 error'><span  class='msg' style='color:blue;' >{{misc.msg}}</span></div>
+                    {% endif %}
+                    <div class='col-12'><button type=submit name='action' value='activate' class='action-button light font-15' style='display:inline; padding: 10px 10px;'><span class='dtop'>Activate Account</span><span class='mob'>Activate</span></button></div>
+                {% endif %}
+            </div>
+            </FORM>
+        </div>
+        <div class='col-4-1'></div>
+    </div>
+        
+
+
+
+<script src="/static/js/create.js"></script>
+<script>
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load();
+</script>
+{% endblock %}
