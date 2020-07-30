@@ -1,0 +1,147 @@
+
+{% extends layout %}
+
+
+{% block body %}
+
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
+    
+    {% if misc.error %}
+        <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
+    {% endif %}
+    {% if misc.msg %}
+        <div class='col-12 error'><span  class='msg' style='color:blue;' >{{misc.msg}}</span></div>
+    {% endif %}
+    
+    <div class='col-12 flex-block'>
+        <div class='col-4-12 no-padding'>
+            <div class='card' style='margin-bottom:10px;'>
+            <FORM action='/checkout' method=POST>
+            <div class='col-12 bbottom'><span class='font-18 bold'>Cart Summary</span></div>
+            
+            {% for p in user_obj.current_cart %}
+                <div class='col-12 flex table-row'>
+                    <div class='col-6-8'><span class='font-15' style='padding-left:10px;'>{{p.product.product_name}}</span></div>
+                    <div class='col-6-4 right'><span class='font-15' style='padding-right:10px;'>{{p.price_str}}</span></div>
+                 </div>
+            {% endfor %}
+            <div class='col-12 flex' style='border-top:solid 2px black;'>
+                <div class='col-6-8'><span class='font-18 bold' style='padding-left:10px;'>Cart Total:</span></div>
+                <div class='col-6-4 right'><span class='font-18 bold' style='padding-right:10px;'>{{user_obj.cart_total_str}}</span></div>
+             </div>
+            
+            <div class='centered' style='margin:20px 0px 0px 0px; padding-bottom:20px;'>
+                <a class='action-button' href='/cart'><span class='pointer font-15'>EDIT CART</span></a>
+            </div>
+            </FORM>
+            </div>
+        </div>
+        <div class='col-1 dtop'></div>
+        <div class='col-7-12'>
+            {% if user_obj.auth %}
+            
+                  <div class='col-12'>
+                      <span class='font-15 contents'>Enter your credit card information in the form below. Be sure to click 'Submit' just one time to avoid multiple charges.</span>
+                  </div>
+                <form id="payment-form" action='/checkout' method=POST>
+                  <div class='col-12'>
+                      <div id="card-element"><!-- placeholder for Elements --></div>
+                  </div>
+                  <div class='col-12' style='padding-top:30px;'>
+                      <span class='contents font-12'>By clicking submit, you are agreeing to abide by our <a href='/terms'>Terms of Service</a> and you are agreeing to enroll your subscription in auto-renewal, which can be changed at any time <a href='/subscription'>here</a>.</span>
+                  </div>
+                  <div class='col-12 centered' style='padding-top:20px;'>
+                      <button class='centered action-button' style='color:white; background-color: #189ad3; font-weight:700;' name='action' value='pay' id="card-button">SUBMIT</button>
+                      
+                  </div>
+                  <div class='col-12 inline-flex'>
+                      <span class='font-15'><p id="payment-result" style='margin:0px;'></p></span>
+                      <span class='font-15' id='go_on_link' style='display:none;'>Go to your <a href="/">homepage</a> to get started.</span>
+                  </div>
+                </form>
+                
+                  <div class='col-12'> </div>
+            {% else %}
+                
+                <div class='col-12'>
+                    <span class='font-15' style='font-style;italic;'>To checkout, you need to log in or create a new account.</span>
+                </div>
+                <div class="col-12 centered">
+                    <span id="login_view_tag" class="pointer {{misc.login_tag_display}} panel_tag font-15" onclick="set_panel(&quot;login&quot;);">
+                        <span class="">Log In</span>
+                    </span>
+                    <span id="create_account_view_tag" class="pointer {{misc.create_account_tag_display}} panel_tag font-15" onclick="set_panel(&quot;create_account&quot;);">
+                        <span class="">Create Account</span>
+                    </span>
+                </div>
+                <div class='col-12'>
+                    
+                    <div id='login_view' class='panel col-12  {{misc.login_display}}'>
+                        <FORM action='/' method=POST>
+                        <input type=hidden name='from' value='checkout' />
+                        <div class='col-12 centered'>
+                            
+                            <div class='col-12'><input type=text name='username' placeholder="Username" /></div>
+                            <div class='col-12'><input type=password name='password' placeholder="Password" /></div>
+                            {% if misc.login_error %}
+                                <div class='col-12 error'><span class='error' >{{misc.login_error}}</span></div>
+                            {% endif %}
+                            <div class='col-12'><button type=submit id='submit_me' name='action' value='login' />Submit</button></div>
+                            <div class='col-12 centered' style='padding-top:15px;'>
+                                
+                                <a class='font-14' href='/forgot'><span class='font-14'>Forgot Password</span></a>
+                            </div>
+                            
+                        </div>
+                        </FORM>
+                    </div>
+                    
+                    <div id='create_account_view' class='panel col-12 {{misc.create_account_display}}'>
+                        <FORM action='/register' method=POST><input type=hidden name='process_step' value='{{misc.process_step}}'>
+                        <input type=hidden name='from' value='checkout' />
+                        <div class='col-12 centered'>
+                            
+                            <div class='col-12'><input type=text name='username' value='{{misc.username}}' placeholder="Username" /></div>
+                            <div class='col-12'><input type=password name='password' value='{{misc.password}}'placeholder="Password" /></div>
+                            <div class='col-12'><input type=text name='email' value='{{misc.email}}'  placeholder="Email" /></div>
+                            <div class='col-12'><input type=text name='phone' value='{{misc.phone}}'  placeholder="Phone (optional)" /></div>
+                            <div class='col-12'><span class='font-12'>By creating your account, you agree to the <a target='_blank' href='/terms'>Terms and Conditions</a></span></div>
+                            {% if misc.create_account_error %}
+                                <div class='col-12 error'><span class='error' >{{misc.create_account_error}}</span></div>
+                            {% endif %}
+                            {% if misc.create_account_msg %}
+                                <div class='col-12 error'><span  class='msg' style='color:blue;' >{{misc.create_account_msg}}</span></div>
+                            {% endif %}
+                            <div class='col-12'><button type=submit id='submit_me' name='action' value='create_account'  />Create Account</button></div>
+                        </div>
+                        </FORM>
+                    </div>
+                    
+                </div>
+  
+            </div>
+            {% endif %}
+        </div>
+        
+    </div>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script> var stripe = Stripe('{{misc.clientKey}}'); </script>
+<script src="static/js/stripe_payment.js"></script>
+<script>
+    
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+ 
+</script>
+{% endblock %}

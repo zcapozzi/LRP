@@ -4,6 +4,13 @@
 
 {% block body %}
 
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
+
     
 
     <div class='col-12'>
@@ -14,7 +21,7 @@
         <div class='col-8-10'>
             <FORM action='/resend' method=POST><input type=hidden name='ID' value={{user_obj.ID}} />
                 <div class='col-12'>
-                    <span class='font-15 contents'>When you registered this account, we sent an email to {{user_obj.email}} with a link to complete account activation and set-up. The main features of the site are not available until activation is complete.</span>  
+                    <span class='font-15 contents'>When you registered this account, we sent an email to {{user_obj.email_decrypted}} with a link to complete account activation and set-up. The main features of the site are not available until activation is complete.</span>  
                 </div>
                 <div class='col-12' style='padding-top:20px;'>
                     <span class='font-15 contents'>It is possible that the email, which had the subject line "Your LacrosseReference PRO account is ready", ended up in a Spam folder. If you would like for the email to be resent with a new activation code,  click the button below.</span>  
@@ -51,6 +58,6 @@
     $( "#personicon" ).click(function( event ) {
       event.stopPropagation(); menu_toggle();
     });
-    finish_load();
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 {% endblock %}

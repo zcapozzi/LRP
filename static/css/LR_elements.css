@@ -3,6 +3,22 @@
 
 .card { box-shadow: 2px 4px 8px 2px rgba(0,0,0,0.2); display:block; text-align:left;  margin-bottom:50px; }
 
+#banner{ 
+    padding: 10px 0px 10px 0px;
+}
+
+.toggle-row {}
+
+#banner.closed{ 
+    opacity: 0;
+    padding: 0;
+    margin: 0;
+    height: 0px;
+    transition: all .75s;
+   -webkit-transition: all .75s;
+
+}
+
 div.card.tier{ border-radius: 4px; margin:0px 10px 10px 10px; padding:0px; }
 div.card.tier:first-child{ margin:0px 10px 10px 0px; }
 div.card.tier:last-child{ margin:0px 0px 10px 10px; }

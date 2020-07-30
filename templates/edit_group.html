@@ -3,6 +3,13 @@
 
 
 {% block body %}
+
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
     <FORM action='/edit_group' method=POST><input type=hidden name='group_ID' value={{misc.group_ID}} />
         
         <div class='col-12 flex-block'>
@@ -17,12 +24,12 @@
                     </div>
                     {% for u in user_obj.active_group_members %}
                         <div class='table-row col-12 flex'>
-                            <div class='col-8-6'><span class='font-15'>{{u.username}}</span></div>
+                            <div class='col-8-6'><span class='font-15'>{{u.username_decrypted}}</span></div>
                             <div class='col-2-3 centered'>
                                 {% if u.user_ID !=  user_obj.ID %}
                                     <span class='font-15'><input name='admin' value='{{u.user_ID}}' type=checkbox {{u.admin_checked}} /></span>
                                 {% else %}
-                                    <span class='font-15'><input name='admin' disabled value='{{u.user_ID}}' type=checkbox {{u.admin_checked}} /></span>
+                                    <span class='font-15'><input disabled value='{{u.user_ID}}' type=checkbox {{u.admin_checked}} /></span>
                                 {% endif %}
                                
                             </div>
@@ -30,7 +37,7 @@
                                 {% if u.user_ID !=  user_obj.ID %}
                                     <span class='font-15'><input name='remove' value='{{u.user_ID}}' type=checkbox /></span>
                                 {% else %}
-                                    <span class='font-15'><input name='remove' disabled value='{{u.user_ID}}' type=checkbox /></span>
+                                    <span class='font-15'><input disabled value='{{u.user_ID}}' type=checkbox /></span>
                                 {% endif %}
                                 
                             </div>
@@ -40,7 +47,7 @@
                     
                     {% if user_obj.inactive_group_members %}
                         <div class='col-12 centered' id='inactives_label'>
-                            <span onclick='show_inactives();' style='text-decoration:underline;' class='pointer font-15 light'>Show Inactive Members</span>
+                            <span id='inactive_label' onclick='show_inactives();' style='text-decoration:underline;' class='pointer font-15 light'>Show Inactive Members</span>
                         </div>
                         <div id='inactives' style='display:none; padding-top:30px;' class='col-12'>
                             <div class='col-12 flex'>
@@ -50,12 +57,12 @@
                             <div class='col-12'>
                             {% for u in user_obj.inactive_group_members %}
                                 <div class='table-row col-12 flex'>
-                                    <div class='col-10-9'><span class='font-15'>{{u.username}}</span></div>
+                                    <div class='col-10-9'><span class='font-15'>{{u.username_decrypted}}</span></div>
                                     <div class='col-2-3 centered'>
                                         {% if u.user_ID !=  user_obj.ID %}
                                             <span class='font-15'><input name='reactivate' value='{{u.user_ID}}' type=checkbox /></span>
                                         {% else %}
-                                            <span class='font-15'><input name='reactivate' disabled value='{{u.user_ID}}' type=checkbox /></span>
+                                            <span class='font-15'><input disabled value='{{u.user_ID}}' type=checkbox /></span>
                                         {% endif %}
                                         
                                     </div>
@@ -65,8 +72,14 @@
                             </div>
                         </div>
                     {% endif %}
+                    {% if misc.edit_members_error %}
+                        <div class='col-12 error'><span class='error' >{{misc.edit_members_error}}</span></div>
+                    {% endif %}
                     
-                    <div class='col-12 centered action-button'><button type=submit name='action' value='manage_members' class='action-button font-15'>SUBMIT</button></div>
+                    {% if misc.edit_members_msg %}
+                        <div class='col-12'><span style='color:blue;' class='font-15'>{{misc.edit_members_msg|safe}}</span></div>
+                    {% endif %}
+                    <div class='col-12 centered action-button'><button type=submit name='action' id='manage_members_button' value='manage_members' class='action-button font-15'>SUBMIT</button></div>
                 </div>
             </div>
             <div class='col-2 dtop'></div>
@@ -84,7 +97,7 @@
                         <div class='col-12'><span style='color:blue;' class='font-15'>{{misc.add_members_msg|safe}}</span></div>
                     {% endif %}
                     
-                    <div class='col-12 centered action-button'><button type=submit name='action' value='add_members' class='action-button font-15'>ADD</button></div>
+                    <div class='col-12 centered action-button'><button type=submit name='action' id='add_members_button' value='add_members' class='action-button font-15'>ADD</button></div>
                 </div>
             </div>
             
@@ -104,7 +117,7 @@
     $( "#personicon" ).click(function( event ) {
       event.stopPropagation(); menu_toggle();
     });
-    finish_load();
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 
 {% endblock %}

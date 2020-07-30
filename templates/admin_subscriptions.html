@@ -1,0 +1,214 @@
+
+{% extends "layout_admin.html" %}
+
+
+{% block body %}
+
+        <div class='col-12 centered' id='banner'></div>
+        {% if misc.breadcrumbs %}
+            <div class='col-12 centered'>
+                {{misc.breadcrumbs}}
+            </div>
+        {% endif %}
+
+        <div class='col-12 page-title'>
+            <span class='font-24 pointer bold'>LaxRef PRO: Subscriptions</span>
+        </div>
+        
+        <div class='col-12 block'>
+            <div class='col-12'>
+                <div class='col-12 bbottom'><span class='font-18 bold pointer'>Subscriptions</div>
+                <div class='col-12'>
+                    <div class='right'><span class='font-15'>Filter</span><input type=text id='filter' onchange='filter(this.value);' /></div>
+                </div>
+                <div class='col-12'>
+                    
+                    <div class='panel col-12'>
+                        <div class='col-12 flex'>
+                            <div class='col-1'><span class='bold font-12'>User ID</span></div>
+                            <div class='col-1'><span class='bold font-12'>Group ID</span></div>
+                            <div class='col-3'><span class='bold font-12'>Status</span></div>
+                            <div class='col-3'><span class='bold font-12'>Product</span></div>
+                            <div class='col-2'><span class='bold font-12'></span></div>
+                        </div>
+                        {% for sub in misc.subscriptions %}
+                            <div class='table-row col-12 flex pointer' id='mainrow{{sub.ID}}' onclick='toggle({{sub.ID}})'>
+                                <div class='col-1'><span class='pointer font-12'>{{sub.user_ID}}</span></div>
+                                <div class='col-1'><span class='pointer font-12'>{{sub.group_ID}}</span></div>
+                                <div class='col-3'><span class='pointer font-12'>{{sub.status}}</span></div>
+                                <div class='col-3'><span class='pointer font-12'>{{sub.product.product_name}}</span></div>
+                                <div class='col-2'><span class='pointer font-12'></span></div>
+                            </div>
+                            {% if sub.display != "hidden" %}
+                                {% if misc.error %}
+                                    <div class='col-12 error centered'><span class='error' >{{misc.error}}</span></div>
+                                {% endif %}
+                                {% if misc.msg %}
+                                    <div class='col-12 centered'><span class='msg' style='color:blue;' >{{misc.msg}}</span></div>
+                                {% endif %}
+                            {% endif %}
+                            <div class='col-12 toggle-row {{sub.display}}' id='row{{sub.ID}}'>
+                                {% if not sub.trial %}
+                                    <FORM action='/create-refund' method=POST>
+                                        <div class='col-12 flex'><span class='pointer font-18 bold'>Issue Refund</span></div>
+                                        {% if misc.confirmed == "no" %}
+                                            <div class='col-12 flex-block'>
+                                              
+                                                    
+                                                    <input type=hidden name='subscription_ID' value='{{sub.ID}}' />
+                                                    <input type=hidden name='confirmed' value='{{misc.confirmed}}' />
+                                                    <div class='col-6-12' style='vertical-align:middle;'><span class='small pointer font-12'>Refund Amount <input type=decimal name='refund_amount' value='{{sub.refund_amount}}' /></span></div>
+                                                    
+                                                    <div class='col-6-12'>
+                                                    <span class='pointer font-12'>Email: <select id='refund_selected_email' name='selected_email'>\
+                                                        <option value=''></option>
+                                                        {% for e in sub.emails %}
+                                                        <option value='{{e.email_decrypted}}' {{e.selected}}>{{e.email_decrypted}}</option>
+                                                        {% endfor %}
+                                                    </select></span></div>
+                                                   
+                                            </div>   
+                                            <div class='col-12 flex-block'> 
+                                                <div class='col-8-12'><textarea rows=5 style='font-family:Arial; width:100%;' name='refund_msg'>{{sub.refund_msg}}</textarea></div>
+                                                <div class='col-4-12 right'><span class='pointer font-12'><button type=submit class='action-button' name='action' id='refund_button' value='create_refund'>REFUND</button></span></div>
+                                             
+                                            </div>
+                                        {% else %}
+                                            <div class='col-12 flex-block'>
+                                              
+                                                    
+                                                    <input type=hidden name='subscription_ID' value='{{sub.ID}}' />
+                                                    <input type=hidden name='confirmed' value='{{misc.confirmed}}' />
+                                                    <input type=hidden name='refund_amount' value='{{sub.refund_amount}}' />
+                                                    <input type=hidden name='refund_msg' value='{{sub.refund_msg}}' />
+                                                    <input type=hidden name='selected_email' value='{{sub.email}}' />
+                                                    
+                  
+                                                    <div class='col-4-12'><span class='pointer font-12'>Amount: {{sub.refund_amount}}</span></div>
+                                                    <div class='col-4-12'><span class='pointer font-12'>Email: {{sub.email}}</span></div>
+                                                    <div class='col-4-12'><span class='pointer font-12'>Stripe ID: {{sub.stripe_payment_intent_decrypted}}</span></div>
+                                                    
+                                            </div>
+                                            <div class='col-12 flex-block'> 
+                                                <div class='col-8-12'><span class='font-15 contents'>{{sub.refund_msg}}</span></div>
+                                                <div class='col-4-12 right'><span class='pointer font-12'><button type=submit class='action-button' name='action' value='edit_refund'>EDIT REFUND</button></span><span class='pointer font-12'><button type=submit class='action-button' name='action' value='create_refund' id='send_refund_button'>SEND REFUND</button></span></div>
+                                             
+                                            </div>
+                                        {% endif %}
+                                        
+                                   
+                                    </FORM>
+                                {% endif %}
+                            
+                                <FORM action='/extend-subscription' method=POST>
+                                    <div class='col-12 flex'><span class='pointer font-18 bold'>Extend Subscription</span></div>
+                                    {% if misc.confirmed == "no" %}
+                                        <div class='col-12 flex-block'>
+                                          
+                                                <input type=hidden name='subscription_ID' value='{{sub.ID}}' />
+                                                <input type=hidden name='confirmed' value='{{misc.confirmed}}' />
+
+                                                <div class='col-6-12' style='vertical-align:middle;'><span class='small pointer font-12'>New Date <input type=text name='new_date_str' value='{{sub.new_date_str}}' /></span></div>
+                                                <div class='col-6-12'>
+                                                <span class='pointer font-12'>Email: <select id='extend_selected_email' name='selected_email'>\
+                                                    <option value=''></option>
+                                                    {% for e in sub.emails %}
+                                                    <option value='{{e.email_decrypted}}' {{e.selected}}>{{e.email_decrypted}}</option>
+                                                    {% endfor %}
+                                                </select></span></div>
+                                               
+                                        </div>   
+                                        <div class='col-12 flex-block'> 
+                                            <div class='col-8-12'><textarea rows=5 style='font-family:Arial; width:100%;' name='extend_msg'>{{sub.extend_msg}}</textarea></div>
+                                            <div class='col-4-12 right'><span class='pointer font-12'><button type=submit class='action-button' name='action' id='extend_button' value='create_extension'>EXTEND</button></span></div>
+                                         
+                                        </div>
+                                    {% else %}
+                                        <div class='col-12 flex-block'>
+                                          
+                                                
+                                                <input type=hidden name='subscription_ID' value='{{sub.ID}}' />
+                                                <input type=hidden name='confirmed' value='{{misc.confirmed}}' />
+                                                <input type=hidden name='extend_msg' value='{{sub.extend_msg}}' />
+                                                <input type=hidden name='selected_email' value='{{sub.email}}' />
+                                                <input type=hidden name='new_date_str' value='{{sub.new_date_str}}' />
+                                                
+              
+                                                <div class='col-4-12'><span class='pointer font-12'>New Date: {{sub.new_date_str}}</span></div>
+                                                <div class='col-4-12'><span class='pointer font-12'>Email: {{sub.email}}</span></div>
+                                                
+                                                
+                                        </div>
+                                        <div class='col-12 flex-block'> 
+                                            <div class='col-8-12'><span class='font-15 contents'>{{sub.extend_msg}}</span></div>
+                                            <div class='col-4-12 right'><span class='pointer font-12'><button type=submit class='action-button' name='action' value='edit_extension'>EDIT EXTENSION</button></span><span class='pointer font-12'><button type=submit class='action-button' name='action' value='create_extension' id='send_extension_button'>SEND EXTENSION</button></span></div>
+                                         
+                                        </div>
+                                    {% endif %}
+                                    
+                               
+                                </FORM>
+                            
+                            
+                            </div>
+                        {% endfor %}
+                        
+                      
+                    </div>
+                </div>
+                
+
+            </div>
+            
+
+<script>
+
+    
+    users = JSON.parse({{misc.subscriptions_json|to_json2}});
+    function toggle(i){
+        var classes = document.getElementById('row' + i).className.split(/\s+/);
+        $(".toggle-row").removeClass("visible").addClass("hidden");
+            
+        if(classes.indexOf("visible") == -1){
+            $("#row" + i).addClass("visible").removeClass("hidden");
+        }
+    }
+    function filter(val){
+        console.log(val);
+        val = val.toLowerCase().trim();
+        console.log(users[0]);
+        console.log(users.length);
+        for(var a = 0;a<users.length;a++){
+            var user = users[a];
+            
+            if(user.email_decrypted == null){ user.email_decrypted = ""; }
+            if(user.username_decrypted == null){ user.username_decrypted = ""; }
+            if(user.first_name_decrypted == null){ user.first_name_decrypted = ""; }
+            if(user.last_name_decrypted == null){ user.last_name_decrypted = ""; }
+            
+            user.display = false;
+            if(user.email_decrypted.toLowerCase().indexOf(val) > -1 || user.last_name_decrypted.toLowerCase().indexOf(val) > -1 || user.first_name_decrypted.toLowerCase().indexOf(val) > -1 || user.username_decrypted.toLowerCase().indexOf(val) > -1){
+                user.display = true;
+                console.log(user.email_decrypted, user.first_name_decrypted, user.last_name_decrypted, user.username_decrypted)
+            }
+            
+            var row1 = document.getElementById('mainrow' + user.ID);
+            var row2 = document.getElementById('row' + user.ID);
+            if(user.display){
+                row1.style.display = "flex";
+            }
+            else{
+                row1.style.display = "none";
+            }
+            row2.style.display = "none";
+        }
+    }
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+</script>
+{% endblock %}

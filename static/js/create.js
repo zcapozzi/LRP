@@ -37,14 +37,6 @@ function team_stats_set_rate(val){
 }
 
 
-function create_user_set_panel(val){
-    panel = val;
-    $(".panel_tag").removeClass("tag-on").addClass("tag-off"); 
-    $("#" + val + "_view_tag").removeClass("tag-off").addClass("tag-on"); 
-
-    $(".panel").removeClass("visible").addClass("hidden"); 
-    $("#" + val + "_view").removeClass("hidden").addClass("visible"); 
-}
 
 function team_stats_sort_by_tag(panel, tag){
     

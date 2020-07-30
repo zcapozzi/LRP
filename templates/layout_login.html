@@ -41,20 +41,10 @@
         </div>
 
         
-        {% if misc.banner_msg %}
-            <div class='col-12 centered'>
-                {{misc.banner_msg}}
-            </div>
-        {% endif %}
-        {% if misc.breadcrumbs %}
-            <div class='col-12 centered'>
-                {{misc.breadcrumbs}}
-            </div>
-        {% endif %}
-        
         {% block body %}{% endblock %}
         
   </div>
+  <div class='col-12 centered'><span class='font-14'>{{misc.copyright|safe}}</span></div>
   
   </body>
 </html>

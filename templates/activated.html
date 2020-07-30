@@ -4,7 +4,12 @@
 
 {% block body %}
 
-    
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
 
     <div class='col-12'>
 
@@ -30,6 +35,6 @@
     $( "#personicon" ).click(function( event ) {
       event.stopPropagation(); menu_toggle();
     });
-    finish_load();
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 {% endblock %}

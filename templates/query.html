@@ -20,6 +20,12 @@ function edit_query(s){
      document.getElementById('update_query').visible = false;
  }
 
+
+    function go(t){
+        url = "/query?table=" + t;
+        window.location = url;
+    }
+
 </SCRIPT>
 <STYLE>
 tr.table-row:nth-child(even) {background-color: #EEE; }
@@ -31,8 +37,16 @@ tr.table-row:nth-child(odd) {background-color: #FFF; }
 	    <table width=100%>
             <FORM action="/query" method="POST">
             <tr style='padding-bottom:10px;'>
-                <td colspan=2>
+                <td>
                     <a href='/query'><span class='font-15'>Back to Query</span></a>
+                </td>
+                <td style='text-align:right; font-size:18px;'>
+                    <select onchange='go(this.value);'  style='text-align:right; font-size:18px;'>
+                        <option value=''></option>
+                        {% for t in misc.tables %}
+                            <option value='{{t.Tables_in_lrpdb}}'>{{t.Tables_in_lrpdb}}</option>
+                        {% endfor %}
+                    </select>
                 </td>
                 
             </tr><tr>
@@ -88,5 +102,7 @@ tr.table-row:nth-child(odd) {background-color: #FFF; }
   <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"</script>
 
   </body>
+  
+  
 </html>
 {% endblock %}

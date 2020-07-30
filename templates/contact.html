@@ -1,0 +1,78 @@
+
+{% extends layout %}
+
+
+{% block body %}
+
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
+    
+    <FORM action='/contact' method=POST>
+        
+        <div class='col-12'>
+            
+             <div class='col-12 page-title'>
+                <span class='font-24 pointer bold'>Contact LacrosseReference</span>
+            </div>
+            <div class='col-12'>
+                
+                <div class='col-12'>
+                    <span class='light font-15'>Email*</span>
+                </div>
+                <div class='col-12'>
+                    <input type=text name='email' class='large' value='{{misc.email}}' />
+                </div>
+                <div class='col-12'>
+                    <span class='light font-15'>Name</span>
+                </div>
+                <div class='col-12'>
+                    <input type=text name='name' class='large' value='{{misc.name}}' />
+                </div>
+                <div class='col-12'>
+                    <span class='light font-15'>Subject</span>
+                </div>
+                <div class='col-12'>
+                    <input type=text name='subject' class='large' value='{{misc.subject}}' />
+                </div>
+                <div class='col-12'>
+                    <span class='light font-15'>Message*</span>
+                </div>
+                <div class='col-12'><textarea rows=10 style='font-family:Arial; width:100%;' name='msg_content'>{{misc.msg_content}}</textarea></div>
+                
+            </div>
+    
+           
+       
+            
+           {% if misc.error %}
+                <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
+            {% endif %}
+            
+            {% if misc.msg %}
+                <div class='col-12'><span style='color:blue;' class='font-15'>{{misc.msg|safe}}</span></div>
+            {% endif %}
+            <div class='col-12 action-button'><button type=submit name='action' value='submit' class='action-button font-15'>SUBMIT</button></div>
+            <div class='col-12'>
+                <span class='light font-15'>* Required</span>
+            </div>
+                
+        </div>
+    </FORM>
+        
+
+
+<script>
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+</script>
+
+{% endblock %}

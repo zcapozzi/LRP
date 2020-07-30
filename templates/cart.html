@@ -3,6 +3,13 @@
 
 
 {% block body %}
+
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
     
     {% if misc.error %}
         <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
@@ -14,7 +21,7 @@
     <div class='col-12 flex-block'>
         <div class='col-4-12 no-padding'>
             <div class='card' style='margin-bottom:10px;'>
-            <FORM action='/register_pay' method=POST>
+            <FORM action='/checkout' method=POST>
             <div class='col-12 bbottom'><span class='font-18 bold'>Cart Summary</span></div>
             
             
@@ -24,7 +31,7 @@
              </div>
             
             <div class='centered {{user_obj.cart_display_status}}' style='margin:20px 0px 0px 0px; padding-bottom:20px;'>
-                <button type=submit class='action-button' name='action' value='checkout'><span class='pointer font-15'>CHECKOUT</span></button>
+                <button type=submit id='checkout_button' class='action-button' name='action' value='checkout'><span class='pointer font-15'>CHECKOUT</span></button>
             </div>
             </FORM>
             </div>
@@ -80,6 +87,6 @@
     $( "#personicon" ).click(function( event ) {
       event.stopPropagation(); menu_toggle();
     });
-    finish_load();
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 {% endblock %}

@@ -6,12 +6,10 @@
 
         <div class='col-12 dtop flex menu-header-bar'>
             <div class='col-12'>
-                <a href='/' class='menu-link active'><span class='menu-link' style='padding-left:10px;'><span class='active-link font-15'>Home</span></span></a>
-                <a href='/team_opponents' class='menu-link'><span class='menu-link' style='padding-left:10px;'><span class='font-15'>My Opponents</span></span></a>
-                <a href='/team_my_team' class='menu-link'><span class='menu-link' style=''><span class='font-15'>My Team</span></span></a>
-                <a href='/team_explore' class='menu-link'><span class='menu-link' style=''><span class='font-15'>Explore</span></span></a>
+                <a href='/' class='menu-link active'><span class='menu-link' style='padding-left:10px;'><span class='active-link font-15'>Media</span></span></a>
             </div>
         </div>
+    
 
         <div class='col-12 centered' id='banner'></div>
         {% if misc.breadcrumbs %}
@@ -19,7 +17,7 @@
                 {{misc.breadcrumbs}}
             </div>
         {% endif %}
-        
+
 <script>
     $( "#threedot" ).click(function( event ) {
       event.stopPropagation(); menu_toggle();

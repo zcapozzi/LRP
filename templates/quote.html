@@ -1,0 +1,251 @@
+
+{% extends layout %}
+
+
+{% block body %}
+ 
+
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
+        
+        <div class='col-12 flex-block'>
+            <div class='col-8-12 flex'>
+      
+                <div class='col-1'></div>
+                <div class='col-10'>
+                    <div class='col-12'>
+                        {% if misc.group_name %}
+                            <span class='font-24 contents pointer bold'>LRP Quote: {{misc.group_name}}</span>
+                        {% else %}
+                            <span class='font-24 contents pointer bold'>Your LacrosseReference PRO Quote</span>
+                        {% endif %}
+                    </div>
+                    {% if not misc.quote.valid %}
+                        {% if misc.quote.ID %}
+                            <FORM action='/quote' method=POST>
+                            <input type=hidden name='hash' value='{{misc.quote_hash}}' />
+                            {% if not misc.resend_msg %}
+                                <div class='col-12' style='padding-top:20px;'>
+                                    <span class='contents font-15 pointer'>Unfortunately, this quote has expired. Click the button below to request a new quote.</span>
+                                </div>
+                            
+                                <div class='col-12 centered' style='padding-top:20px;'>
+                                        
+                                    <button type=submit class='action-button' name='action' value='requote'><span class='pointer font-15'>REQUEST</span></button>
+                           
+                                </div>
+                            {% else %}
+                                <div class='col-12 error'><span  class='msg' style='color:blue;' >{{misc.resend_msg}}</span></div>
+                            {% endif %}
+                            </FORM>
+                        {% else %}
+                            <div class='col-12' style='padding-top:20px;'>
+                                <span class='contents font-15 pointer'>We could not bring up your quote. Be sure to click or copy the full url from the email we sent.</span>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        {% if user_obj.auth %}
+                            {% if misc.quote.trial %}
+                                <div class='col-12' style='padding-top:20px;'>
+                                    <span class='contents font-15 pointer'>We've gone ahead and set up a free trial for you. You'll have access to the platform through {{misc.quote.trial_end_str}}.</span>
+                                </div>
+                            {% endif %}
+                            <div class='col-12' style='padding-top:20px;'>
+                                <span class='contents font-18 bold'>What is included in this quote?</span>
+                            </div>
+                            <div class='col-12 no-padding'>
+                                <ul style='line-height: 20px;'>
+                                    <li><span class='font-15 contents'>100% refund guarantee. If you want to cancel at any point prior to the end of your subscription, I'll refund 100% of your subscription cost. No questions asked.</span></li>
+                                    <li><span class='font-15 contents'>Your account allows up to {{misc.max_users}} unique user login{{misc.max_users_str}}.</span></li>
+                                    <li><span class='font-15 contents'>We will do our best to respond to any questions within 48 hours.</span></li>
+                                    {% if misc.quote.trial %}
+                                    <li><span class='font-15 contents'>No payment required until the end of the trial period.</span></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                            {% if misc.login_account_error %}
+                                <div class='col-12 error'><span class='error' >{{misc.login_account_error}}</span></div>
+                            {% endif %}
+                            {% if misc.login_account_msg %}
+                                <div class='col-12 error'><span  class='msg' style='color:blue;' >{{misc.login_account_msg}}</span></div>
+                            {% endif %}
+                            {% if misc.create_account_error %}
+                                <div class='col-12 error'><span class='error' >{{misc.create_account_error}}</span></div>
+                            {% endif %}
+                            {% if misc.create_account_msg %}
+                                <div class='col-12 error'><span  class='msg' style='color:blue;' >{{misc.create_account_msg}}</span></div>
+                            {% endif %}
+                            {% if misc.quote.trial %}
+                                <div class='col-12'>
+                                    <span class='font-15 contents'>
+                                        
+                                        Click <a href='/'>here</a> to get started OR you can formalize your subscription using the 'Checkout' button.
+                                    </span>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            {% if misc.quote.trial %}
+                                <div class='col-12' style='padding-top:20px;'>
+                                    <span class='contents font-15 pointer'>We've gone ahead and set up a free trial for you. You'll have access to the platform through {{misc.quote.trial_end_str}}.</span>
+                                </div>
+                            {% endif %}
+                            <div class='col-12' style='padding-top:20px;'>
+                                <span class='contents font-18 bold'>What is included in this quote?</span>
+                            </div>
+                            <div class='col-12 no-padding'>
+                                <ul style='line-height: 20px;'>
+                                    <li><span class='font-15 contents'>100% refund guarantee. If you want to cancel at any point prior to the end of your subscription, I'll refund 100% of your subscription cost. No questions asked.</span></li>
+                                    <li><span class='font-15 contents'>Your account allows up to {{misc.max_users}} unique user login{{misc.max_users_str}}.</span></li>
+                                    <li><span class='font-15 contents'>We will do our best to respond to any questions within 48 hours.</span></li>
+                                    {% if misc.quote.trial %}
+                                    <li><span class='font-15 contents'>No payment required until the end of the trial period.</span></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                            {% if misc.quote.trial %}
+                                <div class='col-12'>
+                                    <span class='font-15 contents'>
+                                        Log-in or Register to get started on the platform OR you can formalize your subscription using the 'Checkout' button.
+                                    </span>
+                                </div>
+                            {% endif %}
+                            <div class="col-12 centered">
+                                <span id="login_view_tag" class="pointer {{misc.login_tag_display}} panel_tag font-15" onclick="set_panel(&quot;login&quot;);">
+                                    <span class="">Log In</span>
+                                </span>
+                                <span id="create_account_view_tag" class="pointer {{misc.create_account_tag_display}} panel_tag font-15" onclick="set_panel(&quot;create_account&quot;);">
+                                    <span class="">Create Account</span>
+                                </span>
+                            </div>
+                    
+                            <div class='col-12 no-padding'>
+                                      
+                                
+                                <div id='login_view' class='panel col-12  {{misc.login_display}}'>
+                                    <FORM action='/' method=POST>
+                                    <input type=hidden name='from' value='quote' />
+                                    <input type=hidden name='quote_hash' value='{{misc.quote_hash}}' />
+                                    <div class='col-12 centered'>
+                                        
+                                        <div class='col-12'><input type=text id='username' name='username' placeholder="Username" /></div>
+                                        <div class='col-12'><input type=password id='password' name='password' placeholder="Password" /></div>
+                                        {% if misc.login_account_error %}
+                                            <div class='col-12 error'><span class='error' >{{misc.login_account_error}}</span></div>
+                                        {% endif %}
+                                        <div class='col-12'><button type=submit id='submit_me' name='action' value='login' />Submit</button></div>
+                                        <div class='col-12 centered' style='padding-top:15px;'>
+                                            
+                                            <a class='font-14' href='/forgot'><span class='font-14'>Forgot Password</span></a>
+                                        </div>
+                                        
+                                    </div>
+                                    </FORM>
+                                </div>
+                                
+                                <div id='create_account_view' class='panel col-12 {{misc.create_account_display}}'>
+                                    <FORM action='/register' method=POST><input type=hidden name='process_step' value='{{misc.process_step}}'>
+                                    <input type=hidden name='from' value='quote' />
+                                    <input type=hidden name='quote_hash' value='{{misc.quote_hash}}' />
+                                    <div class='col-12 centered'>
+                                        
+                                        <div class='col-12'><input type=text name='username' id='create_username' value='{{misc.username}}' placeholder="Username" /></div>
+                                        <div class='col-12'><input type=password name='password' id='create_password' value='{{misc.password}}'placeholder="Password" /></div>
+                                        <div class='col-12'><input type=text name='email' id='create_email' value='{{misc.email}}'  placeholder="Email" /></div>
+                                        <div class='col-12'><input type=text name='phone' id='create_phone' value='{{misc.phone}}'  placeholder="Phone (optional)" /></div>
+                                        <div class='col-12'><span class='font-12'>By creating your account, you agree to the <a target='_blank' href='/terms'>Terms and Conditions</a></span></div>
+                                        {% if misc.create_account_error %}
+                                            <div class='col-12 error'><span class='error' >{{misc.create_account_error}}</span></div>
+                                        {% endif %}
+                                        {% if misc.create_account_msg %}
+                                            <div class='col-12 error'><span  class='msg' style='color:blue;' >{{misc.create_account_msg}}</span></div>
+                                        {% endif %}
+                                        <div class='col-12'><button type=submit id='submit_me_register' name='action' value='create_account'  />Create Account</button></div>
+                                    </div>
+                                    </FORM>
+                                </div>
+                                
+                            </div>
+                         
+                        {% endif %}
+                    {% endif %}
+
+                </div>
+                <div class='col-1'></div>
+            </div>
+     
+            <div class='col-4-12'>
+                <div class='col-12 flex' style='border: solid 2px #AAA; border-radius:10px;'>    
+ 
+                    <div class='col-1'></div>
+                    <div class='col-10'>
+                        <FORM action='/quote' method=POST>
+                        <input type=hidden name='user_ID' value={{misc.user_ID}} />
+                        <input type=hidden name='AB_group' value={{misc.AB_group}} />
+                        <input type=hidden name='hash' value='{{misc.quote_hash}}' />
+                        <input type=hidden name='request_type' value='trial-request' />
+                        <div class='col-12 centered' style='border-bottom: solid 2px #88F;'>
+                            <span class='font-15 contents bold'>Quote Summary</span>  
+                        </div>
+
+                        {% if misc.discount %}
+                            <div class='col-12 flex no-padding'>
+                                <div class='col-5'><span class='font-15 light'>Price</div>
+                                <div class='col-7 no-padding right'>
+                                    <div class='inline-flex' style='padding:0px;'>
+                                        <span class='font-15 inline light' style='text-decoration: line-through;'>{{misc.list_price_str}}</span>
+                                        <span class='font-15'>{{misc.quote.price_str}}</span>
+                                    </div>
+                                </div>
+                                
+                            </div>
+                            <div class='col-12 flex no-padding'>
+                                <div class='col-5'><span class='font-15 light'>Discount</div>
+                                <div class='col-7 right'>
+                                        <span class='font-15' style='color:blue;'>{{misc.discount_pct_str}}</span>
+                                </div>
+                                
+                            </div>
+                        {% else %}
+                            <div class='col-12 flex'>
+                                <div class='col-5'><span class='font-15 light'>Price</div>
+                                <div class='col-7 right'>
+                                    <span class='font-15'>{{misc.quote.price_str}}</span>
+                                </div>
+                                
+                            </div>
+                        {% endif %}
+
+                        {% if misc.quote.valid %}
+                            <div class='col-12 centered' style='padding-top:20px;'>
+                                    
+                                <a id='checkout_link' class='action-button' href='/cart'><span class='pointer font-15'>CHECKOUT</span></a>
+                       
+                            </div>
+                        {% endif %}
+                        </FORM>
+                    </div>
+                </div>
+                <div class='col-1'></div>
+            </div>
+                     
+        </div>
+
+        
+
+
+<script>
+    console.log({{misc|to_json2}});
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+</script>
+
+{% endblock %}

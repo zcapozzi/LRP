@@ -32,6 +32,6 @@
     $( "#personicon" ).click(function( event ) {
       event.stopPropagation(); menu_toggle();
     });
-    finish_load();
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 {% endblock %}

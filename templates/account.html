@@ -3,12 +3,18 @@
 
 
 {% block body %}
-
+        <div class='col-12 centered' id='banner'></div>
+        {% if misc.breadcrumbs %}
+            <div class='col-12 centered'>
+                {{misc.breadcrumbs}}
+            </div>
+        {% endif %}
+        
         <div class='col-12 page-title'>
             <span class='font-24 pointer bold'>My Account</span>
         </div>
         <div class='col-12 flex-block'>
-            <div class='col-6-12'>
+            <div class='col-6-12' style='padding-top:20px;'>
                 <div class='col-12 bbottom'><span class='font-18 bold pointer'>My Profile</div>
                 <div class='col-12'><span class='font-13 light'>Username</div>
                 <div class='col-12'><span class='font-15'>{{user_obj.username_str}}</div>
@@ -22,7 +28,7 @@
                 <div class='col-12 action-button'><a  href='/profile' class='action-button'><span class='action-button font-15'>EDIT PROFILE</span></a></div>
 
             </div>
-            <div class='col-6-12'>
+            <div class='col-6-12' style='padding-top:20px;'>
                 <div class='col-12 bbottom'><span class='font-18 bold pointer'>Preferences</div>
                 {{misc.preferences_html|safe}}
 
@@ -33,23 +39,87 @@
             
         </div>
         <div class='col-12 flex-block'>
-            <div class='col-6-12'>
+            <div class='col-6-12' style='padding-top:20px;'>
                 <div class='col-12 bbottom'><span class='font-18 bold pointer'>Security</div>
 
                 <div class='col-12 action-button'><a href='/password' class='action-button'><span class='action-button font-15'>CHANGE PASSWORD</span></a></div>
 
             </div>
-            <div class='col-6-12'>
+            <div class='col-6-12' style='padding-top:20px;'>
                 {% if user_obj.user_type == "team" %}
                     <div class='col-12 bbottom'><span class='font-18 bold pointer'>Group Account</div>
                     <div class='col-12'><span class='font-13 light'>Group Members</div>
-                    <div class='col-12'><span class='font-15'>{{user_obj.active_group_num_members}}</div>
-                    {% if user_obj.active_group_admin %}
-                        <FORM action='/edit_group' method=POST><input type=hidden name='group_ID' value={{user_obj.active_group}} />
-                        <div class='col-12 action-button'><button type=submit class='action-button'><span class='action-button font-15'>EDIT GROUP MEMBERS</span></button></div>
-                        </FORM>
+                    <div class='col-12 flex'>
+                        <div class='col-6'><div class='' style='vertical-align:middle;'><span class='font-15' style='vertical-align:middle;'>{{user_obj.active_group_num_members}}</span></div></div>
+                        <div class='col-6 right'>
+                            {% if user_obj.active_group_admin %}
+                                <FORM action='/edit_group' method=POST><input type=hidden name='group_ID' value={{user_obj.active_group}} />
+                                <button type=submit id='edit_group_members_button' class='action-button'><span class='action-button font-15'>EDIT GROUP MEMBERS</span></button>
+                                </FORM>
+                            {% endif %}
+                         </div>
+                    </div>
+
+                    {% if user_obj.active_subscription %}
+                        <div class='col-12'><span class='font-13 light'>Subscription</div>
+                        <div class='col-12 flex'>
+                            <div class='col-6'><div class='' style='vertical-align:middle;'><span class='font-15' style='vertical-align:middle;'>
+                                {% if user_obj.active_subscription.trial %}
+                                    Trial - Ends {{user_obj.active_subscription.end_date_str}}
+                                {% else %}
+                                    Active - Expires {{user_obj.active_subscription.end_date_str}}
+                                {% endif %}
+                            </span></div></div>
+                            <div class='col-6 right'>
+                                {% if user_obj.active_group_admin %}
+                                    <FORM action='/subscription' method=POST><input type=hidden name='confirmed' value='no'>
+                                    <button type=submit id='edit_subscription_button' class='action-button'><span class='action-button font-15'>EDIT SUBSCRIPTION</span></button>
+                                </FORM>
+                                {% endif %}
+                             </div>
+                        </div>
+                        
                     {% endif %}
+                    
                 {% endif %}
+                {% if user_obj.user_type == "individual" or user_obj.user_type == "media" %}
+                    
+                    <div class='col-12 bbottom'><span class='font-18 bold pointer'>Subscription</div>
+                    <div class='col-12'><span class='font-13 light'>Status</div>
+                    <div class='col-12 flex'>
+                        {% if user_obj.active_subscription %}
+                            <div class='col-6'><div class='' style='vertical-align:middle;'><span class='font-15' style='vertical-align:middle;'>
+                                {% if user_obj.active_subscription.trial %}
+                                    Trial - Ends {{user_obj.active_subscription.end_date_str}}
+                                {% else %}
+                                    Active - Expires {{user_obj.active_subscription.end_date_str}}
+                                {% endif %}
+                            </span></div></div>
+                            <div class='col-6 right'>
+                              
+                                <FORM action='/subscription' method=POST><input type=hidden name='confirmed' value='no'>
+                                    <button id='edit_subscription_button' type=submit class='action-button'><span class='action-button font-15'>EDIT SUBSCRIPTION</span></button>
+                                </FORM>
+                                
+                             </div>
+                         {% else %}
+                            <div class='col-12'><div class='' style='vertical-align:middle;'><span class='font-15' style='vertical-align:middle;'>
+                                No active subscriptions
+                            </span></div></div>
+                         {% endif %}
+                    </div>
+                {% endif %}
+                {% if not user_obj.user_type %}
+                    <div class='col-12 bbottom'><span class='font-18 bold pointer'>Subscription</div>
+                    <div class='col-12'><span class='font-13 light'>Status</div>
+                    <div class='col-12 flex'>
+                        <div class='col-12'><div class='' style='vertical-align:middle;'><span class='font-15' style='vertical-align:middle;'>
+                            No active subscriptions
+                        </span></div></div>
+                         
+                    </div>
+                {% endif %}
+
             </div>
         </div>
 
@@ -63,6 +133,6 @@
     $( "#personicon" ).click(function( event ) {
       event.stopPropagation(); menu_toggle();
     });
-    finish_load();
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 {% endblock %}

@@ -3,13 +3,22 @@
 
 
 {% block body %}
+
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
     <FORM action='/review-quote' method=POST>
         <input value='{{misc.request_ID}}' type=hidden name='request_ID'>
+        <input value='{{misc.group_ID}}' type=hidden name='group_ID'>
         <input value='{{misc.product_ID}}' type=hidden name='product_ID'>
         <input value='{{misc.msg_body}}' type=hidden name='msg_body'>
+        <input value='{{misc.valid_until_str}}' type=hidden name='valid_until_str'>
         <input value='{{misc.trial_end_str}}' type=hidden name='trial_end_str'>
         <input value='{{misc.trial}}' type=hidden name='trial'>
-        <input value='{{misc.price_str}}' type=hidden name='price'>
+        <input value='{{misc.price}}' type=hidden name='price'>
         <input value='{{misc.price_type}}' type=hidden name='price_type'>
         <input value='{{misc.request_ID}}' type=hidden name='request_ID'>
         <input value='{{misc.email}}' type=hidden name='email'>
@@ -26,7 +35,12 @@
                 </div>
                 <div class='col-12 flex'>
                     <div class='col-7-6'><span class='bold font-15'>Email</span></div>
-                    <div class='col-5-6'><span class='font-15'>{{misc.email}}</span></div>
+                    <div class='col-5-6'><span class='font-15'>{{misc.email_decrypted}}</span></div>
+                    
+                </div>
+                <div class='col-12 flex'>
+                    <div class='col-7-6'><span class='bold font-15'>Team</span></div>
+                    <div class='col-5-6'><span class='font-15'>{{misc.group_name}} (ID #{{misc.group_ID}})</span></div>
                     
                 </div>
                 
@@ -46,7 +60,7 @@
             </div>
             <div class='col-12 flex'>
                 <div class='col-8-6'><span class='font-15 bold'>Price</span></div>
-                <div class='col-4-6'><span class='font-15'>${{misc.price_str}}</span></div>
+                <div class='col-4-6'><span class='font-15'>{{misc.price_str}}</span></div>
             </div>
             <div class='col-12 flex'>
                 <div class='col-8-6'><span class='font-15 bold'>Price Type</span></div>
@@ -60,6 +74,10 @@
                 <div class='col-8-6'><span class='font-15 bold'>Trial Ends</span></div>
                 <div class='col-4-6'><span class='font-15'>{{misc.trial_end_formatted}}</span></div>
             </div>
+            <div class='col-12 flex'>
+                <div class='col-8-6'><span class='font-15 bold'>Valid Until</span></div>
+                <div class='col-4-6'><span class='font-15'>{{misc.valid_until_formatted}}</span></div>
+            </div>
            {% if misc.error %}
                 <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
             {% endif %}
@@ -67,7 +85,13 @@
             {% if misc.msg %}
                 <div class='col-12'><span style='color:blue;' class='font-15'>{{misc.msg|safe}}</span></div>
             {% endif %}
-            <div class='col-12 centered action-button'><button type=submit name='action' value='edit_quote' class='action-button font-15'>EDIT</button><button type=submit name='action' value='send_quote' class='action-button font-15'>SEND</button></div>
+            <div class='col-12 centered action-button'>
+                <button type=submit name='action' value='edit_quote' class='action-button font-15'>EDIT</button>
+                <button type=submit name='action' id='send_button' value='send_quote' class='action-button font-15'>SEND</button>
+                {% if misc.show_resend_email %}
+                    <button type=submit name='action' value='resend_quote' class='action-button font-15'>RESEND</button>
+                {% endif %}
+            </div>
             {% if misc.msg_html %}
                 <div class='col-12'>
                     {{misc.msg_html_safe|safe}}
@@ -85,7 +109,7 @@
     $( "#personicon" ).click(function( event ) {
       event.stopPropagation(); menu_toggle();
     });
-    finish_load();
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 
 {% endblock %}

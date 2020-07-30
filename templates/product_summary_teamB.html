@@ -4,6 +4,13 @@
 
 {% block body %}
 
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
+
     
 
     <div class='col-12'>
@@ -35,15 +42,31 @@
                     <input type=hidden name='hash' value={{misc.hash}} />
                     <input type=hidden name='request_type' value='trial-request' />
                     <div class='col-12 centered' style='border-bottom: solid 2px #88F;'>
-                        <span class='font-15 contents bold'>Request a Team Trial</span>  
+                        {% if misc.product.status == "quotable" %}
+                            <span class='font-15 contents bold'>Request a {{misc.product.product_name}} Trial</span>  
+                        {% endif %}
+                        {% if misc.product.status == "available" %}
+                            <span class='font-15 contents bold'>LRP {{misc.product.product_name}}</span>  
+                        {% endif %}
+                        {% if misc.product.status == "pre-register" %}
+                            <span class='font-15 contents bold'>Pre-Register: {{misc.product.product_name}}</span>  
+                        {% endif %}
                     </div>
                     <div class='col-12' style='padding-top:20px'>
-                        <span class='font-15 contents'>Use the form to identify the team you represent. I will reach out within 24 hours to coordinate a trial account.</span>  
+                        {% if misc.product.status == "quotable" %}
+                            <span class='font-15 contents'>Use the form to enter your specifics. I will reach out within 24 hours to coordinate a trial account.</span>    
+                        {% endif %}
+                        {% if misc.product.status == "available" %}
+                            <div class='centered'><span class='font-24 bold centered contents'>{{misc.product.price_str}}</span></div>
+                        {% endif %}
+                        {% if misc.product.status == "pre-register" %}
+                            <span class='font-15 contents'>This product is not quite ready yet, but enter your email to get notified when it's ready.</span>
+                        {% endif %}
                     </div>
                     <div class='col-12' style='padding-top:10px'>
                         <div class='col-12'><span class='font-13 light'>Select Team</div>
                         <div class='col-12'>
-                            <select name='team_select' class='font-15 col-12'>
+                            <select name='team_select' id='team_select' class='font-15 col-12'>
                                 <option value=-1>Select Team</option>
                                 {% for g in misc.groups %}
                                     <option value='{{g.team_ID}}' {{g.selected}}>{{g.group_name}}</option>
@@ -55,7 +78,7 @@
                     <div class='col-12'>
                         <div class='col-12'><span class='font-13 light'>Email</div>
                         <div class='col-12'>
-                            <input type=text value='{{misc.email}}'  placeholder="Enter Email" name='email' class='font-15 col-12' />
+                            <input type=text value='{{misc.email_decrypted}}'  placeholder="Enter Email" name='email' id='email'class='font-15 col-12' />
                         </div>
                         
                     </div>
@@ -67,7 +90,7 @@
                     {% else %}
                         <div class='col-12 centered' style='padding-top:20px;'>
                             
-                            <button type=submit class='action-button' name='action' value='resend_activation'><span class='pointer font-15'>REQUEST TRIAL</span></button>
+                            <button id='action_button' type=submit class='action-button' name='action' value='{{misc.product.status}}'><span class='pointer font-15'>{{misc.product.call_to_action}}</span></button>
                    
                         </div>
                     {% endif %}
@@ -97,6 +120,6 @@
     $( "#personicon" ).click(function( event ) {
       event.stopPropagation(); menu_toggle();
     });
-    finish_load();
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 {% endblock %}

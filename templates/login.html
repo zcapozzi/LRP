@@ -4,6 +4,13 @@
 
 {% block body %}
 
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
+
     <div class='col-12 flex'>
         <div class='col-4-1'></div>
         <div class='col-4-10' style='background-color: #F9F9F9;'>
@@ -31,7 +38,7 @@
     </div>
   
 <script>   
-    finish_load();
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 
 

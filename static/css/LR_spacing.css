@@ -3,7 +3,7 @@
 body{ margin:0px; }
 div{ padding: 5px 0px; }
 span{ padding: 5px; }
-div.viewbox{ width:1024px; padding:0; margin:auto; }
+div.viewbox{ width:1024px; min-height:700px; padding:0; margin:auto; }
 
 .no-padding{ padding:0px; }
 
@@ -21,14 +21,16 @@ div.viewbox{ width:1024px; padding:0; margin:auto; }
 
 input.small{ width:40px; }
 input.medium{ width:100px; }
+input.large{ width:160px; }
 select.small{ width:40px; }
 select.medium{ width:100px; }
+select.large{ width:160px; }
 
 div.page-title{ padding-top:20px; }
 
 @media only screen and (max-width: 800px) {
     
-    div.viewbox{ width:98%; margin:0 1%; }
+    div.viewbox{ width:98%; margin:0 1%; min-height:400px; }
     .font-40{ font-size:30px; }
     .font-36{ font-size:24px; }
     .font-24{ font-size:18px; }

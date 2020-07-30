@@ -4,12 +4,11 @@
 
 {% block body %}
 
+    
+
         <div class='col-12 dtop flex menu-header-bar'>
             <div class='col-12'>
-                <a href='/' class='menu-link active'><span class='menu-link' style='padding-left:10px;'><span class='active-link font-15'>Home</span></span></a>
-                <a href='/team_opponents' class='menu-link'><span class='menu-link' style='padding-left:10px;'><span class='font-15'>My Opponents</span></span></a>
-                <a href='/team_my_team' class='menu-link'><span class='menu-link' style=''><span class='font-15'>My Team</span></span></a>
-                <a href='/team_explore' class='menu-link'><span class='menu-link' style=''><span class='font-15'>Explore</span></span></a>
+                <a href='/' class='menu-link active'><span class='menu-link' style='padding-left:10px;'><span class='active-link font-15'>Individual</span></span></a>
             </div>
         </div>
 
@@ -27,9 +26,7 @@
     $( "#personicon" ).click(function( event ) {
       event.stopPropagation(); menu_toggle();
     });
-    
     finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
-    
 </script>
 {% endblock %}
 

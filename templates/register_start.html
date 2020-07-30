@@ -3,6 +3,13 @@
 
 
 {% block body %}
+
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
     <div class='col-12 flex'>
         <div class='col-4-1'></div>
         <div class='col-4-10' style='background-color: #F9F9F9;'>
@@ -13,6 +20,7 @@
                 <div class='col-12'><input type=password name='password' id='password'  value='{{misc.password}}'placeholder="Password" /></div>
                 <div class='col-12'><input type=text name='email' id='email' value='{{misc.email}}'  placeholder="Email" /></div>
                 <div class='col-12'><input type=text name='phone' id='phone' value='{{misc.phone}}'  placeholder="Phone (optional)" /></div>
+                <div class='col-12'><span class='font-12'>By creating your account, you agree to the <a target='_blank' href='/terms'>Terms and Conditions</a></span></div>
                 {% if misc.error %}
                     <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
                 {% endif %}
@@ -35,6 +43,6 @@
     $( "#personicon" ).click(function( event ) {
       event.stopPropagation(); menu_toggle();
     });
-    finish_load();
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 {% endblock %}

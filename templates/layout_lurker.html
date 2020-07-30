@@ -46,12 +46,13 @@
                     {% endif %}
                     <img class='menu-icon' style=' ' src='/static/img/cart30.png'>
                 </a>
-                <img class='menu-icon' style=' ' title='{{user_obj.email}}' id='personicon' src='/static/img/person30.png'>
+                <img class='menu-icon' style=' ' title='{{user_obj.email_decrypted}}' id='personicon' src='/static/img/person30.png'>
                <div class='menu-holder'>
                 <div id="menu_modal_dtop" class="dropdown-content">
-                    <a id='home_link' href="/">Home</a>
-                    <a id='account_link' href="/account">My Account</a>
-                    <a id='signout_link' href="/logout">Sign Out</a>
+                    <a class='font-15' id='home_link' href="/">Home</a>
+                    <a class='font-15' id='account_link' href="/account">My Account</a>
+                    <a class='font-15' href="/help{{misc.handler}}">Help</a>
+                    <a class='font-15' id='signout_link' href="/logout">Sign Out</a>
                 </div>
                 </div>
             </div>
@@ -67,6 +68,7 @@
                     <div id="menu_modal_mob" class="dropdown-content">
                         <a class='font-15' href="/">Home</a>
                         <a class='font-15' href="/account">My Account</a>
+                        <a class='font-15' href="/help{{misc.handler}}">Help</a>
                         <a class='font-15' href="/logout">Sign Out</a>
                     </div>
                 </div>
@@ -74,21 +76,11 @@
         </div>
         
         
-        {% if misc.banner_msg %}
-            <div class='col-12 centered'>
-                {{misc.banner_msg}}
-            </div>
-        {% endif %}
-        {% if misc.breadcrumbs %}
-            <div class='col-12 centered'>
-                {{misc.breadcrumbs}}
-            </div>
-        {% endif %}
-        
         {% block body %}{% endblock %}
  
     
   </div>
+  <div class='col-12 centered'><span class='font-14'>{{misc.copyright|safe}}</span></div>
   
   </body>
 </html>

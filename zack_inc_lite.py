@@ -111,12 +111,14 @@ def remove_non_ascii(s): return "".join(filter(lambda x: ord(x) < 128, s)) if s 
 def print_dict(d):
     s = ""
     if isinstance(d, dict):
-        for k, v in zip(d.keys(), d.values()):
-            s += ("\n%s: %s" % (k, v))
+        tmp_keys = sorted(d.keys())
+        for k in tmp_keys:
+            s += ("\n%s: %s" % (k, d[k]))
     elif d is not None:
         for d_ in d:
-            for k, v in zip(d_.keys(), d_.values()):
-                s += ("\n%s: %s" % (k, v))
+            tmp_keys = sorted(d_.keys())
+            for k in tmp_keys:
+                s += ("\n%s: %s" % (k, d_[k]))
             s += ("\n---------------------------")
     
     return s

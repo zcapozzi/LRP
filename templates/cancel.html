@@ -1,0 +1,63 @@
+
+{% extends layout %}
+
+
+{% block body %}
+
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
+
+    
+  <div class='col-12 flex'>
+        <div class='col-1'></div>
+        <div class='col-10'>
+            <FORM action='/cancel' method=POST>
+            <div class='col-12'>
+                
+                
+                {% if misc.msg %}
+                    <div class='col-12 centered'><span class='msg' style='color:blue;' >{{misc.msg}}</span></div>
+                {% else %}
+                    <div class='col-12 centered'>
+                        <span class='font-18'>We are sorry to see you go. Obviously, you are under no obligation, but if you wouldn't mind providing some feedback, that would be greatly appreciated. Thank you for using LacrosseReference PRO.</span>
+                    </div>
+                    <div class='col-12' style='padding-top:30px;'>
+                        <span class='font-15 bold'>In a few words, why are you cancelling?</span>
+                    </div>
+                    <div class='col-12'><textarea rows=5 style='font-family:Arial; width:100%;' name='feedback'>{{misc.feedback}}</textarea></div>
+                    <div class='col-12' style='padding-top:30px;'>
+                        <span class='font-15 contents'>We proudly offer a full refund guarantee. If you would like a full refund, we will close and disable your account today and process a refund within 48 hours. Just click the checkbox below. If you are not requesting a refund, we will keep your account active through the end of your current subscription and disable auto-renewal for your account.</span>
+                    </div>
+                    <div class='col-12 flex' style='padding-top:30px;'>
+                        
+                        <div class='col-1'><input type=checkbox name='refund' {{misc.refund_checked}} /></div>
+                        <div class='col-11'>
+                        <span class='font-15'>I would like a full refund.</span></div>
+                        
+                    </div>
+                    
+                    {% if misc.error %}
+                        <div class='col-12 error centered'><span class='error' >{{misc.error}}</span></div>
+                    {% endif %}
+                    <div class='col-12 centered action-button'><button class='action-button' type=submit id='submit_me' />SUBMIT</button></div>
+                {% endif %}
+            </div>
+            </FORM>
+        </div>
+        <div class='col-1'></div>
+    </div>
+
+<script>
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+</script>
+{% endblock %}

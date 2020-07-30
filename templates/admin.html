@@ -4,6 +4,13 @@
 
 {% block body %}
 
+        <div class='col-12 centered' id='banner'></div>
+        {% if misc.breadcrumbs %}
+            <div class='col-12 centered'>
+                {{misc.breadcrumbs}}
+            </div>
+        {% endif %}
+
         <div class='col-12 page-title'>
             <span class='font-24 pointer bold'>LaxRef PRO: Admin</span>
         </div>
@@ -13,6 +20,17 @@
         {% if misc.msg %}
             <div class='col-12 centered'><span class='msg' style='color:blue;' >{{misc.msg}}</span></div>
         {% endif %}
+        <div class='col-12 block'>
+            <div class='col-12'>
+                <div class='col-12 bbottom'><span class='font-18 bold pointer'>Quick Links</div>
+            </div>
+        </div>
+        <div class='col-12 flex-block'>
+            <div class='col-3-12'><a class='action-button' href='/create-quote'><span class='font-15'>CREATE QUOTE</span></a></div>
+            <div class='col-3-12'><a class='action-button' href='/create-refund'><span class='font-15'>ISSUE REFUND</span></a></div>
+            <div class='col-3-12'><a class='action-button' href='/create'><span class='font-15'>CREATE USER</span></a></div>
+            <div class='col-3-12'><a class='action-button' href='/extend-subscription'><span class='font-15'>EXTEND SUBSCRIPTION</span></a></div>
+        </div>
         <div class='col-12 block'>
             <div class='col-12'>
                 <div class='col-12 bbottom'><span class='font-18 bold pointer'>Users</div>
@@ -29,17 +47,17 @@
                         </div>
                         {% for u in misc.display_users %}
                             <div class='table-row col-12 flex'>
-                                <div class='col-1'><span class='font-12' title='{{u.decrypted_password}}'>{{u.ID}}</span></div>
-                                <div class='col-3'><span class='font-12'>{{u.first_name}} {{u.last_name}}</span></div>
-                                <div class='col-3'><span class='font-12'>{{u.email}}</span></div>
-                                <div class='col-3'><span class='font-12'>{{u.username}}</span></div>
+                                <div class='col-1'><span class='font-12' title='{{u.password_decrypted}}'>{{u.ID}}</span></div>
+                                <div class='col-3'><span class='font-12'>{{u.first_name_decrypted}} {{u.last_name_decrypted}}</span></div>
+                                <div class='col-3'><span class='font-12'>{{u.email_decrypted}}</span></div>
+                                <div class='col-3'><span class='font-12'>{{u.username_decrypted}}</span></div>
                                 <div class='col-2'><span class='font-12'>{{u.user_type}}</span></div>
                             </div>
                         {% endfor %}
                         
                       
                     </div>
-                    <div class='col-12 centered action-button'><button type=submit name='action' value='create_standalone_user' class='action-button font-15'>SEE MORE</button></div>
+                    <div class='col-12 centered action-button'><a href='/admin?c=admin_users' class='action-button font-15'><span class=''>SEE MORE</span></a></div>
                 </div>
                 
 
@@ -80,12 +98,13 @@
 
 <script src="/static/js/create.js"></script>
 <script>
+    
     $( "#threedot" ).click(function( event ) {
       event.stopPropagation(); menu_toggle();
     });
     $( "#personicon" ).click(function( event ) {
       event.stopPropagation(); menu_toggle();
     });
-    finish_load();
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 {% endblock %}

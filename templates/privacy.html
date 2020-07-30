@@ -1,0 +1,54 @@
+
+{% extends layout %}
+
+
+{% block body %}
+
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
+
+        <div class='col-12 page-title centered'>
+            <span class='font-24 pointer bold'>Privacy Policy</span>
+        </div>
+        {% for section in misc.terms %}
+            <div class='col-12 flex'>
+                <div class='col-1 mob no-padding'></div>
+                <div class='col-12-10 no-padding'>
+                    <div class='col-12 block'>
+                        <div class='col-12 no-padding'>
+                            <div style='padding:20px 5px 10px 10px;'>
+                                <span class='font-18 bold contents'>
+                                    {{section.seq}}. {{section.title}}
+                                </span>
+                            </div>
+                            <div style='padding:10px 5px 10px 20px;'>
+                                <span class='font-15 contents'>
+                                    {{section.content|safe}}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class='col-1 mob no-padding'></div>
+            </div>
+        {% endfor %}
+    </div>
+        
+
+
+
+<script src="/static/js/create.js"></script>
+<script>
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+</script>
+{% endblock %}

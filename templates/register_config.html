@@ -3,6 +3,13 @@
     
     
 {% block body %}
+
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
     <!--TEMPLATE: REGISTER_CONFIG.HTML -->
     {% if misc.error %}
         <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
@@ -57,6 +64,6 @@
     $( "#personicon" ).click(function( event ) {
       event.stopPropagation(); menu_toggle();
     });
-    finish_load();
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 {% endblock %}

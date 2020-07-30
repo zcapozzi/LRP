@@ -1,0 +1,123 @@
+
+{% extends "layout_admin.html" %}
+
+
+{% block body %}
+
+        <div class='col-12 centered' id='banner'></div>
+        {% if misc.breadcrumbs %}
+            <div class='col-12 centered'>
+                {{misc.breadcrumbs}}
+            </div>
+        {% endif %}
+
+        <div class='col-12 page-title'>
+            <span class='font-24 pointer bold'>LaxRef PRO: Users</span>
+        </div>
+        {% if misc.error %}
+            <div class='col-12 error centered'><span class='error' >{{misc.error}}</span></div>
+        {% endif %}
+        {% if misc.msg %}
+            <div class='col-12 centered'><span class='msg' style='color:blue;' >{{misc.msg}}</span></div>
+        {% endif %}
+        <div class='col-12 block'>
+            <div class='col-12'>
+                <div class='col-12 bbottom'><span class='font-18 bold pointer'>Users</div>
+                <div class='col-12'>
+                    <div class='right'><span class='font-15'>Filter</span><input type=text id='filter' onchange='filter(this.value);' /></div>
+                </div>
+                <div class='col-12'>
+                    
+                    <div class='panel col-12'>
+                        <div class='col-12 flex'>
+                            <div class='col-1'><span class='bold font-12'>ID</span></div>
+                            <div class='col-3'><span class='bold font-12'>Name</span></div>
+                            <div class='col-3'><span class='bold font-12'>Email</span></div>
+                            <div class='col-3'><span class='bold font-12'>Username</span></div>
+                            <div class='col-2'><span class='bold font-12'>Phone</span></div>
+                        </div>
+                        {% for u in misc.users %}
+                            <div class='table-row col-12 flex pointer' id='mainrow{{u.ID}}' onclick='toggle({{u.ID}})'>
+                                <div class='col-1'><span class='font-12' title='{{u.decrypted_password}}'>{{u.ID}}</span></div>
+                                <div class='col-3'><span class='font-12'>{{u.first_name_decrypted}} {{u.last_name_decrypted}}</span></div>
+                                <div class='col-3'><span class='font-12'>{{u.email_decrypted}}</span></div>
+                                <div class='col-3'><span class='font-12'>{{u.username_decrypted}}</span></div>
+                                <div class='col-2'><span class='font-12'>{{u.phone_decrypted}}</span></div>
+                            </div>
+                            <div class='col-12 toggle-row hidden' id='row{{u.ID}}' style=''>
+                                <div class='col-12 flex'>
+                                    <div class='col-6'>
+                                        <div class='col-12 flex'>
+                                            <div class='col-6'><span class='font-12'>Password</span></div>
+                                            <div class='col-6 right'><span class='font-12'>{{u.password_decrypted}}</span></div>
+                                        </div><div class='col-12 flex'>
+                                            <div class='col-6'><span class='font-12'>User Type</span></div>
+                                            <div class='col-6 right'><span class='font-12'>{{u.user_type}}</span></div>
+                                        </div>
+                                    </div>
+                                    <div class='col-6'>
+                                    
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        
+                      
+                    </div>
+                </div>
+                
+
+            </div>
+            
+
+<script>
+
+    
+    users = JSON.parse({{misc.users_json|to_json2}});
+    function toggle(i){
+        var classes = document.getElementById('row' + i).className.split(/\s+/);
+        $(".toggle-row").removeClass("visible").addClass("hidden");
+            
+        if(classes.indexOf("visible") == -1){
+            $("#row" + i).addClass("visible");
+        }
+    }
+    function filter(val){
+        console.log(val);
+        val = val.toLowerCase().trim();
+        console.log(users[0]);
+        console.log(users.length);
+        for(var a = 0;a<users.length;a++){
+            var user = users[a];
+            
+            if(user.email_decrypted == null){ user.email_decrypted = ""; }
+            if(user.username_decrypted == null){ user.username_decrypted = ""; }
+            if(user.first_name_decrypted == null){ user.first_name_decrypted = ""; }
+            if(user.last_name_decrypted == null){ user.last_name_decrypted = ""; }
+            
+            user.display = false;
+            if(user.email_decrypted.toLowerCase().indexOf(val) > -1 || user.last_name_decrypted.toLowerCase().indexOf(val) > -1 || user.first_name_decrypted.toLowerCase().indexOf(val) > -1 || user.username_decrypted.toLowerCase().indexOf(val) > -1){
+                user.display = true;
+                console.log(user.email_decrypted, user.first_name_decrypted, user.last_name_decrypted, user.username_decrypted)
+            }
+            
+            var row1 = document.getElementById('mainrow' + user.ID);
+            var row2 = document.getElementById('row' + user.ID);
+            if(user.display){
+                row1.style.display = "flex";
+            }
+            else{
+                row1.style.display = "none";
+            }
+            row2.style.display = "none";
+        }
+    }
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+</script>
+{% endblock %}

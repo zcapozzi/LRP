@@ -4,9 +4,130 @@
 
 {% block body %}
 
-    
-  
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
 
+    
+    {% if user_obj.active_subscription %}
+        
+            <div class='col-12 flex'>
+                <div class='col-2-1'>
+                    
+                </div>
+                <div class='col-8-10 centered' style='padding-top:30px;'>
+                    
+                    
+                    {% if not user_obj.active_subscription.trial %}
+                        {% if user_obj.active_subscription.status == "non-renewing" %}
+                            <FORM action='/subscription' method=POST>
+                                <input type=hidden name='confirmed' value='{{misc.confirmed}}' />
+                                <div class='' style='padding-bottom:20px;'><span class='font-15 contents'>You previously disabled the auto-renewal of this subscription, which ends {{user_obj.active_subscription.end_date_str}}. Re-enabling autorenewal will ensure you have no break in access.</span></div>
+                                
+                                
+                                {% if misc.confirmed == "yes" and misc.action == "set_renewing" %}
+                                    <div class='' style='padding-bottom:20px;'><span class='font-15 contents' style='color:blue;'>To confirm, when you click 'RE-ENABLE AUTORENEW', we will change your subscription to an auto-renewal. This means your payment method will be automatically charged when your current subscription ends on the date above.</span></div>
+                                    <div class='' style='padding-bottom:20px;'><input id='reenable_check' type=checkbox name='understand'  style='margin-right:15px;' /><span class='font-15 contents'>Click to confirm</span></div>
+                                {% endif %}
+                                
+                                {% if misc.error and misc.action == "set_renewing" %}
+                                    <div class='col-12 error centered'><span class='error' >{{misc.error|safe}}</span></div>
+                                {% endif %}
+                                {% if misc.msg and misc.action == "set_renewing" %}
+                                    <div class='col-12 error centered'><span class='msg' style='color:blue;' >{{misc.msg|safe}}</span></div>
+                                {% endif %}
+                                
+                                <div class='' style='padding-bottom:40px;'><button id='reenable_button' style='width:60%; max-width:200px;' class='action-button' name='action' value='set_renewing'>RE-ENABLE AUTORENEW</button></div>
+                            </FORM>
+                        
+                        {% else %}
+                            {% if misc.error and misc.action == "set_renewing" %}
+                                <div class='col-12 error centered'><span class='error' >{{misc.error|safe}}</span></div>
+                            {% endif %}
+                            {% if misc.msg and misc.action == "set_renewing" %}
+                                <div class='col-12 error centered'><span class='msg' style='color:blue;' >{{misc.msg|safe}}</span></div>
+                            {% endif %}
+               
+                        {% endif %}
+                    {% endif %}
+                    {% if user_obj.active_subscription.trial %}
+                        <FORM action='/subscription' method=POST>
+                            <input type=hidden name='confirmed' value='{{misc.confirmed}}' />
+                            <div class='' style='padding-bottom:20px;'><span class='font-15 contents'>Ready to extend your free trial into a paid subscription? As a reminder, your trial ends on {{user_obj.active_subscription.end_date_str}} and you will lose access to the platform after that date unless you convert to a paid subscription.</span></div>
+                            
+                            
+                            
+                            {% if misc.error and misc.action == "convert" %}
+                                <div class='col-12 error centered'><span class='error' >{{misc.error|safe}}</span></div>
+                            {% endif %}
+                            {% if misc.msg and misc.action == "convert" %}
+                                <div class='col-12 error centered'><span class='msg' style='color:blue;' >{{misc.msg|safe}}</span></div>
+                            {% endif %}
+                            
+                            <div class='' style='padding-bottom:40px;'><button id='convert_button' style='width:60%; max-width:200px;' class='action-button' name='action' value='convert'>CONVERT</button></div>
+                        </FORM>
+                    {% else %}
+                        {% if user_obj.active_subscription.status == "active" %}
+                            <FORM action='/subscription' method=POST>
+                                <input type=hidden name='confirmed' value='{{misc.confirmed}}' />
+                                <div class='' style='padding-bottom:20px;'><span class='font-15 contents'>Enjoying LacrosseReference PRO, but not sure you want to auto-renew when your subscription ends on {{user_obj.active_subscription.end_date_str}}? Simply disable auto-renew so that YOU decide whether you want to renew when the time comes.</span></div>
+                                {% if misc.confirmed == "yes" and misc.action == "disable_autorenew" %}
+                                    <div class='' style='padding-bottom:20px;'><span class='font-15 contents' style='color:blue;'>To confirm, when you click 'DISABLE AUTORENEW', we will set your subscription to expire after the date above unless you renew it.</span></div>
+                                    <div class='' style='padding-bottom:20px;'><input id='disable_check' type=checkbox name='understand'  style='margin-right:15px;' /><span class='font-15 contents'>Click to confirm</span></div>
+                                {% endif %}
+                                
+                                
+                                {% if misc.error and misc.action == "disable_autorenew" %}
+                                    <div class='col-12 error centered'><span class='error' >{{misc.error|safe}}</span></div>
+                                {% endif %}
+                                {% if misc.msg and misc.action == "disable_autorenew" %}
+                                    <div class='col-12 error centered'><span class='msg' style='color:blue;' >{{misc.msg|safe}}</span></div>
+                                {% endif %}
+                                
+                                <div class='' style='padding-bottom:40px;'><button id='disable_button' style='width:60%; max-width:200px;' class='action-button' name='action' value='disable_autorenew'>DISABLE AUTORENEW</button></div>
+                            </FORM>
+                        {% else %}
+                            {% if misc.error and misc.action == "disable_autorenew" %}
+                                <div class='col-12 error centered'><span class='error' >{{misc.error|safe}}</span></div>
+                            {% endif %}
+                            {% if misc.msg and misc.action == "disable_autorenew" %}
+                                <div class='col-12 error centered'><span class='msg' style='color:blue;' >{{misc.msg|safe}}</span></div>
+                            {% endif %}
+                        {% endif %}
+                        
+                        <FORM action='/subscription' method=POST>
+                            <input type=hidden name='confirmed' value='{{misc.confirmed}}' />
+                            
+                            <div class='' style='padding-bottom:20px;'><span class='font-15 contents'>Not happy with LacrosseReference PRO? We'd love to hear how we can do better, but if you do want to cancel, here's how to do it. We will refund your subscription costs and immediately disable your account.</span></div>
+                            {% if misc.confirmed == "yes" and misc.action == "request_refund" %}
+                                <div class='' style='padding-bottom:20px;'><span class='font-15 contents' style='color:blue;'>To confirm, when you click 'REQUEST REFUND', we will terminate your subscription and issue a full refund. You will no longer have access to the paid features of LacrosseReference PRO.</span></div>
+                                <div class='' style='padding-bottom:20px;'><input id='refund_check' type=checkbox name='understand'  style='margin-right:15px;' /><span class='font-15 contents'>Click to confirm</span></div>
+                            {% endif %}
+                            
+                            {% if misc.error and misc.action == "request_refund" %}
+                                <div class='col-12 error centered'><span class='error' >{{misc.error|safe}}</span></div>
+                            {% endif %}
+                            {% if misc.msg and misc.action == "request_refund" %}
+                                <div class='col-12 error centered'><span class='msg' style='color:blue;' >{{misc.msg|safe}}</span></div>
+                            {% endif %}
+                            <div class='' style='padding-bottom:40px;'><button id='refund_button' style='width:60%; max-width:200px;' class='action-button' name='action' value='request_refund'>REQUEST REFUND</button></div>
+                        </FORM>
+                    {% endif %}
+                    
+                </div>
+                <div class='col-2-1'>
+                
+                </div>
+            </div>
+     
+    {% else %}
+        <div class='col-12 error centered'><span class='error' >Something went wrong pulling up your active subscription.</span></div>
+    
+    {% endif %}
+    
 
 <script>
     
@@ -16,6 +137,6 @@
     $( "#personicon" ).click(function( event ) {
       event.stopPropagation(); menu_toggle();
     });
-    finish_load();
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 {% endblock %}

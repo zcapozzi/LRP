@@ -4,12 +4,27 @@
 
 {% block body %}
 
-    <div class='col-12'>
-        <div class='col-12 centered' style='padding: 40px 0px 40px 0px;'>
-            <span class='font-30 bold' style=''>LacrosseReference PRO</span>
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
         </div>
-        <div class='col-12 centered' style='padding: 10px 0px 20px 0px;'>
-            <span class='font-24 bold light' style=''>The best lacrosse statistics. Period.</span>
+    {% endif %}
+    {% if misc.error %}
+        <div class='col-12 error'><span class='error' >{{misc.error|safe}}</span></div>
+    {% endif %}
+    {% if misc.msg %}
+        <div class='col-12 error'><span class='msg' style='color:blue;' >{{misc.msg|safe}}</span></div>
+    {% endif %}
+    <div class='col-12'>
+        <div class='col-12 centered dtop' style='padding: 80px 0px 60px 0px;'>
+            <span class='font-36 bold light' style=''>The best lacrosse statistics. Period.</span>
+        </div>
+        <div class='col-12 centered mob' style='padding: 60px 0px 10px 0px;'>
+            <span class='font-36 bold light' style=''>The best lacrosse statistics.</span>
+        </div>
+        <div class='col-12 centered mob' style='padding: 10px 0px 30px 0px;'>
+            <span class='font-36 bold light' style=''>Period.</span>
         </div>
     </div>
 
@@ -26,7 +41,7 @@
             
             <div class='col-10'>
                 <a href='/product-summary-basic' style='text-decoration:none; color:inherit;'>
-                    <div class='col-12 centered'><img class='' style=' ' src='/static/img/fan_icon.png'></div>
+                    <div id='fan_product' class='col-12 centered'><img class='' style=' ' src='/static/img/fan_icon.png'></div>
                     <div class='centered' style=''><span class='font-18 bold'>For Fans</span></div>
                     <div class='centered text-container medium'><span class='font-15 contents'>
                         Follow your team closer than ever with more in-depth team and individual player statistics as well as post-game (and half) rapid statistical reports delivered straight to your phone or email.
@@ -41,7 +56,7 @@
             <div class='col-1'></div>
             <div class='col-10'>
             <a href='/product-summary-media' style='text-decoration:none; color:inherit;'>
-                <div class='col-12 centered'><img class='' style=' ' src='/static/img/media_icon.png'></div>
+                <div id='media_product' class='col-12 centered'><img class='' style=' ' src='/static/img/media_icon.png'></div>
                 <div class='col-12 centered' style=''><span class='font-18 bold'>For Media</span></div>
                 <div class='centered text-container medium'><span class='font-15 contents'>
                     Make your game prep a snap with the LacrosseReference previews and statistical trends at your fingertips. Everything you need to know about the players, the teams, and what drives the match-up.
@@ -58,7 +73,7 @@
             <div class='col-1'></div>
             <div class='col-10'>
             <a href='/product-summary-team' style='text-decoration:none; color:inherit;'>
-                <div class='col-12 centered'><img class='' style=' ' src='/static/img/team_icon.png'></div>
+                <div id='team_product' class='col-12 centered'><img class='' style=' ' src='/static/img/team_icon.png'></div>
                 <div class='col-12 centered' style=''><span class='font-18 bold'>For Teams</span></div>
                 <div class='centered text-container medium'><span class='font-15 contents'>
                     Scout faster, coach smarter. LacrosseReference PRO gives you what you need to gain that extra competitive edge. Opponent match-ups, in-depth player profiles, and access to our entire database.
@@ -78,7 +93,7 @@
     $( "#personicon" ).click(function( event ) {
       event.stopPropagation(); menu_toggle();
     });
-    finish_load();
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
     
 </script>
 

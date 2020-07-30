@@ -1,8 +1,35 @@
 
-
-function finish_load(){
+function display_notifications(notifications){
+    console.log(notifications);
+    var allow_close = true;
+    var elem = $("#banner"); elem.empty();
+    elem.css("background-color", "#EFE").css("text-align", "left");
+    var n = null;
+    for(var a = 0;a<notifications.length;a++){
+        n = notifications[a];
+        if(n.persistent){ allow_close = false; }
+        
+        if('nospan' in n && n.nospan==1){
+            n.final_html = "<div class='no-padding'>" + n.html + "</div>";
+        }
+        else{
+            n.final_html = "<div class='no-padding'><span style='padding-left:10px;' class='font-12'>" + n.html + "</span></div>";
+        }
+        elem.append(n.final_html);
+    }
     
-    console.log("Finish load...")
+    if(allow_close){
+        var close_html = "";
+        close_html = "<a class='font-12 text-button' onclick='$(\"#banner\").addClass(\"closed\");'>CLOSE</a>";
+        close_html = "<div class='no-padding right pointer'><span class='pointer' style='padding-right:20px;'>" + close_html + "</span></div>";
+        elem.append(close_html);
+    }
+}
+
+function finish_load(notifications){
+    
+    if(notifications.length > 0){ display_notifications(notifications); }
+
     // Change color of main logo; this will be used for the testing script to confirm that all JS was run successfully
     if($("#main_logo").css("color") == "rgb(51, 51, 51)"){
         document.getElementById("main_logo").style.color = "rgb(51, 51, 52)";
@@ -11,6 +38,17 @@ function finish_load(){
         document.getElementById("main_logo").style.color = "rgb(255, 254, 254)";
     }
 }
+
+function set_panel(val){
+    panel = val;
+    $(".panel_tag").removeClass("tag-on").addClass("tag-off"); 
+    $("#" + val + "_view_tag").removeClass("tag-off").addClass("tag-on"); 
+
+    $(".panel").removeClass("visible").addClass("hidden"); 
+    $("#" + val + "_view").removeClass("hidden").addClass("visible"); 
+}
+
+
 function menu_toggle(only_if_open=false){
     tags = {'dtop': 1, 'mob': 1};
     for(t in tags){
@@ -88,7 +126,7 @@ function populate_profile(profile){
             html += "</select>";
         }
         else if(p.element == "text"){
-            html += "<input id='edit_value_" + p.key + "' class='medium' type=text name='" + p.key + "' value='" + p.value + "' />";
+            html += "<input id='edit_value_" + p.key + "' class='large' type=text name='" + p.key + "' value='" + p.value + "' />";
         }
         
         html += "</div>";
@@ -107,4 +145,4 @@ function populate_profile(profile){
     html += "</FORM>";
     elem.append(html);
 }
-    
+  

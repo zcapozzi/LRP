@@ -1,0 +1,64 @@
+
+{% extends layout %}
+
+
+{% block body %}
+
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
+    <FORM action='/help' method=POST><input type=hidden name='source_handler' value='{{misc.source_handler}}'>
+        
+        <div class='col-12'>
+            
+             <div class='col-12 page-title'>
+                <span class='font-24 pointer bold'>Help Center</span>
+            </div>
+            <div class='col-12 bbottom hidden'>
+                
+
+                <div class='col-12'>
+                    <span class='light font-15'>Commonly Asked Questions</span>
+                </div>
+                <div class='col-12'><textarea rows=10 style='font-family:Arial; width:100%;' name='msg_content'>{{misc.question}}</textarea></div>
+                
+            </div><div class='col-12'>
+                
+
+                <div class='col-12'>
+                    <span class='light font-15'>Submit your question and I will get back to you within 48 hours.</span>
+                </div>
+                <div class='col-12'><textarea rows=10 style='font-family:Arial; width:100%;' name='question'>{{misc.question}}</textarea></div>
+                
+            </div>
+    
+           
+       
+            
+           {% if misc.error %}
+                <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
+            {% endif %}
+            
+            {% if misc.msg %}
+                <div class='col-12'><span style='color:blue;' class='font-15'>{{misc.msg|safe}}</span></div>
+            {% endif %}
+            <div class='col-12 action-button'><button type=submit name='action' value='submit' class='action-button font-15'>SUBMIT</button></div>               
+        </div>
+    </FORM>
+        
+
+
+<script>
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+</script>
+
+{% endblock %}
