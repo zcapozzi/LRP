@@ -13,7 +13,9 @@
 
     
     {% if user_obj.active_subscription %}
-        
+        {% if user_obj.active_subscription.price_paid == 0.0 %}
+            <div class='col-12 error centered'><span class='' style='color:blue;' >Since this is a courtesy subscription, there isn't actually anything that you can do here. If you have a question/comment, feel free to <a href='/contact'>contact me</a>.</span></div>
+        {% else %}
             <div class='col-12 flex'>
                 <div class='col-2-1'>
                     
@@ -122,7 +124,7 @@
                 
                 </div>
             </div>
-     
+        {% endif %}
     {% else %}
         <div class='col-12 error centered'><span class='error' >Something went wrong pulling up your active subscription.</span></div>
     

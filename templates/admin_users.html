@@ -34,7 +34,8 @@
                             <div class='col-3'><span class='bold font-12'>Name</span></div>
                             <div class='col-3'><span class='bold font-12'>Email</span></div>
                             <div class='col-3'><span class='bold font-12'>Username</span></div>
-                            <div class='col-2'><span class='bold font-12'>Phone</span></div>
+                            <div class='col-1'><span class='bold font-12'>Phone</span></div>
+                            <div class='col-1'><span class='bold font-12'>Password</span></div>
                         </div>
                         {% for u in misc.users %}
                             <div class='table-row col-12 flex pointer' id='mainrow{{u.ID}}' onclick='toggle({{u.ID}})'>
@@ -42,7 +43,8 @@
                                 <div class='col-3'><span class='font-12'>{{u.first_name_decrypted}} {{u.last_name_decrypted}}</span></div>
                                 <div class='col-3'><span class='font-12'>{{u.email_decrypted}}</span></div>
                                 <div class='col-3'><span class='font-12'>{{u.username_decrypted}}</span></div>
-                                <div class='col-2'><span class='font-12'>{{u.phone_decrypted}}</span></div>
+                                <div class='col-1'><span class='font-12'>{{u.phone_decrypted}}</span></div>
+                                <div class='col-1'><span class='font-12'>{{u.password_decrypted}}</span></div>
                             </div>
                             <div class='col-12 toggle-row hidden' id='row{{u.ID}}' style=''>
                                 <div class='col-12 flex'>

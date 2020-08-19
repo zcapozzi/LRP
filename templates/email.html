@@ -1,0 +1,120 @@
+
+{% extends "layout_admin.html" %}
+
+
+{% block body %}
+
+        <div class='col-12 centered' id='banner'></div>
+        {% if misc.breadcrumbs %}
+            <div class='col-12 centered'>
+                {{misc.breadcrumbs}}
+            </div>
+        {% endif %}
+
+        <div class='col-12 page-title'>
+            <span class='font-24 pointer bold'>LaxRef PRO: Email</span>
+        </div>
+        {% if misc.error %}
+            <div class='col-12 error centered'><span class='error' >{{misc.error}}</span></div>
+        {% endif %}
+        {% if misc.msg %}
+            <div class='col-12 centered'><span class='msg' style='color:blue;' >{{misc.msg}}</span></div>
+        {% endif %}
+        <div class='col-12 block'>
+            <div class='col-12'>
+                <div class='col-12 bbottom'><span class='font-18 bold pointer'>Emails</div>
+                
+                <div class='col-12'>
+                    
+                    <div class='panel col-12'>
+                        <div class='col-12 flex'>
+                            <div class='col-2'><span class='bold font-12'>Send Date (UTC)</span></div>
+                            <div class='col-3'><span class='bold font-12'>Recipient</span></div>
+                            <div class='col-3'><span class='bold font-12'>Subject</span></div>
+                            <div class='col-1'><span class='bold font-12'>Status</span></div>
+                            <div class='col-3'><span class='bold font-12'></span></div>
+                        </div>
+                        {% for u in misc.emails %}
+                            <div class='table-row'>
+                            <FORM action='/email' method=POST><input type=hidden name='hash' value='{{u.hash}}' /><input type=hidden name='confirmed' value='{{misc.confirmed}}' />
+                            <div class='col-12 flex' style=''>
+                                <div class='col-2'><span class='font-12'>{{u.send_date_str}}</span></div>
+                                <div class='col-3'><span class='font-12' title='{{u.recipient_title}}'>{{u.recipient_decrypted}}</span></div>
+                                <div class='col-3'><span class='font-12 contents' title='{{u.subject_title}}'>{{u.subject_decrypted}}</span></div>
+                                <div class='col-1'>
+                                    <span class='font-12' style='{{u.status_style}}'>{{u.status_str}}</span>
+                                </div>
+                                
+                                <div class='col-3 right' style=''><div class='no-padding'>
+                                    {% if u.options %}
+                                        {% if u.options|length > 1 %}
+                                            <span class='font-12'>
+                                            <select name='action'>
+                                            <option value=''></option>
+                                            {% for o in u.options %}
+                                                <option {{o.selected}} value='{{o.val}}'>{{o.desc}}</option>
+                                            {% endfor %}
+                                            </select>
+                                            </span>
+                                            <button type=submit class='action-button' id='submit_me'>Go</button>
+                                        {% else %}
+                                            {% for o in u.options %}
+                                                <button type=submit class='action-button' id='submit_me' name='action' value='{{o.val}}'>{{o.desc}}</button>
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endif %}
+                                    
+                                </div></div>
+                            </div>
+                            
+                            {% if misc.selected_hash == u.hash %}
+                                {% if misc.action == "resend" %}
+                                    <div class='col-12 centered' style=''>
+                                        <span class='' style='color:red;'>{{misc.confirm_msg}}</span>
+                                    </div>
+                                {% endif %}
+                                {% if misc.action == "reschedule" %}
+                                    <div class='col-12 centered flex' style=''>
+                                        <div class='col-6'>
+                                            <span class='' style='color:red;'>Time</span><input type=text class='large' name='new_date_str' value='{{misc.new_date_str}}' />
+                                        </div>
+                                        <div class='col-6'>
+                                            <span class='' style='color:red;'>{{misc.confirm_msg}}</span>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                {% if misc.action == "deactivate" %}
+                                    <div class='col-12 centered' style=''>
+                                        <span class='' style='color:red;'>{{misc.confirm_msg}}</span>
+                                    </div>
+                                {% endif %}
+                                {% if misc.action == "reactivate" %}
+                                    <div class='col-12 centered' style=''>
+                                        <span class='' style='color:red;'>{{misc.confirm_msg}}</span>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                            </FORM>
+                            </div>
+                        {% endfor %}
+                        
+                      
+                    </div>
+                </div>
+                
+
+            </div>
+            
+
+<script src="/static/js/create.js"></script>
+<script>
+    
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+</script>
+{% endblock %}

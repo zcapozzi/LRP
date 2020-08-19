@@ -11,9 +11,18 @@
         </div>
     {% endif %}
 
-        <div class='col-12 page-title'>
+        <div class='col-12 centered page-title'>
             <span class='font-24 pointer bold'>Account Activation</span>
         </div>
+        <div class='col-12 centered'>
+            <span class='font-15 pointer'>A LacrosseReference PRO account has been created for you. Complete the form below to finalize your account set up.</span>
+        </div>
+        <FORM action='/report' id='report_form' method=POST><input type=hidden name='activation_code' value='{{misc.activation_code}}' />
+            <div class='col-12 centered'>
+                
+                <span class='font-15 pointer'>If you believe this is in error, please click <a onclick='document.getElementById("report_form").submit();' name='action' style='text-decoration:underline; color:blue;' value='report_unwanted_account' class='text-button'>here</a>.</span>
+            </div>
+        </FORM>
         <div class='col-12 flex'>
         <div class='col-4-1'></div>
         <div class='col-4-10' style='background-color: #F9F9F9;'>
@@ -31,7 +40,7 @@
                     {% if misc.msg %}
                         <div class='col-12 error'><span  class='msg' style='color:blue;' >{{misc.msg}}</span></div>
                     {% endif %}
-                    <div class='col-12'><button type=submit name='action' value='activate' class='action-button light font-15' style='display:inline; padding: 10px 10px;'><span class='dtop'>Activate Account</span><span class='mob'>Activate</span></button></div>
+                    <div class='col-12'><button type=submit name='action' id='activate_button' value='activate' class='action-button light font-15' style='display:inline; padding: 10px 10px;'><span class='dtop'>Activate Account</span><span class='mob'>Activate</span></button></div>
                 {% endif %}
             </div>
             </FORM>

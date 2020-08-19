@@ -70,6 +70,18 @@
                             <div class='col-8-6'><input id='standalone_is_admin' class='' type=checkbox name='standalone_is_admin' {{misc.standalone_is_admin_checked}} /></div>
                         </div>
                         <div class='col-12 flex'>
+                            <div class='col-4-6'><span class='font-15'>Select Team</span></div>
+                            <div class='col-8-6'>
+                                <select name='team_select' id='team_select' class='font-15'>
+                                    <option value=-1>Select Team</option>
+                                    {% for g in misc.groups %}
+                                        <option value='{{g.team_ID}}' {{g.selected}}>{{g.group_name}}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class='col-12 flex'>
                             <div class='col-4-6'><span class='font-15'>User Type</span></div>
                             <div class='col-8-6'>
                                 <select id='standalone_user_type' class='' name='standalone_user_type'>
@@ -79,6 +91,14 @@
                                 </select>
                             </div>
                         </div>
+                        <div class='col-12 flex'>
+                            <div class='col-4-6'><span class='font-15'>Full Subscription?</span></div>
+                            <div class='col-8-6'><input id='standalone_subscription' class='' type=checkbox name='standalone_subscription' {{misc.standalone_subscription_checked}} /></div>
+                        </div>
+                        <div class='col-12 flex'>
+                            <div class='col-4-6'><span class='font-15'>Create Trial?</span></div>
+                            <div class='col-8-6'><input id='standalone_trial' class='' type=checkbox name='standalone_trial' {{misc.standalone_trial_checked}} /></div>
+                        </div>
                         <div class='col-12 centered action-button'><button type=submit name='action' value='create_standalone_user' class='action-button font-15'>CREATE USER</button></div>
                         </FORM>
                     </div>
@@ -87,9 +107,7 @@
             </div>
             <div class='col-6-12'>
                 <div class='col-12 bbottom'><span class='font-18 bold pointer'>Create Group</div>
-                {{misc.preferences_html|safe}}
-
-                <div class='col-12 action-button'><a href='/preferences' class='action-button'><span class='action-button font-15'>EDIT PREFERENCES</span></a></div>
+                
 
             
             </div>
