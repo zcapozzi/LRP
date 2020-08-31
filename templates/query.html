@@ -80,18 +80,18 @@ tr.table-row:nth-child(odd) {background-color: #FFF; }
         <table class="" >    
             <tr class='bbottom'>
                 {% for c in misc.columns %}
-                    <th style='padding:1px;' class='left'><span class='font-12 bold'>{{ c }}</span></th>
+                    <th style='padding:1px;' class='left'><span class='contents font-12 bold'>{{ c }}</span></th>
                 {% endfor %}
             </tr>
             <tr>
                 {% for c in misc.types %}
-                    <th style='padding:1px;' class='left bbottom'><span style='color:#AAA;' class='font-12'>{{ c }}</span></th>
+                    <th style='padding:1px;' class='left bbottom'><span style='color:#AAA;' class='contents font-12'>{{ c }}</span></th>
                 {% endfor %}
             </tr>
             {% for d in misc.data %}
             <tr class="table-row">
                 {% for d_ in d %}
-                    <td style='padding:1px;' class='left'><span class='font-12'>{{ d_|safe }}</span></td>
+                    <td style='padding:1px;' class='left'><span class='contents font-12'>{{ d_|safe }}</span></td>
                 {% endfor %}
             </tr>
             {% endfor %}

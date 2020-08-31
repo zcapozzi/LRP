@@ -33,6 +33,7 @@
   
   <div class='viewbox'>
         <div class='col-12 flex site-header-bar no-padding' style='border-bottom:solid 1px black;'>
+            <div id="overlay_panel" class='overlay' style=""></div>
             
           
             <div class='col-7 no-padding flex'>
@@ -51,6 +52,7 @@
                     
                     {% if user_obj.is_admin %}
                         <a class='font-15' id='admin' href="/admin">Admin</a>
+                        <a class='font-15' id='load' class='pointer' onclick='show_load_diagnostics()'>Load</a>
                     {% endif %}
                     <a class='font-15' href="/help{{misc.handler}}">Help</a>
                     <a class='font-15' id='signout_link' href="/logout">Sign Out</a>
@@ -71,6 +73,7 @@
                         {% endif %}
                         {% if user_obj.is_admin %}
                             <a class='font-15' id='admin' href="/admin">Admin</a>
+                            <a class='font-15' id='load' class='pointer' onclick='show_load_diagnostics()'>Load</a>
                         {% endif %}
                         <a class='font-15' href="/help{{misc.handler}}">Help</a>
                         <a class='font-15' href="/logout">Sign Out</a>

@@ -20,7 +20,235 @@
             </div>
         {% endif %}
         
+        
+        <div class=''>
+            <div class='home-page-section'>
+                <div class='home-page-section-header'>
+                    <div class='col-10 no-padding'>
+                        <span class='font-30'>My Schedule</span>
+                    </div>
+                    <div class='col-2 right no-padding'>
+                        <img onclick="window.location='';" src="static/img/popout25.png" />
+                    </div>
+                    
+                </div>
+                
+                <div id='my_team_schedule' class='home-page-section-details normal flex-block'>
+                    {% if misc.data.last_game %}
+                        <div class='col-4-12'>
+                            <div class='margin white'>
+                                
+                                {% if misc.data.completed_games_cnt == 1 %}
+                                    <div class='col-12 flex'>
+                                        <div class='col-11 no-padding'><span class='font-20 lightish contents'>Last: {{misc.data.last_game.opponent_display}} ({{misc.data.last_game.score_str}})</span></div>
+                                        
+                                        <div class='col-1 right no-padding' style='margin-top:2px;'></div>
+                                    
+                                    </div>
+                                    <div class='no-padding'>
+                                        <div class='col-12'><span class='font-15 light contents'>Offense</span></div>
+                                        <div class='col-12 flex'>
+                                            <div class='col-3'>
+                                                <div class='spark-bar' style='margin-top:4px; width:40%; background-color:#DDF;'></div>
+                                            </div>
+                                        </div>
+                                                
+                                    </div>
+                                {% endif %}
+                                {% if 1 < misc.data.completed_games_cnt and misc.data.completed_games_cnt < 3 %}
+                                    <div class='col-12 flex'>
+                                        <div class='col-11 no-padding'><span class='font-20 lightish contents'>Last: {{misc.data.last_game.opponent_display}} ({{misc.data.last_game.score_str}})</span></div>
+                                        
+                                        <div class='col-1 right no-padding' style='margin-top:2px;'></div>
+                                    
+                                    </div>
+                                
+                                {% endif %}
+                                
+                                {% if 3 < misc.data.completed_games_cnt %}
+                                
+                                    <div class='col-12 flex'>
+                                        <div class='col-11 no-padding'><span class='font-20 lightish contents'>Last: {{misc.data.last_game.opponent_display}} ({{misc.data.last_game.score_str}})</span></div>
+                                        
+                                        <div class='col-1 right no-padding' style='margin-top:2px;'><img onclick="show_explanation('team_home.html|last_game_whiskers')" src="static/img/Gray_Info15.png" /></div>
+                                    
+                                    </div>
+                                    <div class='no-padding col-12 small_graph' id='last_game_div'></div>
+                                {% endif %}
+                                
+                                
+                                
+                             </div>
+                        </div>
+                    {% endif %}
+                    {% if misc.data.next_game %}
+                        <div class='col-4-12'>
+                            <div class='margin white'>
+                                <div class='col-12 flex'>
+                                    <div class='col-11 no-padding'><span class='font-20 lightish contents'>Next: {{misc.data.next_game.opponent_display}}</span></div>
+                                    
+                                    <div class='col-1 right no-padding' style='margin-top:2px;'><img id='next_game_info' src="static/img/Gray_Info15.png" /></div>
+                                    
+                                </div>
+                                <div class='no-padding col-12' id='next_game_div'></div>
+                                
+                             </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if misc.data.future_games %}
+                        <div class='col-4-12'>
+                            <div class='margin white'>
+                                <div class='col-12 flex'>
+                                    <div class='col-11'><span class='font-20 lightish contents'>Upcoming Schedule</span></div>
+                                    <div class='col-1 right' style='padding-top:2px;'></div>
+                                </div>
+                                <div class='flex no-padding bbottom' style='padding: 0px 5px; margin-bottom:5px;'>
+                                    <div class='col-3'><span class='pointer font-14 bold contents'>Date</span></div>
+                                    <div class='col-3'><span class='pointer font-14 bold contents'>Opp</span></div>
+                                    <div class='col-3'><span class='pointer font-14 bold contents'>Match-up</span></div>
+                                    <div class='col-3 right'><span class='pointer font-14 bold contents'>W.P.</span></div>
+                                </div>
+                                {% for g in misc.data.future_games %}
+                                    <FORM id='game_form{{g.ID}}' action='/team_game' method=POST><input type=hidden name='game_ID' value='{{g.ID}}' />
+                                        <div onclick="document.getElementById('game_form{{g.ID}}').submit();" class='flex no-padding' style='padding: 0px 5px;'>
+                                            <div class='col-3'><span class='mouseover-link pointer font-14 contents'>{{g.date_mmmdd}}</span></div>
+                                            <div class='col-3'><span class='mouseover-link pointer font-14 contents'>{{g.opp_short_code}}</span></div>
+                                            <div class='col-3'><div class='spark-bar' style='margin-top:4px; width:{{g.wp_bar_length}}%; background-color:{{g.wp_bar_color}};'></div></div>
+                                            <div class='col-3 right'><span class='pointer font-14 contents'>{{g.wp_bar_length}}%</span></div>
+                                        </div>
+                                    </FORM>
+                                {% endfor %}
+                             </div>
+                        </div>
+                    {% endif %}
+                    
+                    
+                </div>
+                <!--div class='home-page-section-footer flex'>
+                    <div class='col-8-6 no-padding'></div>
+                    <div class='col-4-6 no-padding right'>
+                        
+                    </div>
+                </div-->
+            </div>
+            
+            <div class='home-page-section'>
+                <div class='home-page-section-header'>
+                    <div class='col-10 no-padding'>
+                        <span class='font-30'>My Stats</span>
+                    </div>
+                    <div class='col-2 right no-padding'>
+                        <img onclick="window.location='';" src="static/img/popout25.png" />
+                    </div>
+                    
+                </div>
+                <div id='my_team_summary' class='home-page-section-summary flex-block'>
+                    <div class='col-6-12 no-padding'><div class='flex'>
+                        <div class='col-6 home-page-section-summary-detail'>
+                            <span class='font-15 light'>Record: </span><span class='font-15 light'>{{misc.data.record_league_str}}</span>
+                        </div>
+                        <div class='col-6 home-page-section-summary-detail'>
+                            <span class='font-15 light'>RPI Rank:</span><span class='font-15 light'>{{misc.data.RPI_rank_str}}</span>
+                        </div>
+                    </div></div>
+                    <div class='col-6-12 no-padding dtop'><div class='flex'>
+                        <div class='col-6 home-page-section-summary-detail'>
+                            <span class='font-15 light'>Lax-ELO Rank: </span><span class='font-15 light'>{{misc.data.elo_rank_str}}</span>
+                        </div>
+                        <div class='col-6 home-page-section-summary-detail'>
+                            <span class='font-15 light'><span class='dtop'>Adj. Efficiency Rank: </span><span class='mob'>Adj. Eff Rank: </span></span><span class='font-15 light'>{{misc.data.adj_efficiency_rank_str}}</span>
+                        </div>
+                    </div></div>
+                    
+                </div>
+                <div id='my_team_details' class='home-page-section-details small flex-block'>
+                    {% if misc.data.my_team_summary %}
+                    <div class='col-4-12'>
+                        <div class='margin white'>
+                            <div class='col-12 small_graph' id='my_team_details_offense'></div>
+                         </div>
+                    </div>
+                    <div class='col-4-12'>
+                        <div class='margin white'>
+                            <div class='col-12 small_graph' id='my_team_details_defense'></div>
+                         </div>
+                    </div>
+                    <div class='col-4-12'>
+                        <div class='margin white'>
+                            <div class='col-12 small_graph' id='my_team_details_fogo'></div>
+                         </div>
+                    </div>
+                    {% else %}
+                        <div class='col-12' style='padding-top:30px;'>
+                            <div class='margin centered'><span class='font-36'>Nothing to report yet.</span></div>
+                        </div>
+                    {% endif %}
+                    
+                </div>
+            </div>
+            
+            <div class='home-page-section'>
+                <div class='home-page-section-header'>
+                    <div class='col-10 no-padding'>
+                        <span class='font-30'>My Rankings</span>
+                    </div>
+                    <div class='col-2 right no-padding'>
+                        <img onclick="window.location='';" src="static/img/popout25.png" />
+                    </div>
+                    
+                </div>
+                <div class='home-page-section-details normal flex-block'>
+                    <div class='col-4-12'>
+                        <div class='margin white'>
+                            <div class='no-padding col-12 small_graph' id='projected_rpi_div'></div>
+                        </div>
+                    </div>
+                    <div class='col-4-12'>
+                        <div class='margin white'>
+                            <div class='col-12 flex'>
+                                <div class='col-11 no-padding'><span class='font-20 lightish contents'>Lax-ELO</span></div>
+                                
+                                <div class='col-1 right no-padding' style='margin-top:2px;'></div>
+                            
+                            </div>
+                            <div class='col-12'>
+                                
+                            </div>
+                            
+                         </div>
+                    </div>
+                    <div class='col-4-12'>
+                        <div class='margin white'>
+                            <div class='col-12 flex'>
+                                <div class='col-11 no-padding'><span class='font-20 lightish contents'>Post-Season</span></div>
+                                
+                                <div class='col-1 right no-padding' style='margin-top:2px;'></div>
+                            
+                            </div>
+                            <div class='col-12'>
+                                
+                            </div>
+                            
+                         </div>
+                    </div>
+                
+                </div>
+                <!--div class='home-page-section-footer flex'>
+                    <div class='col-8-6 no-padding'></div>
+                    <div class='col-4-6 no-padding right'>
+                        
+                    </div>
+                </div-->
+            </div>
+            
+            
+        </div>
+    
+
+<script src="static/js/d3.v4.min.js"></script><script src="static/js/laxrefpro_graphing.js?dt=1"></script>
 <script>
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
     $( "#threedot" ).click(function( event ) {
       event.stopPropagation(); menu_toggle();
     });
@@ -28,8 +256,146 @@
       event.stopPropagation(); menu_toggle();
     });
     
-    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
     
+    var single_stat = "<div class='col-12'><span class='lightish contents font-20'>[header]</span></div>";
+    single_stat += "<div class='col-12 centered ' style='padding-top:65px;'><span class='font-48'>[stat]</span></div>";
+    var misc = {{misc|to_json2}};
+    //console.log(misc);
+    var explanations = {{user_obj.explanations|to_json2}};
+    
+
+    function my_stats_summary(){        
+        var off_games = misc.data.my_team_summary.off_efficiency_by_game;
+        var def_games = misc.data.my_team_summary.def_efficiency_by_game;
+        var standard_y_ticks = create_pct_y_ticks(off_games.concat(def_games))
+        
+        specs = {'margin_left': 60, 'chart_size': 'small'};
+        pre_transition_specs = {}
+        
+        id = "my_team_details_offense";
+        data = {'axis_labels': {'y': 'Efficiency', 'x': 'Games'}, 'title': 'Offensive Efficiency', 'data': []};
+        tmp = {'stroke-dasharray': '3-3', 'stroke': "#666", 'points': []}
+        tmp.points = off_games;
+        data.data.push(tmp)
+        
+        x_ticks = create_game_x_ticks(off_games);
+        data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
+        data['y_ticks'] = standard_y_ticks.ticks;
+        data['max_y'] = standard_y_ticks.max;  data['min_y'] = standard_y_ticks.min;
+        
+        if(off_games.length > 1){
+            horizontal_line(data, id, specs, pre_transition_specs);
+        }
+        else if( off_games.length == 1){
+            $("#" + id).append(single_stat.replace('[header]', 'Offensive Efficiency').replace('[stat]', Math.round(100*off_games[0].y)+"%"));
+        }
+        
+        id = "my_team_details_defense";
+        data = {'axis_labels': {'y': 'Efficiency', 'x': 'Games'}, 'title': 'Defensive Efficiency', 'data': []};
+        tmp = {'stroke-dasharray': 1, 'stroke': "#666", 'points': []}
+        tmp.points = def_games;
+        data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
+        data['y_ticks'] = standard_y_ticks.ticks;
+        data['max_y'] = standard_y_ticks.max; data['min_y'] = standard_y_ticks.min;
+        data.data.push(tmp)
+        if(off_games.length > 1){
+            horizontal_line(data, id, specs, pre_transition_specs);
+        }
+        else if( off_games.length == 1){
+            $("#" + id).append(single_stat.replace('[header]', 'Defensive Efficiency').replace('[stat]', Math.round(100*def_games[0].y)+"%"));
+        }
+        
+        id = "my_team_details_fogo";
+        data = {'axis_labels': {'y': 'Win Rate', 'x': 'Games'}, 'title': 'Faceoff Win Rate', 'data': []};
+        tmp = {'stroke-dasharray': 1, 'stroke': "#f66"}
+        tmp.points = misc.data.my_team_summary.faceoff_win_rate;
+        data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
+        res = create_pct_y_ticks(tmp.points);
+        data['y_ticks'] = res.ticks; data['max_y'] = res.max; data['min_y'] = res.min;
+        data.data.push(tmp)
+        
+        if(off_games.length > 1){
+            horizontal_line(data, id, specs, pre_transition_specs);
+        }
+        else if( off_games.length == 1){
+            $("#" + id).append(single_stat.replace('[header]', 'Faceoff Win Rate').replace('[stat]', Math.round(100*misc.data.my_team_summary.faceoff_win_rate[0].y)+"%"));
+        }
+    }
+    
+    function my_schedule_summary(){
+        if(misc.data.completed_games_cnt > 3){
+            custom_specs = {'chart_size': 'small', 'margin_top': 0, 'margin_right': 0, 'margin_bottom': 0, 'margin_left': 0};
+            custom_last_game_tile(misc, 'last_game_div', custom_specs);
+        }
+        
+        // Display the opponent tile, with the format dependent on the number of games played this year
+        if(misc.data.next_game.history_num_this_year > 3 && misc.data.next_game.history_num_this_year < 6){
+            // Sort by the game date
+            misc.data.next_game.history.sort(function(first, second) {
+             return second.date_sequence - first.date_sequence;
+            });
+            
+            
+            document.getElementById('next_game_info').setAttribute( "onclick", "show_explanation('team_home.html|next_game_season_summary')");
+            custom_specs = {'version': 'season'};
+            custom_next_game_tile(misc, 'next_game_div', custom_specs);
+            $(".opp-game-row").css("padding", "5px");
+            $("#next_game_header_row").css("margin-bottom", "6px");
+        }
+        else{
+            // Sort by the basic aggregate and then show the top 2 and bottom 2
+            misc.data.next_game.history.sort(function(first, second) {
+             return second.basic_aggregate - first.basic_aggregate;
+            });
+            
+            
+            document.getElementById('next_game_info').setAttribute( "onclick", "show_explanation('team_home.html|next_game_split_summary')");
+            custom_specs = {'version': 'aggregate'};
+            custom_next_game_tile(misc, 'next_game_div', custom_specs);
+        }
+    }
+    
+    function my_rankings_summary(){
+        if(misc.data.next_game.history_num_this_year > 2){
+            custom_specs = {'flip': 1, 'shading_vars': ['RPI_bad', 'RPI_good'], 'chart_size': 'small', 'margin_left': 60};
+            data = {'axis_labels': {'y': 'Projected RPI', 'x': 'Date'}, 'title': 'Projected RPI', 'data': []};
+            tmp = {'stroke-dasharray': '3-3', 'stroke': "#666", 'points': []}
+            tmp.points = misc.data.sim_results;
+            data.data.push(tmp)
+            
+            x_ticks = create_game_x_ticks(misc.data.sim_results);
+            data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
+            
+            y_ticks = create_numeric_y_ticks(misc.data.sim_results)
+            data['y_ticks'] = y_ticks.ticks;
+            data['max_y'] = y_ticks.max;  data['min_y'] = y_ticks.min;
+            
+            horizontal_line(data, 'projected_rpi_div', custom_specs);
+        }
+        else{
+            
+        }
+    }
+    
+    function redraw(){
+        my_rankings_summary();
+        my_stats_summary();
+        my_schedule_summary();
+    }
+    redraw();
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+    process_time_log(time_log);
+    
+    /*
+    console.log("misc.data.bracketology_simulation")
+    console.log(misc.data.bracketology_simulation);
+    console.log("misc.data.next_game")
+    console.log(misc.data.next_game);
+    
+    console.log("misc.data.sim_results")
+    console.log(misc.data.sim_results);*/
+    
+    $(window).resize(redraw);
 </script>
 {% endblock %}
 

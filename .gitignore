@@ -11,3 +11,4 @@ tags/*.pyc
 LocalDocs/
 pre_upload.py
 upload_dev.bat
+upload_test.bat

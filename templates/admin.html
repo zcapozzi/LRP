@@ -93,6 +93,37 @@
             
         </div>
         
+        <div class='col-12'>
+                <div class='col-12 bbottom'><span class='font-18 bold pointer'>Product Requests</div>
+                
+                <div class='col-12'>
+                    
+                    <div class='panel col-12'>
+                        <div class='col-12 flex'>
+                            <div class='col-1'><span class='bold font-12'>ID</span></div>
+                            <div class='col-4'><span class='bold font-12'>Email</span></div>
+                            <div class='col-4'><span class='bold font-12'>Product Tag</span></div>
+                            <div class='col-3'><span class='bold font-12'>Date</span></div>
+                        </div>
+                        {% for u in misc.product_requests %}
+                            <div class='table-row col-12 flex'>
+                                <div class='col-1'><span class='font-12'>{{u.ID}}</span></div>
+                                <div class='col-4'><span class='font-12'>{{u.email_decrypted}}</span></div>
+                                <div class='col-4'><span class='font-12'>{{u.product_tag}}</span></div>
+                                <div class='col-3'><span class='font-12'>{{u.datestamp_str}}</span></div>
+                            </div>
+                        {% endfor %}
+                        
+                      
+                    </div>
+                    <div class='col-12 centered action-button'><button type=submit name='action' value='create_standalone_user' class='action-button font-15'>SEE MORE (NOT)</button></div>
+                </div>
+                
+
+            </div>
+            <div class='col-12 centered action-button'><a href='/explanations' name='action' class='action-button font-15'>EXPLANATIONS</a></div>
+        </div>
+        
 
 
 

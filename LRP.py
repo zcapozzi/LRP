@@ -161,6 +161,10 @@ def x_header(r):
     
 def finish_user_obj(user_obj):
     
+    if 'explanations' in user_obj and user_obj['explanations'] is not None:
+        for u in user_obj['explanations']:
+            u['explanation_html_BR'] = u['explanation_html'].replace("\n", "<BR>").replace("'", "&#39;")
+            
     try:
         if user_obj is None: return None
         user_obj['cart_cnt'] = 0
@@ -209,6 +213,11 @@ def finish_user_obj(user_obj):
     return user_obj
 
 def finish_misc(misc, user_obj):
+
+    if 'time_log' not in misc:
+        misc['time_log'] = []
+    misc['time_log'] = json.dumps(misc['time_log'])    
+    
     try:
         if 'handler' not in misc: 
             misc['handler'] = ""
@@ -255,6 +264,8 @@ def get_user_obj(creds=None):
         param = []
         cursor.execute(query, param)
         preferences = zc.dict_query_results(cursor)
+        
+        
         
         
         if len(user_obj) > 0:
@@ -346,6 +357,8 @@ def get_user_obj(creds=None):
         else:
             user_obj['profile'] = None
             
+        cursor.execute("SELECT * from LRP_Explanations where active", [])
+        user_obj['explanations'] = zc.dict_query_results(cursor)
         cursor.execute("SELECT * from LRP_Products where active", [])
         products = zc.dict_query_results(cursor)
         cursor.execute("SELECT * from LRP_Subscriptions where active", [])
@@ -613,7 +626,7 @@ class QueryHandler(webapp2.RequestHandler):
     msg = None; error = None; 
     
     def post(self):
-        misc = {'handler': 'query', 'error': None, 'msg': None}
+        misc = {'target_template': 'query.html', 'time_log': [], 'handler': 'query', 'error': None, 'msg': None}
         session_ID = self.session.get('session_ID')
         if True or session_ID not in [None, 0]:
             user_obj = None #get_user_obj({'session_ID': session_ID})
@@ -634,14 +647,14 @@ class QueryHandler(webapp2.RequestHandler):
             
             else:
                     
-                target_template = get_template(user_obj)
+                misc['target_template'] = get_template(user_obj)
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"
+            misc['target_template'] = "index.html"
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
     def process_queries(self, misc, queries, table=None):
         field_type = {
                      0: 'DECIMAL',
@@ -820,7 +833,7 @@ class QueryHandler(webapp2.RequestHandler):
         return misc
         
     def get(self):
-        misc = {'handler': 'query', 'error': None, 'msg': None}
+        misc = {'target_template': 'query.html', 'time_log': [], 'handler': 'query', 'error': None, 'msg': None}
         session_ID = self.session.get('session_ID')
         if True or session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -865,9 +878,10 @@ class QueryHandler(webapp2.RequestHandler):
             
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", 'index.html'); self.response.out.write(template.render(path, tv))
+            
 def encrypt_user_info():
     lg("Encrypting existing user information...")
-    misc = {}
+    misc = {'target_template': None, 'time_log': []}
     conn, cursor = mysql_connect()
     cursor.execute("SELECT * from LRP_Users", [])
     misc['users'] = {'data': zc.dict_query_results(cursor), 'table': 'LRP_Users', 'keys': ["email", "username", "phone", "first_name", "last_name", "stripe_customer_id"]}
@@ -1036,7 +1050,67 @@ def claim_quote(misc, user_obj):
             param = [user_obj['ID'], misc['quote']['ID'], misc['product_ID'], 'added', datetime.now(), misc['quote']['price'], None, misc['list_price'], 1]
             queries.append(query); params.append(param)
     return misc, user_obj, queries, params
+  
+def clean_product_data_generic(misc, user_obj):
+    return misc, user_obj
+    
+def build_product_data_team(self, user_obj, misc):
+    misc['time_log'].append({'tag': 'Build Team Data', 'start': ms()})
+    if 'year' not in misc or misc['year'] is None:
+        misc['year'] = datetime.now().year
+                
+    data = None
+    lg("Building product data...")
+    tmp = {}
+    misc['data'] = None
+    
+    if 'active_group' not in user_obj or user_obj['active_group'] in [None, -1]:
+        misc['error'] = "We could not find an active subscription for your account. If this in error, please <a href='https://pro.lacrossereference.com/contact'>contact us</a>."
+        logging.error("%s\n\nContext: %s" % (misc['error'], user_obj['email']))
+    else:
+        misc['data'] = {}
+        active_group =user_obj['active_groups'][ [z['ID'] for z in user_obj['active_groups']].index(user_obj['active_group']) ]
         
+        
+        team_path = "teamstats_%04d_%d_LRP.json" % (active_group['team_ID'], misc['year'])
+        server_path = "/capozziinc.appspot.com/TeamData/%s" % (team_path)
+        local_path = os.path.join("LocalDocs", "TeamData", team_path)
+        #lg("Server path: %s" % server_path)
+        lg("Local path: %s" % local_path)
+        
+        data = None
+        if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+            try:
+                data = json.loads(cloudstorage.open(server_path).read())
+            except Exception, e:
+                logging.error("The server team JSON for ID %d could not be read from %s\n\n%s" % (active_group['team_ID'], server_path, traceback.format_exc()))
+        else:
+            try:
+                txt = open(local_path, 'r').read()
+                lg(txt)
+                data = json.loads(txt)
+                lg(data.__class__)
+            except Exception, e:
+                logging.error("The local team JSON for ID %d could not be read from %s\n\n%s" % (active_group['team_ID'], local_path, traceback.format_exc()))
+
+        if data is not None:
+            misc['data']['display_name'] = active_group['group_name']
+            auto_tags = [{'tag': 'record'}, {'tag': 'adj_efficiency_rank_str'}, {'tag': 'elo_rank_str'}, {'tag': 'league_record'}, {'tag': 'RPI_rank_str'}]
+            ignore = []
+            auto_tags = [{'tag': z} for z in data.keys() if z not in ignore]
+            for tag in auto_tags:
+                misc['data'][tag['tag']] = data[tag['tag']]
+            
+            if misc['data']['league_record'] in [None, '']:
+                misc['data']['record_league_str'] = misc['data']['record']
+            else:
+                misc['data']['record_league_str'] = "%s (%s)" % (misc['data']['record'], misc['data']['league_record'])
+                
+            pd(misc['data'])
+        misc, user_obj = clean_product_data_generic(misc, user_obj)
+    misc['time_log'][-1]['end'] = ms()
+    return misc, user_obj, tmp
+    
 class IndexHandler(webapp2.RequestHandler):
     def dispatch(self):
         self.session_store = sessions.get_store(request=self.request)
@@ -1050,19 +1124,20 @@ class IndexHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        misc = {'handler': 'index', 'error': None, 'msg': None}; queries = []; params = []
+        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'index', 'error': None, 'msg': None}; queries = []; params = []
         if self.request.get("username") != "":
             user_obj = get_user_obj({'username': self.request.get("username"), 'password': self.request.get("password")})
             if user_obj['auth']:
                 self.session['session_ID'] = user_obj['session_ID']
                 user_obj['user_cookie'] = self.session['cart_cookie']
                 
-                target_template = get_template(user_obj)
-                if self.request.get('from') not in ['', None]:
-                    target_template = "%s.html" % self.request.get('from')
+                misc['target_template'] = get_template(user_obj)
+                if self.request.get('from') not in ['', None, 'login']:
+                    misc['target_template'] = "%s.html" % self.request.get('from')
                 
                 misc['login_account_msg'] = "Login was successful"
                 # If this is because someone is claiming a quote, process all that stuff
+                
                 if self.request.get('from') == "quote":
                     misc['quote_hash'] = self.request.get('quote_hash')
                     misc = display_quote(misc)
@@ -1078,11 +1153,11 @@ class IndexHandler(webapp2.RequestHandler):
                         logging.error("%s Email: %s" % (misc['login_account_error'], user_obj['email']))
                         
                     ex_queries(queries, params)
-                    target_template = get_template(user_obj)
+                    misc['target_template'] = get_template(user_obj)
                     
                     # If there is not a free trial, then they are still just a lurker that should see their quote again.
                     if 'quote' in misc and misc['quote'] is not None and not misc['quote']['trial']:
-                        target_template = "quote.html"
+                        misc['target_template'] = "quote.html"
                     
                 stripe.api_key = client_secrets['web']['StripeServerKey']
                 misc['clientKey'] = client_secrets['web']['StripeClientKey']
@@ -1091,13 +1166,17 @@ class IndexHandler(webapp2.RequestHandler):
                 user_obj = transfer_cart_items(self, user_obj)
                 
                 
+                
+                if misc['target_template'] == "team_home.html":
+                    misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
+                    
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"  }
-                path = os.path.join("templates", target_template)
+                path = os.path.join("templates", misc['target_template'])
                 self.response.out.write(template.render(path, tv))
             else:
-                target_template = "login.html"
+                misc['target_template'] = "login.html"
                 if self.request.get('from') not in ['', None]:
-                    target_template = "%s.html" % self.request.get('from')
+                    misc['target_template'] = "%s.html" % self.request.get('from')
                 misc['login_tag_display'] = "tag-on"
                 misc['login_display'] = "visible"
                 misc['create_account_tag_display'] = "tag-off"
@@ -1112,7 +1191,7 @@ class IndexHandler(webapp2.RequestHandler):
                     misc = display_quote(misc)
 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-                path = os.path.join("templates", target_template)
+                path = os.path.join("templates", misc['target_template'])
                 self.response.out.write(template.render(path, tv))
         else:
             tv = {'user_obj': None, 'misc': {}, 'layout': 'layout_no_auth.html'}; path = os.path.join("templates", "index.html")
@@ -1120,34 +1199,37 @@ class IndexHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        target_template = "index.html"
-        
-        misc = {'handler': 'index', 'error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'index', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [0, None]:
-            user_obj = get_user_obj({'session_ID': session_ID})
+            misc['time_log'].append({'tag': 'get_user_obj()', 'start': ms()}); user_obj = get_user_obj({'session_ID': session_ID})
+            misc['time_log'][-1]['end'] = ms()
             if user_obj['auth']:
                 
+                misc['time_log'].append({'tag': 'Get Products/Cart', 'start': ms()}); 
                 conn, cursor = mysql_connect()
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
                 next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
                 cursor.close(); conn.close()
+                misc['time_log'][-1]['end'] = ms()
              
-                target_template = get_template(user_obj)
+                misc['target_template'] = get_template(user_obj)
+                if misc['target_template'] == "team_home.html":
+                    misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
                 
                 user_obj['email_decrypted'] = decrypt(user_obj['email'])
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html" }
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
                 user_obj = process_non_auth(self)        
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             
 class LoginHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -1168,9 +1250,7 @@ class LoginHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        target_template = "login.html"
-        
-        misc = {'handler': 'login', 'error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': 'login.html', 'time_log': [], 'handler': 'login', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -1181,11 +1261,11 @@ class LoginHandler(webapp2.RequestHandler):
             else:
                 user_obj = process_non_auth(self)
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
 def dict_request(req):            
     d = {}
@@ -1209,9 +1289,8 @@ class CreateHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "index.html"
         
-        misc = {'handler': 'create', 'error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'create', 'error': None, 'msg': None}; user_obj = None
         misc['create_group_user_display'] = "visible"; misc['create_group_user_tag_display'] = "tag-on"
         misc['create_standalone_user_display'] = "hidden"; misc['create_standalone_user_tag_display'] = "tag-off"
         
@@ -1331,25 +1410,23 @@ class CreateHandler(webapp2.RequestHandler):
                         
                 ex_queries(queries,params)
                 
-                target_template = "create.html"
+                misc['target_template'] = "create.html"
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template)
+                path = os.path.join("templates", misc['target_template'])
                 self.response.out.write(template.render(path, tv))
             else:
                 
-                target_template = get_template(user_obj)
+                misc['target_template'] = get_template(user_obj)
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
     
     def get(self):
         
-        target_template = "index.html"
-        
-        misc = {'handler': 'create', 'error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'create', 'error': None, 'msg': None}; user_obj = None
         misc['create_group_user_display'] = "visible"; misc['create_group_user_tag_display'] = "tag-on"
         misc['create_standalone_user_display'] = "hidden"; misc['create_standalone_user_tag_display'] = "tag-off"
         
@@ -1358,7 +1435,7 @@ class CreateHandler(webapp2.RequestHandler):
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth'] and user_obj['is_admin']:
-                target_template = "create.html"
+                misc['target_template'] = "create.html"
                 
                 conn, cursor = mysql_connect()
                 cursor.execute("SELECT * from LRP_Users")
@@ -1370,17 +1447,17 @@ class CreateHandler(webapp2.RequestHandler):
                 cursor.close(); conn.close()
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template)
+                path = os.path.join("templates", misc['target_template'])
                 self.response.out.write(template.render(path, tv))
             else:
                 
-                target_template = get_template(user_obj)
+                misc['target_template'] = get_template(user_obj)
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             
 class AdminHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -1395,16 +1472,15 @@ class AdminHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "index.html"
-        misc = {'handler': 'admin', 'error': None, 'msg': None}; user_obj = None
+        
+        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'admin', 'error': None, 'msg': None}; user_obj = None
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-        path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
     
     def get(self):
         
-        target_template = "admin.html"
         
-        misc = {'handler': 'admin', 'error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': 'admin.html', 'time_log': [], 'handler': 'admin', 'error': None, 'msg': None}; user_obj = None
         local = not os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
         session_ID = self.session.get('session_ID')
         if local or session_ID not in [None, 0]:
@@ -1418,8 +1494,13 @@ class AdminHandler(webapp2.RequestHandler):
                 misc['groups'] = zc.dict_query_results(cursor)
                 cursor.execute("SELECT * from LRP_Group_Access")
                 misc['access'] = zc.dict_query_results(cursor)
+                cursor.execute("SELECT * from LRP_Product_Requests")
+                misc['product_requests'] = zc.dict_query_results(cursor)
                 cursor.close(); conn.close()
                 
+                for u in misc['product_requests']:
+                    u['email_decrypted'] = decrypt(u['email'])
+                    u['datestamp_str'] = u['datestamp'].strftime("%b %d, %Y").replace(" 0", " ")
                 for u in misc['groups']:   
                     tmp = [z for z in misc['access'] if z['group_ID'] ==  u['ID']]
                     u['num_users'] = len(tmp)
@@ -1441,20 +1522,20 @@ class AdminHandler(webapp2.RequestHandler):
                 misc['display_groups'] = sorted(misc['groups'], key=lambda x:x['ID'],  reverse=True)[0:15]
                 
                 if self.request.get("c") not in [None, '']:
-                    target_template = self.request.get("c") + ".html"
+                    misc['target_template'] = self.request.get("c") + ".html"
                     misc['users_json'] = json.dumps(misc['users'])
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template)
+                path = os.path.join("templates", misc['target_template'])
                 self.response.out.write(template.render(path, tv))
             else:
                 
-                target_template = get_template(user_obj)
+                misc['target_template'] = get_template(user_obj)
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             
 class TermsHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -1470,13 +1551,13 @@ class TermsHandler(webapp2.RequestHandler):
     
     def post(self):
     
-        target_template = "index.html"
+        misc = {'target_template': "index.html"}
         default_get(self)
     
     def get(self):
         
        
-        misc = {'handler': 'terms', 'error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': 'terms.html', 'time_log': [], 'handler': 'terms', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -1540,7 +1621,7 @@ class TermsHandler(webapp2.RequestHandler):
             
         
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
-        path = os.path.join("templates", "terms.html"); self.response.out.write(template.render(path, tv))
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         
 class PrivacyHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -1556,13 +1637,13 @@ class PrivacyHandler(webapp2.RequestHandler):
     
     def post(self):
     
-        target_template = "index.html"
+        misc['target_template'] = "index.html"
         default_get(self)
     
     def get(self):
         
        
-        misc = {'handler': 'privacy', 'error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': 'privacy.html', 'time_log': [], 'handler': 'privacy', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -1604,7 +1685,7 @@ class PrivacyHandler(webapp2.RequestHandler):
             
         
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
-        path = os.path.join("templates", "privacy.html"); self.response.out.write(template.render(path, tv))
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         
 class ActivateHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -1620,10 +1701,8 @@ class ActivateHandler(webapp2.RequestHandler):
     
     def post(self):
     
-        misc = {'handler': 'activate', 'error': None, 'code_error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': 'activated.html', 'time_log': [], 'handler': 'activate', 'error': None, 'code_error': None, 'msg': None}; user_obj = None
         queries = []; params = []
-        
-        target_template = "activated.html"
         
         
         misc['user_ID'] = int(self.request.get('user_ID').strip())
@@ -1688,16 +1767,16 @@ class ActivateHandler(webapp2.RequestHandler):
             layout = "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"       
         else:
             layout = "layout_no_auth.html"   
-            target_template = "finalize_activation.html"         
+            misc['target_template'] = "finalize_activation.html"         
             
 
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
-        path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
     
     def get(self):
         
        
-        misc = {'handler': 'activate', 'error': None, 'code_error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': None, 'time_log': [], 'handler': 'activate', 'error': None, 'code_error': None, 'msg': None}; user_obj = None
         queries = []; params = []
         
         
@@ -1722,19 +1801,19 @@ class ActivateHandler(webapp2.RequestHandler):
         
         if len(users) == 0:
             misc['code_error'] = "Your activation code did not match our records."
-            target_template = "finalize_activation.html"
+            misc['target_template'] = "finalize_activation.html"
         else:
             user = users[0]
             misc['user_ID'] = user['ID']
             if user['activation_type'] == "full":
-                target_template = "finalize_activation.html"
+                misc['target_template'] = "finalize_activation.html"
             elif user['activation_type'] == "final":
-                target_template = "activated.html"
+                misc['target_template'] = "activated.html"
                 conn, cursor = mysql_connect()
                 cursor.execute("UPDATE LRP_Users set activated=1 where ID=%s", [misc['user_ID']])
                 conn.commit(); cursor.close(); conn.close()
             else:
-                target_template = "activated.html"
+                misc['target_template'] = "activated.html"
                 conn, cursor = mysql_connect()
                 cursor.execute("UPDATE LRP_Users set activated=1 where ID=%s", [misc['user_ID']])
                 conn.commit(); cursor.close(); conn.close()
@@ -1747,7 +1826,7 @@ class ActivateHandler(webapp2.RequestHandler):
             
         user_obj = process_non_auth(self)
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
-        path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         
 def logout(self, user_obj):
     user_obj['auth'] = False
@@ -1777,9 +1856,7 @@ class LogoutHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        target_template = "index.html"
-        
-        misc = {'handler': 'logout', 'error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'logout', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -1788,12 +1865,12 @@ class LogoutHandler(webapp2.RequestHandler):
             user_obj = process_non_auth(self)
                 
             tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             
         else: 
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
 def ex_queries(queries, params, desc=None):
     if len(queries) > 0:
@@ -1867,8 +1944,8 @@ class RegisterHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "register_start.html"
-        misc = {'handler': 'register', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
+        
+        misc = {'target_template': 'register_start.html', 'time_log': [], 'handler': 'register', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
         
         
         stripe.api_key = client_secrets['web']['StripeServerKey']
@@ -1929,9 +2006,9 @@ class RegisterHandler(webapp2.RequestHandler):
         
         if misc['error'] is None:
             
-            target_template = "register_start.html"
+            misc['target_template'] = "register_start.html"
             if self.request.get('from') not in ['', None]:
-                target_template = "%s.html" % self.request.get('from')
+                misc['target_template'] = "%s.html" % self.request.get('from')
                 
             if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/') or not (misc['username'].startswith("newuser")):
        
@@ -2002,7 +2079,7 @@ class RegisterHandler(webapp2.RequestHandler):
             layout = 'layout_no_auth.html'
             user_obj = process_non_auth(self)
             if self.request.get('from') not in ['', None]:
-                target_template = "%s.html" % self.request.get('from')
+                misc['target_template'] = "%s.html" % self.request.get('from')
                 
             if self.request.get('from') == "quote":
                 misc['quote_hash'] = self.request.get('quote_hash')
@@ -2011,10 +2088,10 @@ class RegisterHandler(webapp2.RequestHandler):
                 pass    
         misc['create_account_error'] = misc['error']
         misc['create_account_msg'] = misc['msg']
-        if target_template == "checkout.html":
+        if misc['target_template'] == "checkout.html":
             misc['error'] = None; misc['msg'] = None
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
-        path = os.path.join("templates", target_template)
+        path = os.path.join("templates", misc['target_template'])
         self.response.out.write(template.render(path, tv))
 
     
@@ -2023,25 +2100,23 @@ class RegisterHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        target_template = "register_start.html"
-        
-        misc = {'handler': 'register', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+        misc = {'target_template': 'register_start.html', 'time_log': [], 'handler': 'register', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
-                target_template = "index.html"
+                misc['target_template'] = "index.html"
                 misc['msg'] = "You are already registered and logged in."
             
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
       
 def get_products(cursor, category=None):
     
@@ -2083,8 +2158,8 @@ class RegisterConfigHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "register_config.html"
-        misc = {'handler': 'registerConfig', 'error': None, 'current_items': None}; user_obj = None; queries = []; params = []
+        
+        misc = {'target_template': "register_config.html", 'time_log': [], 'handler': 'registerConfig', 'error': None, 'current_items': None}; user_obj = None; queries = []; params = []
         
         
         session_ID = self.session.get('session_ID')
@@ -2121,27 +2196,25 @@ class RegisterConfigHandler(webapp2.RequestHandler):
                             user_obj['cart'].append({'ID': next_cart_ID, 'user_ID': user_obj['ID'], 'product_ID': misc['product_ID'], 'date_added': datetime.now(), 'status': 'added', 'active': 1, 'price': price, 'list_price': list_price, 'product': tmp_product})
                         else:
                             misc['error'] = "Product has been added already."
-                        target_template = "cart.html"
+                        misc['target_template'] = "cart.html"
                     
              
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template)
+                path = os.path.join("templates", misc['target_template'])
                 self.response.out.write(template.render(path, tv))
             else:
-                target_template = "index.html"
+                misc['target_template'] = "index.html"
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"
+            misc['target_template'] = "index.html"
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             
     def get(self):
         
-        target_template = "index.html"
-        
-        misc = {'handler': 'registerConfig', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'registerConfig', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
     
                 
         conn, cursor = mysql_connect()
@@ -2153,17 +2226,17 @@ class RegisterConfigHandler(webapp2.RequestHandler):
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
                 
-                target_template = get_template(user_obj)
+                misc['target_template'] = get_template(user_obj)
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': "layout_no_auth.html"}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_no_auth.html"}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 def pd(d):
     logging.info("\n\n%s\n\n" % zc.print_dict(d))
 
@@ -2189,8 +2262,8 @@ class CartHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "cart.html"
-        misc = {'handler': 'cart', 'error': None}; user_obj = None; queries = []; params = []
+        
+        misc = {'target_template': 'cart.html', 'time_log': [], 'handler': 'cart', 'error': None}; user_obj = None; queries = []; params = []
         
         
         session_ID = self.session.get('session_ID')
@@ -2230,7 +2303,7 @@ class CartHandler(webapp2.RequestHandler):
                     misc['msg'] = "Item has been removed"
                 else:
                     misc['error'] = "Cart could not be updated."
-                target_template = "cart.html"
+                misc['target_template'] = "cart.html"
             
         elif self.request.get("action") == "enter_discount":
             if 'ID' in user_obj and user_obj['ID'] is not None:
@@ -2270,7 +2343,7 @@ class CartHandler(webapp2.RequestHandler):
                     misc['msg'] = "Discount code has been applied."
                 else:
                     misc['error'] = "Discount code could not be applied."
-                target_template = "cart.html"
+                misc['target_template'] = "cart.html"
             
         elif self.request.get("action") == "renew_expired":
             if 'ID' in user_obj and user_obj['ID'] is not None:
@@ -2286,7 +2359,7 @@ class CartHandler(webapp2.RequestHandler):
                 
                     queries.append(query); params.append(param)
             
-            target_template = "cart.html"
+            misc['target_template'] = "cart.html"
             
      
         ex_queries(queries, params)
@@ -2295,13 +2368,11 @@ class CartHandler(webapp2.RequestHandler):
         else:
             user_obj = process_non_auth(self)
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
-        path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         
     def get(self):
         
-        target_template = "cart.html"
-        
-        misc = {'handler': 'cart', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+        misc = {'target_template': 'cart.html', 'time_log': [], 'handler': 'cart', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -2318,16 +2389,16 @@ class CartHandler(webapp2.RequestHandler):
                 
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_lurker.html'}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
             
                 user_obj = process_non_auth(self)
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             
 class SubscriptionHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -2342,8 +2413,8 @@ class SubscriptionHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "subscription.html"
-        misc = {'handler': 'subscription', 'error': None}; user_obj = None; queries = []; params = []
+        
+        misc = {'target_template': 'subscription.html', 'time_log': [], 'handler': 'subscription', 'error': None}; user_obj = None; queries = []; params = []
         
         
         stripe.api_key = client_secrets['web']['StripeServerKey']
@@ -2475,7 +2546,7 @@ class SubscriptionHandler(webapp2.RequestHandler):
                                     msg = {'email': user_obj['email_decrypted'], 'subject': "Refund Processed for LacrosseReference PRO", 'content': "Hello,\n\nWe have processed your refund. Please <a href='https://pro.lacrossereference.com/contact'>contact us</a> if, for some reason, the refund hasn't shown up within 1 business day.\n\nThank you for being a valued customer.\n\n-Zack (founder of LacrosseReference)"}
                                     mail_res, dbrec = finalize_mail_send(msg)
                                     if mail_res != "": create_mail_record(dbrec)
-                                    target_template = "index.html"
+                                    misc['target_template'] = "index.html"
                                     misc['msg'] = "Refund has been processed and sent to %s" % user_obj['email_decrypted']
                                     user_obj = get_user_obj({'session_ID': session_ID})
                                     user_obj['email_decrypted'] = decrypt(user_obj['email'])
@@ -2518,32 +2589,30 @@ class SubscriptionHandler(webapp2.RequestHandler):
                 user_obj = get_user_obj({'session_ID': session_ID})
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
-                path = os.path.join("templates", target_template)
+                path = os.path.join("templates", misc['target_template'])
                 self.response.out.write(template.render(path, tv))
         
             else:
-                target_template = "index.html"
+                misc['target_template'] = "index.html"
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"
+            misc['target_template'] = "index.html"
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         
         
                     
 
     def get(self):
         
-        target_template = "index.html"
-        
-        misc = {'handler': 'subscription', 'error': None, 'confirmed': 'no', 'msg': None}; user_obj = None
+        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'subscription', 'error': None, 'confirmed': 'no', 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
-                target_template = "subscription.html"
+                misc['target_template'] = "subscription.html"
                 
                 conn, cursor = mysql_connect()
                 #cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [7, user_obj['ID'], datetime.now()]); conn.commit()
@@ -2551,14 +2620,14 @@ class SubscriptionHandler(webapp2.RequestHandler):
                 cursor.close(); conn.close()
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             
 class UploadHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -2573,60 +2642,61 @@ class UploadHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        misc = {'handler': 'upload', 'error': None, 'msg': 'N/A'}; user_obj = None; queries = []; params = []
-        
-        bucket_name = self.request.get("bucket")
-        
-        field_storage = self.request.POST.get("file", None)
-        input_data = field_storage.file.read()
-                            
-        full_file_list = self.request.POST.getall('file')
-        my_file = full_file_list[0]
-        
-        fname = str(my_file).split("u'")[-1][:-2]
-        
-        options = {'retry_params': cloudstorage.RetryParams(backoff_factor=1.1)}
-        
-        
-        #bucket_name = "svc_data_extraction/SVC_MDV_Models"
-        tmp_path = "%s/%s" % (bucket_name, fname)
-        path = "/capozziinc.appspot.com/%s" % (tmp_path)
-        logging.info("Attempting an upload to %s (%d chars)" % (path, len(input_data)))
-        if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
-                
-            #conn, cursor = mysql_connect()
-            #conn.commit(); cursor.close(); conn.close()
-                
+        misc = {'target_template': None, 'time_log': [], 'handler': 'upload', 'error': None, 'msg': 'N/A'}; user_obj = None; queries = []; params = []
+        upload_key = self.request.get("thomas")
+        if upload_key != client_secrets['web']['LRPUploadKey']:
+            misc['msg'] = "Not Authorized"
+        else:
+            bucket_name = self.request.get("bucket")
             
-            f_ = cloudstorage.open(path, 'w')
-            try:
-                f_.write(input_data)   
-            except UnicodeDecodeError:
+            
+            field_storage = self.request.POST.get("file", None)
+            input_data = field_storage.file.read()
+                                
+            full_file_list = self.request.POST.getall('file')
+            my_file = full_file_list[0]
+            
+            fname = str(my_file).split("u'")[-1][:-2]
+            
+            options = {'retry_params': cloudstorage.RetryParams(backoff_factor=1.1)}
+            
+            
+            #bucket_name = "svc_data_extraction/SVC_MDV_Models"
+            tmp_path = "%s/%s" % (bucket_name, fname)
+            path = "/capozziinc.appspot.com/%s" % (tmp_path)
+            logging.info("Attempting an upload to %s (%d chars)" % (path, len(input_data)))
+            if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+                    
+                #conn, cursor = mysql_connect()
+                #conn.commit(); cursor.close(); conn.close()
+                    
+                
+                f_ = cloudstorage.open(path, 'w')
                 try:
-                    f_.write(input_data.encode('utf-8'))   
+                    f_.write(input_data)   
                 except UnicodeDecodeError:
                     try:
-                        f_.write(input_data.encode('latin-1'))   
+                        f_.write(input_data.encode('utf-8'))   
                     except UnicodeDecodeError:
-                        misc['msg'] = ("Could not upload file using either utf-8 or latin-1")
-            f_.close()
-            misc['msg'] = "Success"
-        else:
-            misc['msg'] = "LocalHost-NoUpload"
-        ex_queries(queries, params)
-        
+                        try:
+                            f_.write(input_data.encode('latin-1'))   
+                        except UnicodeDecodeError:
+                            misc['msg'] = ("Could not upload file using either utf-8 or latin-1")
+                f_.close()
+                misc['msg'] = "Success"
+            else:
+                misc['msg'] = "LocalHost-NoUpload"
+            ex_queries(queries, params)
+            
         self.response.out.write(misc['msg'])
         
     def get(self):
         
-        target_template = "index.html"
-        
-        misc = {'handler': 'upload', 'error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'upload', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
-                target_template = "password.html"
                 
                 conn, cursor = mysql_connect()
                 misc['products'] = get_products(cursor, "Data Subscriptions")
@@ -2635,14 +2705,14 @@ class UploadHandler(webapp2.RequestHandler):
                 cursor.close(); conn.close()
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
-                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
             user_obj = process_non_auth(self)
-            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             
 class PasswordHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -2657,8 +2727,8 @@ class PasswordHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "password.html"
-        misc = {'handler': 'password', 'error': None}; user_obj = None; queries = []; params = []
+        
+        misc = {'target_template': 'password.html', 'time_log': [], 'handler': 'password', 'error': None}; user_obj = None; queries = []; params = []
         
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
@@ -2709,29 +2779,27 @@ class PasswordHandler(webapp2.RequestHandler):
                     params.append([11, user_obj['ID'], datetime.now()])
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
-                path = os.path.join("templates", target_template)
+                path = os.path.join("templates", misc['target_template'])
                 self.response.out.write(template.render(path, tv))
         
             else:
-                target_template = "index.html"
+                misc['target_template'] = "index.html"
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"
+            misc['target_template'] = "index.html"
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
     def get(self):
         
-        target_template = "index.html"
-        
-        misc = {'handler': 'password', 'error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'password', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
-                target_template = "password.html"
+                misc['target_template'] = "password.html"
                 
                 conn, cursor = mysql_connect()
                 misc['products'] = get_products(cursor, "Data Subscriptions")
@@ -2740,14 +2808,118 @@ class PasswordHandler(webapp2.RequestHandler):
                 cursor.close(); conn.close()
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+
+class ExplanationsHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+        misc = {'target_template': 'explanations.html', 'time_log': [], 'handler': 'explanations', 'error': None}; user_obj = None; queries = []; params = []
+        
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth'] and user_obj['is_admin']:
+                
+                conn, cursor = mysql_connect()
+                cursor.execute("SELECT * from LRP_Explanations", [])
+                misc['explanations'] = zc.dict_query_results(cursor)
+                cursor.close(); conn.close()
+                
+                
+                req = dict_request(self.request)
+                
+                
+                if req['action'] == "view_explanation":
+                    misc['action'] = "edit_explanation"
+                    misc['explanation'] = misc['explanations'][ [z['ID'] for z in misc['explanations']].index(int(req['ID'])) ]
+                    misc['target_template'] = "explanation_detail.html"
+                elif req['action'] == "new_explanation":
+                    misc['action'] = "add_explanation"
+                    
+                    misc['explanation'] = {'tag': '', 'html_page': '', 'explanation_html': '', 'header_text': '', 'ID': None}
+                    misc['target_template'] = "explanation_detail.html"
+                elif req['action'] == "edit_explanation":
+                    misc['action'] = "edit_explanation"
+                    misc['explanation'] = misc['explanations'][ [z['ID'] for z in misc['explanations']].index(int(req['ID'])) ]
+                    misc['target_template'] = "explanation_detail.html"
+                    
+                    query = "UPDATE LRP_Explanations set tag=%s, html_page=%s, explanation_html=%s, header_text=%s where ID=%s"
+                    param = [req['tag'], req['html_page'], req['explanation_html'], req['header_text'], req['ID']]
+                    queries.append(query); params.append(param)
+                
+                    misc['explanation']['tag'] = req['tag']
+                    misc['explanation']['html_page'] = req['html_page']
+                    misc['explanation']['explanation_html'] = req['explanation_html']
+                    misc['explanation']['header_text'] = req['header_text']
+                elif req['action'] == "add_explanation":
+                    misc['action'] = "edit_explanation"
+                    next_ID = 1 if len(misc['explanations']) == 0 else max([z['ID']+1 for z in misc['explanations']])
+                    misc['explanation'] = {'tag': req['tag'], 'html_page': req['html_page'], 'explanation_html': req['explanation_html'], 'ID': next_ID}
+                    misc['target_template'] = "explanation_detail.html"
+                    
+                    query = "INSERT INTO LRP_Explanations (ID, active, html_page, tag, explanation_html, header_text) VALUES (%s, %s, %s, %s, %s, %s)"
+                    param = [next_ID, 1, req['html_page'], req['tag'], req['explanation_html'], req['header_text']]
+                    queries.append(query); params.append(param)
+                
+                
+                ex_queries(queries, params)
+                
+                misc['explanation']['explanation_html_BR'] = None if misc['explanation']['explanation_html'] is None else misc['explanation']['explanation_html'].replace("\n",  "<BR>")
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", misc['target_template'])
+                self.response.out.write(template.render(path, tv))
+        
+            else:
+                misc['target_template'] = "index.html"
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        else: 
+            misc['target_template'] = "index.html"
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+
+    def get(self):
+        
+        misc = {'target_template': 'explanations.html', 'time_log': [], 'handler': 'explanations', 'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth'] and user_obj['is_admin']:
+                
+                conn, cursor = mysql_connect()
+                cursor.execute("SELECT * from LRP_Explanations", [])
+                misc['explanations'] = zc.dict_query_results(cursor)
+                cursor.close(); conn.close()
+                
+                misc['action'] = "edit_explanation"
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+            else:
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        else: 
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
 def calc_discount(misc, product):
     misc['list_price'] = product['price']
@@ -2849,8 +3021,7 @@ class ReviewQuoteHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "review_quote.html"
-        misc = {'handler': 'reviewQuote', 'error': None}; user_obj = None; queries = []; params = []
+        misc = {'target_template': 'review_quote.html', 'time_log': [], 'handler': 'reviewQuote', 'error': None}; user_obj = None; queries = []; params = []
         
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
@@ -2963,7 +3134,7 @@ class ReviewQuoteHandler(webapp2.RequestHandler):
                         
                 misc['price_str'] = "${:,.0f}".format(misc['price'])
                 if misc['action'] == "edit_quote":
-                    target_template = "create_quote.html"
+                    misc['target_template'] = "create_quote.html"
                 elif misc['action'] in ['resend_quote', "send_quote"]:
                     misc['period'] = None
                     if misc['price_type'] in ["monthly", "annual"]:
@@ -3044,38 +3215,36 @@ class ReviewQuoteHandler(webapp2.RequestHandler):
                     g['selected'] = " selected" if g['ID'] == misc['group_ID'] else ""
                     
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj),}
-                path = os.path.join("templates", target_template)
+                path = os.path.join("templates", misc['target_template'])
                 self.response.out.write(template.render(path, tv))
         
             else:
-                target_template = "index.html"
+                misc['target_template'] = "index.html"
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"
+            misc['target_template'] = "index.html"
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
     def get(self):
         
-        target_template = "index.html"
-        
-        misc = {'handler': 'reviewQuote', 'error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'reviewQuote', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth'] and user_obj['is_admin']:
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
-                target_template = "index.html"; user_obj = process_non_auth(self)
+                misc['target_template'] = "index.html"; user_obj = process_non_auth(self)
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"; user_obj = process_non_auth(self)
+            misc['target_template'] = "index.html"; user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 class CreateRefundHandler(webapp2.RequestHandler):
     def dispatch(self):
         self.session_store = sessions.get_store(request=self.request)
@@ -3090,8 +3259,8 @@ class CreateRefundHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "admin_subscriptions.html"
-        misc = {'handler': 'createRefund', 'error': None}; user_obj = None; queries = []; params = []
+        
+        misc = {'target_template': "admin_subscriptions.html", 'time_log': [], 'handler': 'createRefund', 'error': None}; user_obj = None; queries = []; params = []
         
         stripe.api_key = client_secrets['web']['StripeServerKey']
         misc['clientKey'] = client_secrets['web']['StripeClientKey']
@@ -3224,24 +3393,22 @@ class CreateRefundHandler(webapp2.RequestHandler):
                     misc['confirmed'] = "no"
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj),}
-                path = os.path.join("templates", target_template)
+                path = os.path.join("templates", misc['target_template'])
                 self.response.out.write(template.render(path, tv))
         
             else:
-                target_template = "index.html"
+                misc['target_template'] = "index.html"
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"
+            misc['target_template'] = "index.html"
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
     def get(self):
         
-        target_template = "admin_subscriptions.html"
-        
-        misc = {'handler': 'createRefund', 'subscription_ID': None, 'confirmed': 'no', 'error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': 'admin_subscriptions.html', 'time_log': [], 'handler': 'createRefund', 'subscription_ID': None, 'confirmed': 'no', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -3294,15 +3461,15 @@ class CreateRefundHandler(webapp2.RequestHandler):
                 misc['subscriptions_json'] = json.dumps(misc['subscriptions'])
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
-                target_template = "index.html"; user_obj = process_non_auth(self)
+                misc['target_template'] = "index.html"; user_obj = process_non_auth(self)
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"; user_obj = process_non_auth(self)
+            misc['target_template'] = "index.html"; user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
             
 class ExtendSubscriptionHandler(webapp2.RequestHandler):
@@ -3319,8 +3486,8 @@ class ExtendSubscriptionHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "admin_subscriptions.html"
-        misc = {'handler': 'extendSubscription', 'error': None}; user_obj = None; queries = []; params = []
+        
+        misc = {'target_template': "admin_subscriptions.html", 'time_log': [], 'handler': 'extendSubscription', 'error': None}; user_obj = None; queries = []; params = []
         
         
         session_ID = self.session.get('session_ID')
@@ -3426,24 +3593,22 @@ class ExtendSubscriptionHandler(webapp2.RequestHandler):
                     misc['confirmed'] = "no"
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj),}
-                path = os.path.join("templates", target_template)
+                path = os.path.join("templates", misc['target_template'])
                 self.response.out.write(template.render(path, tv))
         
             else:
-                target_template = "index.html"
+                misc['target_template'] = "index.html"
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"
+            misc['target_template'] = "index.html"
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
     def get(self):
         
-        target_template = "admin_subscriptions.html"
-        
-        misc = {'handler': 'extendSubscription', 'subscription_ID': None, 'confirmed': 'no', 'error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': "admin_subscriptions.html", 'time_log': [], 'handler': 'extendSubscription', 'subscription_ID': None, 'confirmed': 'no', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -3497,15 +3662,15 @@ class ExtendSubscriptionHandler(webapp2.RequestHandler):
                 misc['subscriptions_json'] = json.dumps(misc['subscriptions'])
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
-                target_template = "index.html"; user_obj = process_non_auth(self)
+                misc['target_template'] = "index.html"; user_obj = process_non_auth(self)
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"; user_obj = process_non_auth(self)
+            misc['target_template'] = "index.html"; user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
 class CreateQuoteHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -3529,8 +3694,7 @@ class CreateQuoteHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "create_quote.html"
-        misc = {'handler': 'createQuote', 'error': None}; user_obj = None; queries = []; params = []
+        misc = {'target_template': "create_quote.html", 'time_log': [], 'handler': 'createQuote', 'error': None}; user_obj = None; queries = []; params = []
         
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
@@ -3644,28 +3808,26 @@ class CreateQuoteHandler(webapp2.RequestHandler):
                         misc['error'] = "Valid Until date must be YYYY-MM-DD."
                 
                 if misc['error'] in ['', None]:
-                    target_template = "review_quote.html"
+                    misc['target_template'] = "review_quote.html"
                     
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj),}
-                path = os.path.join("templates", target_template)
+                path = os.path.join("templates", misc['target_template'])
                 self.response.out.write(template.render(path, tv))
         
             else:
-                target_template = "index.html"
+                misc['target_template'] = "index.html"
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"
+            misc['target_template'] = "index.html"
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
     def get(self):
         
-        target_template = "create_quote.html"
-        
-        misc = {'handler': 'createQuote', 'error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': "create_quote.html", 'time_log': [], 'handler': 'createQuote', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -3687,15 +3849,15 @@ class CreateQuoteHandler(webapp2.RequestHandler):
                 
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
-                target_template = "index.html"; user_obj = process_non_auth(self)
+                misc['target_template'] = "index.html"; user_obj = process_non_auth(self)
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"; user_obj = process_non_auth(self)
+            misc['target_template'] = "index.html"; user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
 def display_quote(misc):
     conn, cursor = mysql_connect()
@@ -3764,8 +3926,8 @@ class ViewQuoteHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "quote.html"
-        misc = {'handler': 'viewQuote', 'error': None}; user_obj = None; queries = []; params = []
+        
+        misc = {'target_template': "quote.html", 'time_log': [], 'handler': 'viewQuote', 'error': None}; user_obj = None; queries = []; params = []
         
         misc['action'] = self.request.get("action")
         misc['quote_hash'] = self.request.get("hash")
@@ -3812,13 +3974,11 @@ class ViewQuoteHandler(webapp2.RequestHandler):
                 
         ex_queries(queries, params)
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
-        path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
     def get(self):
         
-        target_template = "quote.html"
-        
-        misc = {'handler': 'viewQuote', 'quote_hash': self.request.get('c'), 'error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': "quote.html", 'time_log': [], 'handler': 'viewQuote', 'quote_hash': self.request.get('c'), 'error': None, 'msg': None}; user_obj = None
         
         misc['login_tag_display'] = "tag-on"
         misc['login_display'] = "visible"
@@ -3842,7 +4002,7 @@ class ViewQuoteHandler(webapp2.RequestHandler):
         pd(misc)
                 
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout }
-        path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             
 class SwitchGroupsHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -3857,8 +4017,8 @@ class SwitchGroupsHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "switch_groups.html"
-        misc = {'handler': 'switchGroups', 'error': None}; user_obj = None; queries = []; params = []
+        
+        misc = {'target_template': "switch_groups.html", 'time_log': [], 'handler': 'switchGroups', 'error': None}; user_obj = None; queries = []; params = []
         
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
@@ -3878,14 +4038,14 @@ class SwitchGroupsHandler(webapp2.RequestHandler):
                     user_obj = get_user_obj({'session_ID': session_ID})
                     
                     
-                    target_template = "team_home.html"
+                    misc['target_template'] = "team_home.html"
                     tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
-                    path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                    path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
                 else:
                     
-                    target_template = "index.html"
+                    misc['target_template'] = "index.html"
                     tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
-                    path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                    path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
                     
                             
                 
@@ -3893,30 +4053,28 @@ class SwitchGroupsHandler(webapp2.RequestHandler):
                 
         
             else:
-                target_template = "index.html"
+                misc['target_template'] = "index.html"
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"
+            misc['target_template'] = "index.html"
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
     def get(self):
         
-        target_template = "switch_groups.html"
-        
-        misc = {'handler': 'switchGroups', 'error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': "switch_groups.html", 'time_log': [], 'handler': 'switchGroups', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
-                target_template = "switch_groups.html"
+                misc['target_template'] = "switch_groups.html"
                 
                 if user_obj['active_group'] is None:
-                    target_template = "lurker_home.html"
+                    misc['target_template'] = "lurker_home.html"
                 elif user_obj['num_active_groups'] ==  1:
-                    target_template = get_template(user_obj)
+                    misc['target_template'] = get_template(user_obj)
                     
                 conn, cursor = mysql_connect()
                 cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [8, user_obj['ID'], datetime.now()]); conn.commit()
@@ -3926,14 +4084,14 @@ class SwitchGroupsHandler(webapp2.RequestHandler):
                 cursor.close(); conn.close()
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             
 class PreferencesHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -3948,9 +4106,8 @@ class PreferencesHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "preferences.html"
         
-        misc = {'handler': 'preferences', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
+        misc = {'target_template': "preferences.html", 'time_log': [], 'handler': 'preferences', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -3987,22 +4144,20 @@ class PreferencesHandler(webapp2.RequestHandler):
                 misc['msg'] = "Preferences have been updated."
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
-                target_template = "index.html"
+                misc['target_template'] = "index.html"
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"
+            misc['target_template'] = "index.html"
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         
     def get(self):
         
-        target_template = "preferences.html"
-        
-        misc = {'handler': 'preferences', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
+        misc = {'target_template': "preferences.html", 'time_log': [], 'handler': 'preferences', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -4018,16 +4173,16 @@ class PreferencesHandler(webapp2.RequestHandler):
                 
                 user_obj['relevant_preferences'] = [z for z in user_obj['preferences'] if z['key'] in relevants]
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
-                target_template = "index.html"
+                misc['target_template'] = "index.html"
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"
+            misc['target_template'] = "index.html"
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             
 class ProfileHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -4042,9 +4197,8 @@ class ProfileHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "profile.html"
         
-        misc = {'handler': 'profile', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
+        misc = {'target_template': "profile.html", 'time_log': [], 'handler': 'profile', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -4081,22 +4235,20 @@ class ProfileHandler(webapp2.RequestHandler):
                 user_obj = get_user_obj({'session_ID': session_ID})
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
-                target_template = "index.html"
+                misc['target_template'] = "index.html"
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"
+            misc['target_template'] = "index.html"
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         
     def get(self):
         
-        target_template = "profile.html"
-        
-        misc = {'handler': 'profile', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
+        misc = {'target_template': "profile.html", 'time_log': [], 'handler': 'profile', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -4111,16 +4263,16 @@ class ProfileHandler(webapp2.RequestHandler):
                 
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
-                target_template = "index.html"
+                misc['target_template'] = "index.html"
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"
+            misc['target_template'] = "index.html"
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
 def get_file(bucket, fname, specs = {}):       
     if bucket is None:
@@ -4169,8 +4321,8 @@ class ForgotHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "forgot.html"
-        misc = {'handler': 'forgot', 'error': None}; user_obj = process_non_auth(self); queries = []; params = []
+        
+        misc = {'target_template': "forgot.html", 'time_log': [], 'handler': 'forgot', 'error': None}; user_obj = process_non_auth(self); queries = []; params = []
         user_obj['ID'] = None
         
         misc['username'] = self.request.get('username').strip().lower()
@@ -4220,7 +4372,7 @@ class ForgotHandler(webapp2.RequestHandler):
             ex_queries(queries, params)
                     
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-        path = os.path.join("templates", target_template)
+        path = os.path.join("templates", misc['target_template'])
         self.response.out.write(template.render(path, tv))
 
     
@@ -4229,25 +4381,23 @@ class ForgotHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        target_template = "forgot.html"
-        
-        misc = {'handler': 'forgot', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+        misc = {'target_template': "forgot.html", 'time_log': [], 'handler': 'forgot', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
-                target_template = "index.html"
+                misc['target_template'] = "index.html"
                 misc['msg'] = "You are already registered and logged in."
             
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
 class CronHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -4262,8 +4412,8 @@ class CronHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "forgot.html"
-        misc = {'handler': 'forgot', 'error': None}; user_obj = process_non_auth(self); queries = []; params = []
+        
+        misc = {'target_template': "forgot.html", 'time_log': [], 'handler': 'forgot', 'error': None}; user_obj = process_non_auth(self); queries = []; params = []
         user_obj['ID'] = None
         
         misc['username'] = self.request.get('username').strip().lower()
@@ -4316,7 +4466,7 @@ class CronHandler(webapp2.RequestHandler):
             ex_queries(queries, params)
                     
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-        path = os.path.join("templates", target_template)
+        path = os.path.join("templates", misc['target_template'])
         self.response.out.write(template.render(path, tv))
 
     
@@ -4344,7 +4494,7 @@ class CronHandler(webapp2.RequestHandler):
     """
     def get(self, orig_url):
         lg("Cron: %s" % orig_url)
-        misc = {}; status = 200
+        misc = {'target_template': None, 'time_log': [], }; status = 200
         
         if orig_url == "hello":
             
@@ -4441,10 +4591,11 @@ class ContactHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "contact.html"
+        
         user_obj = None; queries = []; params = []
         
         misc = dict_request(self.request); misc['error'] = None
+        misc['target_template'] = "contact.html"
         misc['handler'] = "contact"
         misc['email'] = misc['email'].lower().strip()
         
@@ -4505,7 +4656,7 @@ class ContactHandler(webapp2.RequestHandler):
                     misc['msg'] = None
                     
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
-        path = os.path.join("templates", target_template)
+        path = os.path.join("templates", misc['target_template'])
         self.response.out.write(template.render(path, tv))
 
     
@@ -4514,9 +4665,7 @@ class ContactHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        target_template = "contact.html"
-        
-        misc = {'handler': 'contact', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+        misc = {'target_template': "contact.html", 'time_log': [], 'handler': 'contact', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -4533,7 +4682,7 @@ class ContactHandler(webapp2.RequestHandler):
             
            
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
-        path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
 class EmailHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -4594,9 +4743,10 @@ class EmailHandler(webapp2.RequestHandler):
         return misc
     
     def post(self):
-        target_template = "email.html"
+        
         user_obj = None; queries = []; params = []
         misc = dict_request(self.request); misc['error'] = None
+        misc['target_template'] = "email.html"
         
         local = not os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
         session_ID = self.session.get('session_ID')
@@ -4726,7 +4876,7 @@ class EmailHandler(webapp2.RequestHandler):
            
                     
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
-        path = os.path.join("templates", target_template)
+        path = os.path.join("templates", misc['target_template'])
         self.response.out.write(template.render(path, tv))
 
     
@@ -4735,9 +4885,7 @@ class EmailHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        target_template = "email.html"
-        
-        misc = {'handler': 'email', 'confirmed': 'no', 'selected_ID': None, 'action': 'view', 'new_date_str': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+        misc = {'target_template': "email.html", 'time_log': [], 'handler': 'email', 'confirmed': 'no', 'selected_ID': None, 'action': 'view', 'new_date_str': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
         local = not os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
         session_ID = self.session.get('session_ID')
         if local or session_ID not in [None, 0]:
@@ -4761,7 +4909,7 @@ class EmailHandler(webapp2.RequestHandler):
             
            
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
-        path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
 class HelpHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -4776,7 +4924,7 @@ class HelpHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "help.html"
+        
         user_obj = None; queries = []; params = []
         
         
@@ -4788,6 +4936,7 @@ class HelpHandler(webapp2.RequestHandler):
             if user_obj['auth']:      
                 user_obj['user_cookie'] = None
                 misc = dict_request(self.request); misc['error'] = None
+                misc['target_template'] = "help.html"
                 misc['handler'] = "help"
                 if 'category' not in misc:
                     misc['category'] = None
@@ -4830,7 +4979,7 @@ class HelpHandler(webapp2.RequestHandler):
                     
         
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
-        path = os.path.join("templates", target_template)
+        path = os.path.join("templates", misc['target_template'])
         self.response.out.write(template.render(path, tv))
 
     
@@ -4839,9 +4988,7 @@ class HelpHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        target_template = "help.html"
-        
-        misc = {'handler': 'help', 'source_handler': self.request.get('c'), 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+        misc = {'target_template': "help.html", 'time_log': [], 'handler': 'help', 'source_handler': self.request.get('c'), 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -4849,17 +4996,17 @@ class HelpHandler(webapp2.RequestHandler):
                 user_obj['user_cookie'] = None
                 layout = "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"
             else:
-                target_template = "index.html"
+                misc['target_template'] = "index.html"
                 user_obj = process_non_auth(self); user_obj['ID'] = None
                 layout = 'layout_no_auth.html'
         else:
-            target_template = "index.html"
+            misc['target_template'] = "index.html"
             user_obj = process_non_auth(self); user_obj['ID'] = None
             layout = 'layout_no_auth.html'
             
            
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
-        path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
 def process_non_auth(self):
     # If we ever have issues with this, it's possible that because we aren't returning the self object, the actual cookie is not getting set
@@ -4869,13 +5016,16 @@ def process_non_auth(self):
         self.session['cart_cookie'] = user_cookie
     user_obj = {'user_cookie': user_cookie, 'auth': 0}
     
-    conn, cursor = mysql_connect()
-    cursor.execute("SELECT * from LRP_Cart", [])
-    items = zc.dict_query_results(cursor)
-    cursor.execute("SELECT * from LRP_Products", [])
-    products = zc.dict_query_results(cursor)
-    cursor.close(); conn.close()
-    
+    try:
+        conn, cursor = mysql_connect()
+        cursor.execute("SELECT * from LRP_Cart", [])
+        items = zc.dict_query_results(cursor)
+        cursor.execute("SELECT * from LRP_Products", [])
+        products = zc.dict_query_results(cursor)
+        cursor.close(); conn.close()
+    except Exception:
+        logging.error("MYSQL wasn't able to pull cart and product information in process_non_auth...")
+        items = []; products = []
     user_obj['cart'] = [z for z in items if z['user_cookie'] == user_cookie and z['active'] == 1]
     for i, p in enumerate(user_obj['cart']):
         p['product'] = products[ [z['ID'] for z in products].index(p['product_ID'])]
@@ -4902,7 +5052,7 @@ class ProductSummaryHandler(webapp2.RequestHandler):
         
         
         
-        misc = {'handler': 'productSummary', 'error': None, 'product_tag': product_tag,  'team_ID': None}; user_obj = None; queries = []; params = []
+        misc = {'target_template': None, 'time_log': [], 'handler': 'productSummary', 'error': None, 'product_tag': product_tag,  'team_ID': None}; user_obj = None; queries = []; params = []
         
         conn, cursor = mysql_connect()
         cursor.execute("SELECT * from LRP_Groups where active", [])
@@ -4924,6 +5074,7 @@ class ProductSummaryHandler(webapp2.RequestHandler):
         misc['action'] = self.request.get('action').lower().strip()
         misc['request_type'] = self.request.get('request_type')
         misc['AB_group'] = self.request.get('AB_group')
+        
         misc['group_ID'] = None
         if product_tag == "team":
             misc['team_ID'] = int(self.request.get('team_select'))
@@ -5003,14 +5154,16 @@ class ProductSummaryHandler(webapp2.RequestHandler):
         cursor.close(); conn.close()
         for g in misc['groups']:
             g['selected'] = " selected" if misc['team_ID'] == g['team_ID'] else ""
+        
+        misc['target_template'] = "product_summary_%s%s.html" % (product_tag, misc['AB_group'])
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
-        path = os.path.join("templates", "product_summary_%s%s.html" % (product_tag, misc['AB_group'])); self.response.out.write(template.render(path, tv))
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
     
         
     def get(self, orig_url):
         
-        misc = {'handler': 'productSummary', 'user_ID': None, 'email': "", "AB_group": None, 'hash': create_temporary_password()}; user_obj = None
+        misc = {'target_template': None, 'time_log': [], 'handler': 'productSummary', 'user_ID': None, 'email': "", "AB_group": None, 'hash': create_temporary_password()}; user_obj = None
         random.seed(time.time()); misc['AB_group'] = "A" if random.random() < .5 else "B"
         if self.request.get('v') != "": misc['AB_group'] = self.request.get('v')
         url_match = self.url_regex.search(orig_url)
@@ -5031,13 +5184,15 @@ class ProductSummaryHandler(webapp2.RequestHandler):
                 misc['email_decrypted'] = decrypt(user_obj['email'])
                 misc['AB_group'] = "A" if user_obj['AB_group'] < 24 else "B"
                 if self.request.get('v') != "": misc['AB_group'] = self.request.get('v')
-                
+                misc['target_template'] = "product_summary_%s%s.html" % (product_tag, misc['AB_group'])
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
 
             else:
+                misc['target_template'] = "product_summary_%s%s.html" % (product_tag, misc['AB_group'])
                 user_obj = process_non_auth(self)
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
         else: 
+            misc['target_template'] = "product_summary_%s%s.html" % (product_tag, misc['AB_group'])
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
         
@@ -5051,7 +5206,8 @@ class ProductSummaryHandler(webapp2.RequestHandler):
             conn.commit()
             
         cursor.close(); conn.close()
-        path = os.path.join("templates", "product_summary_%s%s.html" % (product_tag, misc['AB_group'])); self.response.out.write(template.render(path, tv))
+        
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
 def generate_stripe_response(intent):
   if intent.status == 'succeeded':
@@ -5076,8 +5232,7 @@ class CheckoutHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        target_template = "checkout.html"
-        misc = {'handler': 'checkout', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
+        misc = {'target_template': "checkout.html", 'time_log': [], 'handler': 'checkout', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
         
         stripe.api_key = client_secrets['web']['StripeServerKey']
         misc['clientKey'] = client_secrets['web']['StripeClientKey']
@@ -5242,12 +5397,12 @@ class CheckoutHandler(webapp2.RequestHandler):
         
         else:
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
     
         
     def get(self):
-        target_template = "index.html"
+        misc = {'target_template': "index.html"}
         default_get(self)
             
 class ReportHandler(webapp2.RequestHandler):
@@ -5265,8 +5420,7 @@ class ReportHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        target_template = "report.html"
-        misc = {'handler': 'report', 'error': None, 'msg': None, 'action': self.request.get('action')}; user_obj = None; queries = []; params = []
+        misc = {'target_template': "report.html", 'time_log': [], 'handler': 'report', 'error': None, 'msg': None, 'action': self.request.get('action')}; user_obj = None; queries = []; params = []
 
         pd(misc)
         
@@ -5285,12 +5439,12 @@ class ReportHandler(webapp2.RequestHandler):
             
         
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
-        path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
     
         
     def get(self):
-        target_template = "index.html"
+        misc = {'target_template': "index.html"}
         default_get(self)
             
 def url_escape(url):
@@ -5325,9 +5479,8 @@ class EditGroupHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "edit_group.html"
         
-        misc = {'handler': 'editGroup', 'emails': "", 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
+        misc = {'target_template': "edit_group.html", 'time_log': [], 'handler': 'editGroup', 'emails': "", 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
         misc['add_members_msg'] = None
         misc['add_members_error'] = None
         misc['edit_members_msg'] = None
@@ -5531,25 +5684,25 @@ class EditGroupHandler(webapp2.RequestHandler):
                         u['username_decrypted'] = decrypt(u['username'])
                         u['username'] = ""
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
-                path = os.path.join("templates", target_template)
+                path = os.path.join("templates", misc['target_template'])
                 self.response.out.write(template.render(path, tv))
 
             
             else:
-                target_template = "index.html"
+                misc['target_template'] = "index.html"
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"
+            misc['target_template'] = "index.html"
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         
         
     
     def get(self):
         
-        target_template = "index.html"
+        misc = {'target_template': "index.html"}
         
         default_get(self)
 
@@ -5566,9 +5719,8 @@ class ResendHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        target_template = "activation_reminder.html"
-        
-        misc = {'handler': 'resend', 'emails': "", 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
+    
+        misc = {'target_template': "activation_reminder.html", 'time_log': [], 'handler': 'resend', 'emails': "", 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
     
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
@@ -5611,19 +5763,19 @@ class ResendHandler(webapp2.RequestHandler):
                 
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template)
+                path = os.path.join("templates", misc['target_template'])
                 self.response.out.write(template.render(path, tv))
 
             
             else:
-                target_template = "index.html"
+                misc['target_template'] = "index.html"
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            target_template = "index.html"
+            misc['target_template'] = "index.html"
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         
         
     
@@ -5632,8 +5784,8 @@ class ResendHandler(webapp2.RequestHandler):
         default_get(self)
 
 def default_get(self):
-    target_template = "index.html"
-    misc = {'handler': 'index', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+    
+    misc = {'target_template': "index.html", 'time_log': [], 'handler': 'index', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
     session_ID = self.session.get('session_ID')
     if session_ID not in [None, 0]:
         user_obj = get_user_obj({'session_ID': session_ID})
@@ -5641,16 +5793,17 @@ def default_get(self):
             
             
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else:
             tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
     else: 
         user_obj = process_non_auth(self)
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-        path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         
                 
+def ms(): return float(1000. * time.time())
 
 class TeamsHomeHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -5670,13 +5823,28 @@ class TeamsHomeHandler(webapp2.RequestHandler):
         self.response.out.write(template.render(path, tv))
     
     def get(self):
-        misc = {'handler': 'preferences', 'error': None, 'msg': None}; user_obj = None
-        #conn, cursor = mysql_connect()
+        misc = {'target_template': 'teams_home.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
         
-        #cursor.close(); conn.close()
-        tv = {'user_obj': user_obj, 'misc': misc}
-        path = os.path.join("templates", "teams_home.html")
-        self.response.out.write(template.render(path, tv))
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                
+                misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+            else:
+                misc['target_template'] = "index.html"
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        else: 
+        
+            misc['target_template'] = "index.html"
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        
 
 def build_preferences_html(user_obj, misc):
     html = ""
@@ -5718,12 +5886,12 @@ class AccountHandler(webapp2.RequestHandler):
     
             
     def get(self):
-        misc = {'handler': 'account', 'error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'account', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
-                target_template = "account.html"
+                misc['target_template'] = "account.html"
                 
                 conn, cursor = mysql_connect()
                 cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [1, user_obj['ID'], datetime.now()]); conn.commit()
@@ -5749,17 +5917,17 @@ class AccountHandler(webapp2.RequestHandler):
                 
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
-                target_template = "index.html"
+                misc['target_template'] = "index.html"
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-                path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
         
-            target_template = "index.html"
+            misc['target_template'] = "index.html"
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", target_template); self.response.out.write(template.render(path, tv))
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         
    
 config = {}
@@ -5778,7 +5946,7 @@ else:
 def handle_404(request, response, exception):
     logging.exception(exception)
     user_obj = get_user_obj()
-    misc = {'handler': '404', 'error': None, 'msg': None}
+    misc = {'target_template': 'error_404.html', 'time_log': [], 'handler': '404', 'error': None, 'msg': None}
     tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_no_auth.html"}
     response.set_status(404)
     path = os.path.join("templates", 'error_404.html'); response.out.write(template.render(path, tv))
@@ -5786,7 +5954,7 @@ def handle_404(request, response, exception):
 def handle_500(request, response, exception):
     logging.exception(exception)
     user_obj = get_user_obj()
-    misc = {'handler': '500', 'error': None, 'msg': None}
+    misc = {'target_template': 'error_general.html', 'time_log': [], 'handler': '500', 'error': None, 'msg': None}
     if not os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
         misc['error'] = traceback.format_exc()
         txt = misc['error'].split("File")[-1]
@@ -5843,6 +6011,7 @@ app = webapp2.WSGIApplication([
     ,('/email', EmailHandler)
     ,('/contact', ContactHandler)
     ,('/report', ReportHandler)
+    ,('/explanations', ExplanationsHandler)
     ,('/help', HelpHandler)
     ,('/cron-(.+)', CronHandler)
     

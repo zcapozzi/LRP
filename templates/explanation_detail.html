@@ -1,0 +1,79 @@
+
+{% extends "layout_admin.html" %}
+
+
+{% block body %}
+
+        <div class='col-12 centered' id='banner'></div>
+        {% if misc.breadcrumbs %}
+            <div class='col-12 centered'>
+                {{misc.breadcrumbs}}
+            </div>
+        {% endif %}
+
+        <div class='col-12 page-title'>
+            <span class='font-24 pointer bold'>LaxRef PRO: Explanation</span>
+        </div>
+        {% if misc.error %}
+            <div class='col-12 error centered'><span class='error' >{{misc.error}}</span></div>
+        {% endif %}
+        {% if misc.msg %}
+            <div class='col-12 centered'><span class='msg' style='color:blue;' >{{misc.msg}}</span></div>
+        {% endif %}
+        <div class='col-12 right' style='padding-bottom:10px;'>
+            <a class='action-button' href='/explanations'><span class='font-15'>Back to List</span></a>
+        </div>
+              
+              
+        <div id='preview' class='font-15' style='padding:10px; font-family: Arial; min-height:100px; background-color:#EEE;'>
+            {{misc.explanation.explanation_html_BR|safe}}
+        </div>
+        
+        
+        <FORM action='/explanations' method=POST><input type=hidden name='ID' value='{{misc.explanation.ID}}' />
+        <div class='flex'>
+            <div class='col-6'><span class='font-15 bold'>HTML Page</span></div>
+            <div class='col-6'><input class='font-15' type=text name='html_page' value='{{misc.explanation.html_page}}' /></div>
+        </div>
+        <div class='flex'>
+            <div class='col-6'><span class='font-15 bold'>Tag</span></div>
+            <div class='col-6'><input class='font-15' type=text name='tag' value='{{misc.explanation.tag}}' /></div>
+        </div>
+        <div class='flex'>
+            <div class='col-6'><span class='font-15 bold'>Header Text</span></div>
+            <div class='col-6'><input class='font-15' type=text name='header_text' value='{{misc.explanation.header_text}}' /></div>
+        </div>
+        <div class=''>
+            <span class='light font-15 bold'>HTML</span>
+        </div>
+        <div class='col-12'>
+            <textarea onchange='edit_html(this.value);' style='width:100%;' rows=10 name='explanation_html'>{{misc.explanation.explanation_html}}</textarea>
+        </div>
+            
+        <div class=' centered col-12'>
+            <button name='action' value='{{misc.action}}' class='action-button'><span class='font-12'>EDIT</span></button>
+        </div>
+            
+        </FORM>      
+        
+
+
+<script src="/static/js/create.js"></script>
+<script>
+    function edit_html(val){
+        $("#preview").empty();
+        while(val.indexOf("\n") > -1){ val = val.replace("\n", "<BR>") }
+        $("#preview").append(val);
+    }
+    
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+    
+    
+</script>
+{% endblock %}

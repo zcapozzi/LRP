@@ -13,6 +13,7 @@ div.viewbox{ width:1024px; min-height:700px; padding:0; margin:auto; }
 .font-13{ font-size:13px; }
 .font-15{ font-size:15px; }
 .font-18{ font-size:18px; }
+.font-20{ font-size:20px; }
 .font-24{ font-size:24px; }
 .font-30{ font-size:30px; }
 .font-36{ font-size:36px; }
@@ -34,6 +35,7 @@ div.page-title{ padding-top:20px; }
     .font-40{ font-size:30px; }
     .font-36{ font-size:24px; }
     .font-24{ font-size:18px; }
+    .font-20{ font-size:16px; }
     .font-18{ font-size:15px; }
     .font-13{ font-size:10px; }
     .font-14{ font-size:11px; }

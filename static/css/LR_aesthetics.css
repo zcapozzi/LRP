@@ -17,8 +17,8 @@ img { cursor:pointer; padding:none; margin:none; }
 span.error{ color:red; display:inline-block; }
 span.msg{ display:inline-block; }
 
-span.light{ color: #888; }
-button.light{ color: #888; }
+.light{ color: #888; fill: #888; }
+.lightish{ color: #555; fill: #555; }
 
 .gradient-shaded{ 
     background: rgb(24,154,211);

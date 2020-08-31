@@ -1,4 +1,74 @@
 
+function show_load_diagnostics(){
+    console.log("Show it...");
+    
+    var time_log_html = "No timelog created."
+    if(typeof(time_log) != "undefined" && time_log.length > 0){
+        time_log_html = ""
+        
+        time_log_html += "<div class='flex bbottom'>";
+        time_log_html += "<div class='col-9-6'><span class='font-15 bold'>Task</span></div>";
+        time_log_html += "<div class='col-3-6 right'><span class='font-15 bold'>Duration</span></div>";
+        time_log_html += "</div>";
+        
+        for(var a = 0;a<time_log.length-1;a++){
+            var log = time_log[a];
+            time_log_html += "<div class='flex table-row'>";
+            time_log_html += "<div class='col-9-6'><span class='font-15'>" + log.tag + "</span></div>";
+            time_log_html += "<div class='col-3-6 right'><span class='font-15'>" + log.duration_str + "</span></div>";
+            time_log_html += "</div>";
+        }
+        var log = time_log[time_log.length-1];
+        time_log_html += "<div class='flex bold' style='border-top: solid 1px black;'>";
+        time_log_html += "<div class='col-9-6'><span class='font-15 bold'>Total</span></div>";
+        time_log_html += "<div class='col-3-6 right'><span class='font-15 bold'>" + log.duration_str + "</span></div>";
+        time_log_html += "</div>";
+        
+    }
+    html = '';
+        html += '<div class="col-12 flex">';
+            html += '<div class="col-3-1"></div>';
+            html += '<div class="col-6-10 popup-content">';
+            html += time_log_html;
+           
+            html += '<div class="col-12 centered" style="padding-top:30px;"><button class="action-button" onclick="hide_overlay();" class="close"><span class="">Close</span></button></div>    ';
+            html += '</div>';
+            html += '<div class="col-3-1"></div>';
+        html += '</div>';
+    
+    
+    $("#overlay_panel").empty(); $("#overlay_panel").append(html); $("#overlay_panel").addClass("shown");
+}
+
+function hide_overlay(){
+    $(".overlay").removeClass("shown");
+}
+
+function process_time_log(time_log){
+    var total = 0;
+    for(var a = 0;a<time_log.length;a++){
+        var log = time_log[a];
+        if(!('duration' in log)){
+            log.duration = log.end - log.start;
+        }
+        total += log.duration;
+    }    
+    for(var a = 0;a<time_log.length;a++){
+        var log = time_log[a];
+        
+        
+        if(log.duration > 5000){ dur = Math.round(log.duration/1000.0*10.0)/10.0 + "s"; }
+        else if(log.duration > 1000){ dur = Math.round(log.duration/1000.0*100.0)/100.0 + "s"; }
+        else{ dur = log.duration + "ms"; }
+        
+        log.duration_str = dur;
+    }
+    
+    time_log.push({'tag': "Total", 'duration_str': total/1000.0 + "s"});
+    
+    
+}
+
 function display_notifications(notifications){
     console.log(notifications);
     var allow_close = true;
@@ -37,6 +107,47 @@ function finish_load(notifications){
     else if($("#main_logo").css("color") == "rgb(255, 255, 255)"){
         document.getElementById("main_logo").style.color = "rgb(255, 254, 254)";
     }
+}
+
+function show_explanation(tags){
+    var tags = tags.split("|");
+    if(tags.length != 2){
+        exp = 'Oops...|There should be something here, but there isn\'t. Apologies.'
+    }
+    else if(typeof explanations == "undefined"){
+        exp = 'Oops...|There should be something here, but there isn\'t. Apologies.'
+    }
+    else if(explanations == null){
+        exp = 'Oops...|There should be something here, but there isn\'t. Apologies.'
+    }
+    else{
+        exp = 'Oops...|There should be something here, but there isn\'t. Apologies.'
+        for(var a = 0;a<explanations.length;a++){
+            var explanation = explanations[a];
+            console.log(explanation.html_page , tags[0] , explanation.tag , tags[1]);
+            if(explanation.html_page == tags[0] && explanation.tag == tags[1]){
+                exp = explanation.header_text + "|" + explanation.explanation_html_BR;
+            }
+        }
+    }    
+        
+    exp_html = "<div class='col-12 flex'><div class='col-10'><span class='font-36 bold contents'>" + exp.split("|")[0] + "</span></div>";
+    exp_html += "<div class='col-2 right'><img onclick='hide_overlay();' src='/static/img/Close24.png' /></div></div>";
+    exp_html += "<div class='col-12 exp-scroll'><span class='font-15 contents'>" + exp.split("|")[1] + "</span></div>";
+    
+    html = '';
+        html += '<div class="flex" style="max-height:450px; margin:5px;">';
+            html += '<div class="col-1"></div>';
+            html += '<div class="col-10 popup-content">';
+            html += exp_html;
+           
+            html += '<div class="col-12 centered" style="padding-top:30px;"><button class="action-button" onclick="hide_overlay();" class="close"><span class="">Close</span></button></div>    ';
+            html += '</div>';
+            html += '<div class="col-1"></div>';
+        html += '</div>';
+    
+    
+    $("#overlay_panel").empty(); $("#overlay_panel").append(html); $("#overlay_panel").addClass("shown");
 }
 
 function set_panel(val){
