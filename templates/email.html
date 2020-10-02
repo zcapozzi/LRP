@@ -56,10 +56,10 @@
                                             {% endfor %}
                                             </select>
                                             </span>
-                                            <button type=submit class='action-button' id='submit_me'>Go</button>
+                                            <button type=submit class='action-button' id='submit_me_single'>Go</button>
                                         {% else %}
                                             {% for o in u.options %}
-                                                <button type=submit class='action-button' id='submit_me' name='action' value='{{o.val}}'>{{o.desc}}</button>
+                                                <button type=submit class='action-button' id='submit_me_multiple' name='action' value='{{o.val}}'>{{o.desc}}</button>
                                             {% endfor %}
                                         {% endif %}
                                     {% endif %}

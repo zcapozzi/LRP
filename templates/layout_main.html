@@ -24,8 +24,8 @@
     <link rel="stylesheet" href="static/css/LR_spacing.css?dt=1" />
     <link rel="stylesheet" href="static/css/LR_structural.css?dt=1" />
     
-    <script src="static/js/laxref.js?dt=1"></script>
-    <script src="static/js/laxrefpro.js?dt=2"></script>
+    <script src="static/js/laxref.js?dt=3"></script>
+    <script src="static/js/laxrefpro.js?dt=6"></script>
     <script src="static/js/jquery.min.js"></script>
 
   </head>
@@ -33,7 +33,7 @@
   
   <div class='viewbox'>
         <div class='col-12 flex site-header-bar no-padding' style='border-bottom:solid 1px black;'>
-            <div id="overlay_panel" class='overlay' style=""></div>
+            <img id='pixel' src='' style='display:none;' /><div id="overlay_panel" class='overlay' style=""></div>
                
           
             <div class='col-7 no-padding flex'>
@@ -51,17 +51,18 @@
                 <img class='menu-icon' style=' ' title='{{user_obj.email_decrypted}}' id='personicon' src='/static/img/person30.png'>
                <div class='menu-holder'>
                 <div id="menu_modal_dtop" class="dropdown-content">
-                    <a class='font-15' id='home_link' href="/">Home</a>
-                    <a class='font-15' id='account_link' href="/account">My Account</a>
+                    <a class='font-15' id='home_link_dtop' href="/">Home</a>
+                    <a class='font-15' id='account_link_dtop' href="/account">My Account</a>
                     {% if user_obj.num_active_groups > 1 %}
-                        <a class='font-15' id='switch_active_group' href="/switch_groups">Switch Teams</a>
+                        <a class='font-15' id='switch_active_group_dtop' href="/switch_groups">Switch Teams</a>
                     {% endif %}
                     {% if user_obj.is_admin %}
-                        <a class='font-15' id='admin' href="/admin">Admin</a>
-                        <a class='font-15' id='load' class='pointer' onclick='show_load_diagnostics()'>Load</a>
+                        <a class='font-15' id='admin_dtop' href="/admin">Admin</a>
+                        <a class='font-15' id='load_dtop' class='pointer' onclick='show_load_diagnostics()'>Load</a>
+                        <a class='font-15' id='console_dtop' class='pointer' onclick='show_console()'>Console</a>
                     {% endif %}
                     <a class='font-15' href="/help{{misc.handler}}">Help</a>
-                    <a class='font-15' id='signout_link' href="/logout">Sign Out</a>
+                    <a class='font-15' id='signout_link_dtop' href="/logout">Sign Out</a>
                 </div>
                 </div>
             </div>
@@ -76,17 +77,17 @@
                 <div class='menu-holder'>
                     <div id="menu_modal_mob" class="dropdown-content">
                         <a class='font-15' href="/">Home</a>
-                        <a class='font-15' href="/team_opponents">Opponents</a>
-                        <a class='font-15' href="/team_my_team">My Team</a>
-                        <a class='font-15' href="/team_explore" style='border-bottom: solid 1px #999;'>Explore</a>
+                        <a class='font-15' href="/team_my_schedule">Schedule</a>
+                        <a class='font-15' href="/team_my_stats">Stats</a>
                         <a class='font-15' href="/account">My Account</a>
                         {% if user_obj.num_active_groups > 1 %}
                             <a id='switch_active_group' href="/switch_groups"><span class='font-15'>Switch Teams</span></a>
                         {% endif %}
                         
                         {% if user_obj.is_admin %}
-                            <a class='font-15' id='admin' href="/admin">Admin</a>
-                            <a class='font-15' id='load' class='pointer' onclick='show_load_diagnostics()'>Load</a>
+                            <a class='font-15' id='admin_mob' href="/admin">Admin</a>
+                            <a class='font-15' id='load_mob' class='pointer' onclick='show_load_diagnostics()'>Load</a>
+                            <a class='font-15' id='console_mob' class='pointer' onclick='show_console()'>Console</a>
                         {% endif %}
                         <a class='font-15' href="/help{{misc.handler}}">Help</a>
                         <a class='font-15' href="/logout">Sign Out</a>

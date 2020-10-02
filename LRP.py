@@ -161,9 +161,6 @@ def x_header(r):
     
 def finish_user_obj(user_obj):
     
-    if 'explanations' in user_obj and user_obj['explanations'] is not None:
-        for u in user_obj['explanations']:
-            u['explanation_html_BR'] = u['explanation_html'].replace("\n", "<BR>").replace("'", "&#39;")
             
     try:
         if user_obj is None: return None
@@ -171,6 +168,9 @@ def finish_user_obj(user_obj):
         user_obj['cart_display_status'] = "hidden"
         
         
+        if 'explanations' in user_obj and user_obj['explanations'] is not None:
+            for u in user_obj['explanations']:
+                u['explanation_html_BR'] = u['explanation_html'].replace("\n", "<BR>").replace("'", "&#39;")
         
         
         if 'cart' in user_obj:
@@ -218,7 +218,13 @@ def finish_misc(misc, user_obj):
         misc['time_log'] = []
     misc['time_log'] = json.dumps(misc['time_log'])    
     
+    #misc['breadcrumbs'] = "<span class='font-13'><a class='text-link' href='/'>Home</a> > <a href='/admin'>Admin</a></span>"
+    
+    
+    misc['on_server'] = 1 if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/') else 0
+    misc['refresh_settings_tags'] = ["general_focus_year"]
     try:
+    
         if 'handler' not in misc: 
             misc['handler'] = ""
         elif misc['handler'] not in [None, '']:
@@ -236,11 +242,22 @@ def finish_misc(misc, user_obj):
                     p['in_cart'] = 0
                     if p['ID'] in [z['product_ID'] for z in user_obj['cart'] if z['active'] and z['status'] == "added"]:
                         p['in_cart'] = 1
-    
+        misc['nhca'] = ""
+        if user_obj is not None and 'ID' in user_obj:
+            misc['nhca'] = user_obj['ID']
+            
+        misc, user_obj = establish_default_settings(misc, user_obj)
     except Exception:
         logging.error("finish_misc fail: %s" % traceback.format_exc())   
     return misc
 
+def establish_default_settings(misc, user_obj):
+    misc['default_settings'] = None
+    if misc['target_template'] in ["team_my_rankings.html", "team_my_schedule.html", "team_my_stats.html"]:
+        misc['default_settings'] = {}
+        misc['default_settings']['general_focus_year'] = datetime.now().year
+    return misc, user_obj
+    
 def get_user_obj(creds=None):
     auth_timeout = 10800000# - 10799
     user_obj = None
@@ -249,12 +266,12 @@ def get_user_obj(creds=None):
         
     if creds is not None and 'username' in creds: # User has submitted credentials... 
         
-        query = "SELECT * from LRP_Users where active=1 and (LOWER(email)=%s or LOWER(username)=%s)"
+        query = "SELECT * from LRP_Users where active=1 and (email=%s or username=%s)"
         #print creds['username'].lower()
         dt = datetime.now()
         tmp_keys = ['username']
         for k in tmp_keys:
-            creds["%s_encrypted" % k] =  encrypt(creds[k]).lower()
+            creds["%s_encrypted" % k] =  encrypt(creds[k].lower())
         param = [creds['username_encrypted'], creds['username_encrypted']]
         cursor.execute(query, param)
         
@@ -271,6 +288,7 @@ def get_user_obj(creds=None):
         if len(user_obj) > 0:
             user_obj = user_obj[0]
             tmp = preferences[ [z['user_ID'] for z in preferences].index(user_obj['ID']) ]
+            
             user_obj['preferences'] = process_preferences([{'key': k, 'value': v} for k, v in zip(tmp.keys(), tmp.values())])
             logging.info("%s--->%s" % (user_obj['password'], decrypt(user_obj['password'])))
             user_obj['password'] = decrypt(user_obj['password'])
@@ -447,6 +465,17 @@ def get_user_obj(creds=None):
             max_dt = max([z['end_date'] for z in user_obj['non_renewed_subscriptions']])
             max_dt_str = max_dt.strftime("%b %d, %Y").replace(" 0", " ")
             user_obj['notifications'].append({'nospan': 1, 'html': "<FORM id='banner_renew_form' class='no-padding' action='/cart' method=POST><input type=hidden name='action' value='renew_expired' /><span style='padding-left:10px;' class='font-12'> Your subscription(s) expired on %s. Click <a style='cursor:pointer; color: blue; text-decoration: underline; text-decoration-color: blue;' class='text-button' onclick='document.getElementById(\"banner_renew_form\").submit();'>here</a> to renew.</span></FORM>" % max_dt_str})
+        
+        
+        # Get current user settings (when it's a new season, just reset everyone's settings to None
+        cursor.execute("SELECT * from LRP_User_Settings where user_ID=%s", [user_obj['ID']])
+        tmp = zc.dict_query_results(cursor)
+        
+        user_obj['settings'] = {}
+        for k in tmp:
+            user_obj['settings'][k['tag']] = {'target_template': k['target_template'], 'val': k['val']}
+        
+        
         if len([1 for z in user_obj['active_subscriptions'] if z['expiring']]) > 0:
             # This should be added as a show_once notification by cron job rather than every time
             """
@@ -456,6 +485,8 @@ def get_user_obj(creds=None):
             user_obj['notifications'].append({'nospan': 1, 'html': "<span style='padding-left:10px;' class='font-12'> Your subscription expires on %s. You can make changes to your subscription <a href='/subscription'>here</a>.</span></FORM>" % min_dt_str})
             """
             pass
+        
+        
         
     cursor.close(); conn.close()
     
@@ -1053,48 +1084,81 @@ def claim_quote(misc, user_obj):
   
 def clean_product_data_generic(misc, user_obj):
     return misc, user_obj
+def storage_path(server, fname):
+    if server:
+        return "/capozziinc.appspot.com/%s" % (fname)
+    else:
+        return os.path.join("LocalDocs", fname)
+
+def storage_read(server, path):
+    lg("server: %s" % server)
+    if server:
+        lg("Load from %s" % path)
+        return cloudstorage.open(path).read()
+    else:
+        return open(path, 'r').read()
     
 def build_product_data_team(self, user_obj, misc):
     misc['time_log'].append({'tag': 'Build Team Data', 'start': ms()})
+    
     if 'year' not in misc or misc['year'] is None:
         misc['year'] = datetime.now().year
-                
+    if misc['target_template'] not in ["team_home.html"] and 'settings' in user_obj and 'general_focus_year' in user_obj['settings'] and user_obj['settings']['general_focus_year'] is not None:
+        misc['year'] = int(user_obj['settings']['general_focus_year']['val'])
+       
+    # Lax-ELO change chart settings
+    now = datetime.now()
+    if now.month < 3:
+        misc['laxelo_movement_start_date'] = (datetime(now.year-1, 2, 1) - datetime(2015, 1, 1)).total_seconds()/3600/24
+    else:
+        misc['laxelo_movement_start_date'] = (datetime(now.year, 2, 1) - datetime(2015, 1, 1)).total_seconds()/3600/24
+    
+    if misc['target_template'] in ["team_my_rankings.html"] and 'settings' in user_obj and 'laxelo_movement_start_date' in user_obj['settings'] and user_obj['settings']['laxelo_movement_start_date'] is not None:
+        lg(user_obj['settings']['laxelo_movement_start_date']['val'])
+        misc['laxelo_movement_start_date'] = (datetime.strptime(user_obj['settings']['laxelo_movement_start_date']['val'], "%Y-%m-%d %H:%M:%S") - datetime(2015, 1, 1)).total_seconds()/3600/24
+    
     data = None
     lg("Building product data...")
     tmp = {}
-    misc['data'] = None
+    misc['data'] = None; misc['active_team_ID'] = None
     
     if 'active_group' not in user_obj or user_obj['active_group'] in [None, -1]:
         misc['error'] = "We could not find an active subscription for your account. If this in error, please <a href='https://pro.lacrossereference.com/contact'>contact us</a>."
         logging.error("%s\n\nContext: %s" % (misc['error'], user_obj['email']))
     else:
         misc['data'] = {}
+        lg("Template: %s" % misc['target_template'])
         active_group =user_obj['active_groups'][ [z['ID'] for z in user_obj['active_groups']].index(user_obj['active_group']) ]
+        misc['active_team_ID'] = active_group['team_ID']
         
         
-        team_path = "teamstats_%04d_%d_LRP.json" % (active_group['team_ID'], misc['year'])
-        server_path = "/capozziinc.appspot.com/TeamData/%s" % (team_path)
-        local_path = os.path.join("LocalDocs", "TeamData", team_path)
-        #lg("Server path: %s" % server_path)
-        lg("Local path: %s" % local_path)
+        team_path = os.path.join("TeamData", "teamstats_%04d_%d_LRP.json" % (active_group['team_ID'], misc['year']))
         
+        on_server = os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
+            
+        misc['extra_data'] = {}
         data = None
-        if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
-            try:
-                data = json.loads(cloudstorage.open(server_path).read())
-            except Exception, e:
-                logging.error("The server team JSON for ID %d could not be read from %s\n\n%s" % (active_group['team_ID'], server_path, traceback.format_exc()))
-        else:
-            try:
-                txt = open(local_path, 'r').read()
-                lg(txt)
-                data = json.loads(txt)
-                lg(data.__class__)
-            except Exception, e:
-                logging.error("The local team JSON for ID %d could not be read from %s\n\n%s" % (active_group['team_ID'], local_path, traceback.format_exc()))
-
+        try:
+            data = json.loads(storage_read(on_server, storage_path(on_server, team_path)))
+            
+            if misc['target_template'] == "team_my_rankings.html":
+                
+                misc['extra_data']['all_teams_laxelo_history'] = json.loads(storage_read(on_server, storage_path(on_server, os.path.join('TeamData', "AllTeamsELOHistory_%s.json" % (data['league'].replace(" ", ""))))))
+            if misc['target_template'] == "team_my_stats.html":
+                lg(storage_path(on_server, os.path.join('GeneralData', "dbLaxRef_Team_Game_Summaries_%d_%s.json" % (misc['year'], data['league'].replace(" ", "")))))
+                misc['extra_data']['db_team_game_summaries'] = json.loads(storage_read(on_server, storage_path(on_server, os.path.join('GeneralData', "dbLaxRef_Team_Game_Summaries_%d_%s.json" % (misc['year'], data['league'].replace(" ", ""))))))
+            
+            misc['extra_data']['db_teams'] = json.loads(storage_read(on_server, storage_path(on_server, os.path.join('GeneralData', "dbLaxRef_Teams_%s.json" % (data['league'].replace(" ", ""))))))
+            misc['extra_data']['db_conferences'] = json.loads(storage_read(on_server, storage_path(on_server, os.path.join('GeneralData', "dbLaxRef_Conferences.json"))))
+            
+         
+                
+        except Exception, e:
+            logging.error("The %s team JSON for ID %d could not be read from %s\n\n%s" % ("server" if on_server else "local", active_group['team_ID'], storage_path(on_server, team_path), traceback.format_exc()))
+        
         if data is not None:
             misc['data']['display_name'] = active_group['group_name']
+            misc['data']['gender'] = "men" if "Men" in data['league'] else "women"
             auto_tags = [{'tag': 'record'}, {'tag': 'adj_efficiency_rank_str'}, {'tag': 'elo_rank_str'}, {'tag': 'league_record'}, {'tag': 'RPI_rank_str'}]
             ignore = []
             auto_tags = [{'tag': z} for z in data.keys() if z not in ignore]
@@ -1105,8 +1169,8 @@ def build_product_data_team(self, user_obj, misc):
                 misc['data']['record_league_str'] = misc['data']['record']
             else:
                 misc['data']['record_league_str'] = "%s (%s)" % (misc['data']['record'], misc['data']['league_record'])
-                
-            pd(misc['data'])
+        else:
+            misc['error'] = "There was an error loading data."
         misc, user_obj = clean_product_data_generic(misc, user_obj)
     misc['time_log'][-1]['end'] = ms()
     return misc, user_obj, tmp
@@ -1367,7 +1431,6 @@ class CreateHandler(webapp2.RequestHandler):
                         go_on = False
                     
                     
-                    pd(misc)    
                     if req['standalone_first_name'] == "": req['standalone_first_name'] = None
                     if req['standalone_last_name'] == "": req['standalone_last_name'] = None
                     tmp_keys = ['standalone_email', 'standalone_password', 'standalone_username', 'standalone_first_name', 'standalone_last_name', 'standalone_phone']
@@ -2447,7 +2510,7 @@ class SubscriptionHandler(webapp2.RequestHandler):
                 
                 sub = user_obj['active_subscription']
                 sub['stripe_payment_intent_decrypted'] = decrypt(sub['stripe_payment_intent'])
-                pd(sub)
+                
                 
                 if misc['error'] is None:
                     if misc['action'] == "disable_autorenew" and misc['confirmed'] == "no":
@@ -2498,7 +2561,6 @@ class SubscriptionHandler(webapp2.RequestHandler):
                         else:
                             # This is where we are actually processing the refund
                             
-                            #pd(sub)
                             
                             payment_went_through = False
                             try:
@@ -2566,9 +2628,6 @@ class SubscriptionHandler(webapp2.RequestHandler):
                         else:
                             new_price = product['price']
                             
-                        #pd(sub)
-                        #pd(quote)
-                        #pd(product)
                         if sub['product_ID'] not in [z['product_ID'] for z in user_obj['cart'] if z['status'] == "added" and z['active']]:
                             query = "INSERT INTO LRP_Cart (ID, user_ID, quote_ID, product_ID, status, date_added, price, discount_tag, list_price, active, trial_subscription_ID) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Cart fds), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
                             param = [user_obj['ID'], sub['quote_ID'], sub['product_ID'], 'added', datetime.now(), new_price, None, product['price'], 1, sub['ID']]
@@ -2838,7 +2897,7 @@ class ExplanationsHandler(webapp2.RequestHandler):
             if user_obj['auth'] and user_obj['is_admin']:
                 
                 conn, cursor = mysql_connect()
-                cursor.execute("SELECT * from LRP_Explanations", [])
+                cursor.execute("SELECT * from LRP_Explanations order by ID desc", [])
                 misc['explanations'] = zc.dict_query_results(cursor)
                 cursor.close(); conn.close()
                 
@@ -2860,8 +2919,8 @@ class ExplanationsHandler(webapp2.RequestHandler):
                     misc['explanation'] = misc['explanations'][ [z['ID'] for z in misc['explanations']].index(int(req['ID'])) ]
                     misc['target_template'] = "explanation_detail.html"
                     
-                    query = "UPDATE LRP_Explanations set tag=%s, html_page=%s, explanation_html=%s, header_text=%s where ID=%s"
-                    param = [req['tag'], req['html_page'], req['explanation_html'], req['header_text'], req['ID']]
+                    query = "UPDATE LRP_Explanations set tag=%s, html_page=%s, explanation_html=%s, header_text=%s, updated=%s where ID=%s"
+                    param = [req['tag'], req['html_page'], req['explanation_html'], req['header_text'], datetime.now(), req['ID']]
                     queries.append(query); params.append(param)
                 
                     misc['explanation']['tag'] = req['tag']
@@ -2871,17 +2930,21 @@ class ExplanationsHandler(webapp2.RequestHandler):
                 elif req['action'] == "add_explanation":
                     misc['action'] = "edit_explanation"
                     next_ID = 1 if len(misc['explanations']) == 0 else max([z['ID']+1 for z in misc['explanations']])
-                    misc['explanation'] = {'tag': req['tag'], 'html_page': req['html_page'], 'explanation_html': req['explanation_html'], 'ID': next_ID}
+                    misc['explanation'] = {'tag': req['tag'], 'header_text': req['header_text'], 'html_page': req['html_page'], 'explanation_html': req['explanation_html'], 'ID': next_ID}
                     misc['target_template'] = "explanation_detail.html"
                     
-                    query = "INSERT INTO LRP_Explanations (ID, active, html_page, tag, explanation_html, header_text) VALUES (%s, %s, %s, %s, %s, %s)"
-                    param = [next_ID, 1, req['html_page'], req['tag'], req['explanation_html'], req['header_text']]
+                    query = "INSERT INTO LRP_Explanations (ID, active, html_page, tag, explanation_html, header_text, updated) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+                    param = [next_ID, 1, req['html_page'], req['tag'], req['explanation_html'], req['header_text'], datetime.now()]
                     queries.append(query); params.append(param)
                 
                 
                 ex_queries(queries, params)
                 
                 misc['explanation']['explanation_html_BR'] = None if misc['explanation']['explanation_html'] is None else misc['explanation']['explanation_html'].replace("\n",  "<BR>")
+                
+                for m in misc['explanations']:
+                    m['color'] = "black" if len(m['explanation_html']) > 0 else "red"
+                
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", misc['target_template'])
@@ -2906,10 +2969,13 @@ class ExplanationsHandler(webapp2.RequestHandler):
             if user_obj['auth'] and user_obj['is_admin']:
                 
                 conn, cursor = mysql_connect()
-                cursor.execute("SELECT * from LRP_Explanations", [])
+                cursor.execute("SELECT * from LRP_Explanations order by ID desc", [])
                 misc['explanations'] = zc.dict_query_results(cursor)
                 cursor.close(); conn.close()
                 
+                for m in misc['explanations']:
+                    m['color'] = "black" if len(m['explanation_html']) > 0 else "red"
+                    
                 misc['action'] = "edit_explanation"
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
@@ -3353,7 +3419,7 @@ class CreateRefundHandler(webapp2.RequestHandler):
                     elif misc['action'] == "create_refund" and misc['confirmed'] == "yes":
                         # This is where we are actually processing the refund
                         misc['msg'] = "Refund has been processed and sent to %s" % sub['email']
-                        #pd(sub)
+                        
                         
                         refund = stripe.Refund.create(
                           amount=int(refund_amount_val*100.),
@@ -3575,7 +3641,7 @@ class ExtendSubscriptionHandler(webapp2.RequestHandler):
                     elif misc['action'] == "create_extension" and misc['confirmed'] == "yes":
                         # This is where we are actually processing the extension
                         misc['msg'] = "Extension has been processed and sent to %s" % sub['email']
-                        #pd(sub)
+                        
                         
                         queries.append("UPDATE LRP_Subscriptions set end_date=%s where ID=%s")
                         params.append([end_date, sub['ID']])
@@ -3999,7 +4065,7 @@ class ViewQuoteHandler(webapp2.RequestHandler):
             layout = 'layout_no_auth.html'
         
         misc = display_quote(misc)
-        pd(misc)
+        
                 
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout }
         path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
@@ -4037,6 +4103,8 @@ class SwitchGroupsHandler(webapp2.RequestHandler):
                     cursor.close(); conn.close()
                     user_obj = get_user_obj({'session_ID': session_ID})
                     
+                    
+                    misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
                     
                     misc['target_template'] = "team_home.html"
                     tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
@@ -4413,62 +4481,8 @@ class CronHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': "forgot.html", 'time_log': [], 'handler': 'forgot', 'error': None}; user_obj = process_non_auth(self); queries = []; params = []
-        user_obj['ID'] = None
-        
-        misc['username'] = self.request.get('username').strip().lower()
-        
-        conn, cursor = mysql_connect()
-        cursor.execute("SELECT * from LRP_Users")
-        users = zc.dict_query_results(cursor)
-        cursor.execute("SELECT * from LRP_Email_Templates where template_desc='Password Reset'")
-        msg = zc.dict_query_results(cursor)[0]
-        cursor.close(); conn.close()
-        
-        
-        if "" == misc['username']:
-            misc['error'] = "You must enter a valid value for username/email."
-        elif misc['username'] not in [decrypt(z['username']).strip().lower() for z in users] and misc['username'] not in [decrypt(z['email']).strip().lower() for z in users]:
-            misc['error'] = "Could not find an account associated with your entry."
-        
-        if misc['error'] is None:
-            
-            
-            pd (misc)
-            user = None
-            lg(str([decrypt(z['username']).strip().lower() for z in users]))
-            lg(misc['username'] in [decrypt(z['username']).strip().lower() for z in users])
-            if misc['username'] in [decrypt(z['username']).strip().lower() for z in users]:
-                user = users[ [decrypt(z['username']).strip().lower() for z in users].index(misc['username']) ]
-            elif misc['username'] in [decrypt(z['email'].strip().lower()) for z in users]:
-                user = users[ [decrypt(z['email'].strip().lower()) for z in users].index(misc['username']) ]
-            
-            misc['msg'] = "Password has been reset; check your inbox for a password reset message."
-            
-            tmp_password = create_temporary_password()
-            msg['email'] = decrypt(user['email'])
-            msg['subject'] = "Password Reset"
-            
-            query = "UPDATE LRP_Users set password=%s where ID=%s"
-            param = [encrypt(tmp_password), user['ID']]
-            queries.append(query); params.append(param)
-            
-            
-            msg['content'] = get_file(msg['bucket'], msg['fname'])
-            msg['content'] = msg['content'].replace("[password]", tmp_password)
-            msg['content'] = msg['content'].replace("[username]", decrypt(user['username']))
-            msg['content'] = msg['content'].replace("\r\n", "\\n")
-            msg['content'] = msg['content'].replace("\n", "\\n")
-            
-            mail_res, dbrec = finalize_mail_send(msg)
-            if mail_res != "": create_mail_record(dbrec)
-            
-            ex_queries(queries, params)
-                    
-        tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-        path = os.path.join("templates", misc['target_template'])
-        self.response.out.write(template.render(path, tv))
-
+        misc = {'target_template': "index.html"}
+        default_get(self)
     
         
         
@@ -4571,6 +4585,100 @@ class CronHandler(webapp2.RequestHandler):
             pass
         self.response.set_status(status)
         self.response.out.write(json.dumps(misc))
+
+def get_global_tags():
+    return ['general_focus_year']
+
+class LoggerHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+        
+        misc = {'target_template': "index.html"}
+        default_get(self)
+    
+    def get(self, orig_url):
+        lg("Logger: %s" % orig_url)
+        misc = {'target_template': None, 'time_log': [], 'global_tags': get_global_tags()}; status = 200
+        queries = []; params = []
+        
+        try:
+            if orig_url == "editSettings":
+                args = self.request.get('c').split("|")
+                req = {'target_template': str(args[0]), 'tag': str(args[2]), 'val': str(args[3]), 'user_ID': None if args[1] in [u'', '', None, -1] else int(str(args[1]))}
+                
+                if req['tag'] == "laxelo_movement_start_date": # Adjust from days to a date
+                    req['val'] = datetime(2015, 1, 1) + timedelta(days=int(req['val']))
+                
+                
+                # global tags are those that are not specific to a given page
+                if req['tag'] in misc['global_tags']: req['target_template'] = None
+                
+                pd(req)
+                tup = (req['target_template'], req['tag'])
+                
+                conn, cursor = mysql_connect()
+                cursor.execute("SELECT * from LRP_User_Settings where active and user_ID=%s", [req['user_ID']])
+                settings = zc.dict_query_results(cursor)
+                
+                query = None
+                if req['target_template'] is None and req['tag'] in [z['tag'] for z in settings]: # Update existing global setting
+                    
+                    query = "UPDATE LRP_User_Settings set val=%s where tag=%s and user_ID=%s and active"
+                    param = [req['val'], req['tag'], req['user_ID']]
+                        
+                elif req['target_template'] is not None and tup in [(z['target_template'], z['tag']) for z in settings]: # Update existing local setting
+                    
+                    query = "UPDATE LRP_User_Settings set val=%s where tag=%s and target_template=%s and user_ID=%s and active"
+                    param = [req['val'], req['tag'], req['target_template'], req['user_ID']]
+                        
+                else: # Insert new setting
+                    query = "INSERT INTO LRP_User_Settings (ID, active, user_ID, target_template, tag, val) VALUES((SELECT IFNULL(max(ID), 0) + 1 from LRP_User_Settings fds), %s, %s, %s, %s, %s)"
+                    param = [1, req['user_ID'], req['target_template'], req['tag'], req['val']]
+                
+                lg("Query %s w/ %s" % (query, param))
+                if query is not None:
+                    cursor.execute(query, param); conn.commit()
+                cursor.close(); conn.close()
+                
+            if orig_url == "explanationOpen":
+                args = self.request.get('c').split("|")
+                req = {'html_page': str(args[0]), 'tag': str(args[1]), 'user_ID': None if args[2] in [u'', '', None, -1] else int(str(args[2]))}
+                
+                queries.append("INSERT INTO LRP_Explanation_Clicks (datestamp, html_page, tag, user_ID) VALUES (%s, %s, %s, %s)")
+                params.append([datetime.now(), req['html_page'], req['tag'], req['user_ID']])
+                
+                
+            if orig_url == "jsVisualizationFail":
+                args = self.request.get('c').split("|")
+                req = {'html_page': str(args[0]), 'div_ID': str(args[1]), 'user_ID': None if args[2] in [u'', '', None, -1] else int(str(args[2]))}
+                
+                logging.error("jsVisualizationFail:%s" % str(req))
+            
+            if orig_url == "explanationFeedback":
+                args = self.request.get('c').split("|")
+                req = {'html_page': str(args[0]), 'tag': str(args[1]), 'user_ID': None if args[2] in [u'', '', None, -1] else int(str(args[2])), 'was_helpful': int(str(args[3]))}
+                
+                queries.append("INSERT INTO LRP_Explanation_Feedback (datestamp, html_page, tag, user_ID, was_helpful) VALUES (%s, %s, %s, %s, %s)")
+                params.append([datetime.now(), req['html_page'], req['tag'], req['user_ID'], req['was_helpful']])
+            ex_queries(queries, params)
+                
+        except Exception:
+            misc['error'] = "Logger failed (url: %s; args=%s)" % (orig_url, self.request.get('c'))
+            status = 500
+            logging.error("%s\n\n%s" % (traceback.format_exc(), misc['error']))
+                    
+        self.response.set_status(status)
+        self.response.out.write(json.dumps(misc))
         
 def check_submission_for_spam(msg):
     msg['spam'] = 0
@@ -4642,7 +4750,6 @@ class ContactHandler(webapp2.RequestHandler):
             
             msg = {'email': "admin@lacrossereference.com", 'subject': misc['final_subject'], 'content': "Email: %s\nName: %s\nSubject: %s\n\n\n%s" % (misc['email'], misc['name'], misc['subject'], misc['msg_content'])}
             
-            pd(misc)
             if misc['spam'] == 0:
                 mail_res, dbrec = finalize_mail_send(msg)
                 if mail_res != "": create_mail_record(dbrec)
@@ -5120,6 +5227,20 @@ class ProductSummaryHandler(webapp2.RequestHandler):
                         param = [datetime.now(), misc['email_encrypted'], misc['team_ID'], misc['group_ID'], misc['product_tag'], misc['product']['ID'], 'active', 1, misc['request_type'], None]
                         queries.append(query); params.append(param)
                         misc['msg'] = "Request received."
+                        
+                        msg = {'email': client_secrets['local']['personal_email'], 'subject': "%s has made a product request for %s" % (misc['email'], misc['product_tag']), 'content': "Team ID: %s\nGroup ID: %s\nRequest Type: %s" % (misc['team_ID'], misc['group_ID'], misc['request_type'])}
+            
+                        
+                        mail_res, dbrec = finalize_mail_send(msg)
+                        if mail_res != "": create_mail_record(dbrec)
+                        if mail_res == "Success" or client_secrets['local']['--no-mail'] in ["Y", 'y', 'yes']:
+                            
+                            # Success
+                            pass
+                            
+                        else:
+                            logging.error("Failed to send a notification email about a product request\n\n%s" % (str(msg)))
+                        
                     else:
                         misc['msg'] = "Your request was received."
                     
@@ -5422,8 +5543,6 @@ class ReportHandler(webapp2.RequestHandler):
         
         misc = {'target_template': "report.html", 'time_log': [], 'handler': 'report', 'error': None, 'msg': None, 'action': self.request.get('action')}; user_obj = None; queries = []; params = []
 
-        pd(misc)
-        
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -5819,11 +5938,188 @@ class TeamsHomeHandler(webapp2.RequestHandler):
     
     def post(self):
         tv = {'user_obj': None, 'misc': {}}
-        path = os.path.join("templates", "teams_home.html")
+        path = os.path.join("templates", "index.html")
         self.response.out.write(template.render(path, tv))
     
     def get(self):
         misc = {'target_template': 'teams_home.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                
+                misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+            else:
+                misc['target_template'] = "index.html"
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        else: 
+        
+            misc['target_template'] = "index.html"
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        
+class TeamsMyRankingsHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+        misc = {'target_template': 'team_my_rankings.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                
+                misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
+                misc['active_element'] = self.request.get("active_element")
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+            else:
+                misc['target_template'] = "index.html"
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        else: 
+        
+            misc['target_template'] = "index.html";
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        
+
+    def get(self):
+        misc = {'target_template': 'team_my_rankings.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                
+                misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+            else:
+                misc['target_template'] = "index.html"
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        else: 
+        
+            misc['target_template'] = "index.html"
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        
+class TeamsMyStatsHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+        misc = {'target_template': 'team_my_stats.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                
+                misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
+                misc['active_element'] = self.request.get("active_element")
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+            else:
+                misc['target_template'] = "index.html"
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        else: 
+        
+            misc['target_template'] = "index.html";
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        
+
+    def get(self):
+        misc = {'target_template': 'team_my_stats.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                
+                misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+            else:
+                misc['target_template'] = "index.html"
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        else: 
+        
+            misc['target_template'] = "index.html"
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        
+class TeamsMyScheduleHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+        misc = {'target_template': 'team_my_schedule.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                
+                misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
+                misc['active_element'] = self.request.get("active_element")
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+            else:
+                misc['target_template'] = "index.html"
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        else: 
+        
+            misc['target_template'] = "index.html";
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        
+
+    def get(self):
+        misc = {'target_template': 'team_my_schedule.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         
         if session_ID not in [None, 0]:
@@ -6014,9 +6310,13 @@ app = webapp2.WSGIApplication([
     ,('/explanations', ExplanationsHandler)
     ,('/help', HelpHandler)
     ,('/cron-(.+)', CronHandler)
+    ,('/logger-(.+)', LoggerHandler)
     
     
-    ,('/teamshome', TeamsHomeHandler)
+    ,('/team_home', TeamsHomeHandler)
+    ,('/team_my_rankings', TeamsMyRankingsHandler)
+    ,('/team_my_schedule', TeamsMyScheduleHandler)
+    ,('/team_my_stats', TeamsMyStatsHandler)
     
     ,('/(product-summary.+)', ProductSummaryHandler)
     

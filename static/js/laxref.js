@@ -1,4 +1,4 @@
-var offense = true;
+var show_offense = true;
 var stat_type = "rate";
 var panel = "standard";
 var sort_by = null;
@@ -7,11 +7,72 @@ var sort_by = null;
 var sort_tag = {'generic': null, 'by_opponents': 'cnt', 'standard': 'date', 'all_games': 'date'};
 var sort_dir = {'generic': 'desc', 'by_opponents': 'desc', 'standard': 'desc', 'all_games': 'desc'};
 
+function jsformat(val, fmt){
+    orig_fmt = fmt;
+    var pct = false; var seconds = false;
+    var plus_minus = false; var plus_minus_sign = "";
+    if(fmt.endsWith("%")){ pct = true; fmt = fmt.replace("%", ""); }
+    if(fmt.endsWith("s")){ seconds = true; fmt = fmt.replace("s", ""); }
+    if(fmt.startsWith("+/-")){ plus_minus = true; }
+    var decimals = null;
+    try{
+        decimals = parseInt(fmt); 
+    }
+    catch(error){  }
+    
+    var res = null;
+    if(["", "{}"].indexOf(fmt) > -1){
+        res = val;
+    }
+    else if (typeof val == "string"){ res = val; }
+    else if (decimals != null && !pct && !seconds){ res = val.toFixed(decimals); }
+    else if (decimals == null && pct){ res = val*100.0  + "%"; }
+    else if (decimals != null && pct){ res = (val*100.0).toFixed(decimals)  + "%"; }
+    else if (decimals == null && seconds){ res = val + "s"; }
+    else if (decimals != null && seconds){ res = (val).toFixed(decimals) + "s"; }
+    
+    if(plus_minus){
+        if(res == 0){ 
+            res = "---";
+        }
+        else if (res > 0){ res = "+" + res; }
+        else if (res < 0){ res = res; }
+    }
+    
+    //console.log(val, orig_fmt, res);
+    return res
+}
+
+function add_suffix(n){
+    m = n % 10;
+    if([1].indexOf(m) > -1){ return n + "st"; }
+    if([2].indexOf(m) > -1){ return n + "nd"; }
+    if([3].indexOf(m) > -1){ return n + "rd"; }
+    if([4,  5, 6, 7, 8, 9, 0].indexOf(m) > -1){ return n + "th"; }
+}
+
+function generic_format(row, field, fmt){
+    var debug = false;
+    
+    var val = null;
+    
+    if (typeof row[field.tag] == "undefined"){ return ""; }
+    if(["string","number"].indexOf(typeof row[field.tag]) == -1){ val = row[field.tag].val; }
+    else{ val = row[field.tag]; }
+    
+    if(val == null){ return ""; }
+    var format = fmt.fmt;
+    if(debug){ console.log("Format " + val + " via " + format); }
+    return jsformat(val, format);
+    
+}
+
 
 // Generic
 
-var generic_td = null;
-function generic_sort_by_tag(tag){
+var generic_td = {};
+var generic_specs = {};
+function generic_sort_by_tag(tag, id){
     
     if(sort_tag.generic == tag){
         sort_dir.generic = ((sort_dir.generic == "desc") ? "asc" : "desc");
@@ -20,8 +81,8 @@ function generic_sort_by_tag(tag){
         sort_tag.generic = tag;
         sort_dir.generic = "desc";
     }
-    if (typeof generic_td.data[0][sort_tag.generic] == "object"){
-        generic_td.data.sort(function(first, second) {
+    if (typeof generic_td[id].data[0][sort_tag.generic] == "object"){
+        generic_td[id].data.sort(function(first, second) {
         
             if(sort_dir.generic == "desc"){
                 return second[sort_tag.generic].val - first[sort_tag.generic].val;
@@ -33,7 +94,7 @@ function generic_sort_by_tag(tag){
         });
     }
     else{
-        generic_td.data.sort(function(first, second) {
+        generic_td[id].data.sort(function(first, second) {
         
             if(sort_dir.generic == "desc"){
                 return second[sort_tag.generic] - first[sort_tag.generic];
@@ -45,65 +106,33 @@ function generic_sort_by_tag(tag){
         });
     }
     console.log("First element");
-    console.log(generic_td.data[0]);
+    console.log(generic_td[id].data[0]);
     console.log("sorted by " + sort_tag.generic + " " + sort_dir.generic);
-    generic_create_table(generic_td);
+    generic_create_table(generic_td[id], generic_specs[id]);
 }
 
 
-function generic_format(row, field, fmt){
-    var debug = false;
-    
-    var val = row[field.tag].val;
-    if(val == null){ return ""; }
-    var format = fmt.fmt;
-    if(debug){ console.log("Format " + val + " via " + format); }
-    var pct = false;
-    var plus_minus = false; var plus_minus_sign = "";
-    if(format.endsWith("%")){ pct = true; format = format.replace("%", ""); }
-    if(format.startsWith("+/-")){ plus_minus = true; }
-    var decimals = null;
-    try{
-        decimals = parseInt(format); 
-    }
-    catch(error){  }
-    
-    var res = null;
-    if(["", "{}"].indexOf(format) > -1){
-        res = val;
-    }
-    else if (typeof val == "string"){ res = val; }
-    else if (decimals != null && ! pct){ res = val.toFixed(decimals); }
-    else if (decimals == null && pct){ res = val*100.0  + "%"; }
-    else if (decimals != null && pct){ res = (val*100.0).toFixed(decimals)  + "%"; }
-    
-    if(plus_minus){
-        if(res == 0){ 
-            res = "---";
-        }
-        else if (res > 0){ res = "+" + res; }
-        else if (res < 0){ res = res; }
-    }
-    
-    
-    return res
-}
 
-var generic_specs = {};
-function generic_create_table(td, specs=null){
-    generic_td = td;
-    console.log(td);
+function generic_create_table(td, specs={}){
+    if(specs != null && 'id' in specs){
+        td_id = specs.id;
+    }
+    else{
+        td_id = 'default';
+    }
+    generic_td[td_id] = td;
+    generic_specs[td_id] = specs;
+    //console.log(td);
 
     var html = ""; var row_cnt = "";
-    if(specs != null){ generic_specs = specs; }
     var target_elem = "#js_div";
-    if( 'target_elem' in generic_specs ){ target_elem = generic_specs.target_elem; }
+    if( 'target_elem' in specs ){ target_elem = specs.target_elem; }
     if(target_elem.indexOf("#") != 0){ target_elem = "#"+target_elem; }
     var elem = $(target_elem); elem.empty();
     
     // START HEADER ROW
     var fields_printed = 0; var field = null;
-    html += "<div class='col-12 no-padding flex'>";
+    html += "<div class='bbottom col-12 no-padding flex'>";
     for(var a = 0;a<td.classes.length;a++){
         var cl = td.classes[a];
         cl.class += " no-padding";
@@ -117,13 +146,13 @@ function generic_create_table(td, specs=null){
                 
                 var onclick = "";
                 field = td.fields[fields_printed];  fields_printed += 1; 
-                if('sort_by' in field){ onclick = 'onclick="generic_sort_by_tag(\'' + field.sort_by + '\');"'; }
+                if('sort_by' in field){ onclick = 'onclick="generic_sort_by_tag(\'' + field.sort_by + '\', \'' + specs.id + '\');"'; }
                 html += "<li " + onclick + " style='' class='table-li "+sub_cl.class+"'><div class='large-cell-holder no-padding'>";
                 if('display' in field){
-                    html += "<span class='no-padding col-12 font-13'>" + field.display + "</span>";
+                    html += "<span class='no-padding col-12 font-12'>" + field.display + "</span>";
                 }
                 else{
-                    html += "<span class='no-padding col-12 font-13'><span class='no-padding dtop'>" + field.dtop_display + "</span><span class='no-padding mob'>" + field.mob_display + "</span></span>";
+                    html += "<span class='no-padding col-12 font-12'><span class='no-padding dtop'>" + field.dtop_display + "</span><span class='no-padding mob'>" + field.mob_display + "</span></span>";
                 }
                 
                 html += "</div></li>";
@@ -134,15 +163,15 @@ function generic_create_table(td, specs=null){
             var onclick = "";
             field = td.fields[fields_printed]; 
             //console.log(fields_printed);
-            row_cnt = (fields_printed == 0 && !('no_row_count' in td)) ? "<div class='no-padding font-13'  style='width:25px;'>&nbsp;</div>" : ""; 
+            row_cnt = (fields_printed == 0 && !('no_row_count' in td)) ? "<div class='no-padding font-12'  style='width:25px;'>&nbsp;</div>" : ""; 
             //console.log(row_cnt);
-            if('sort_by' in field){ onclick = 'onclick="generic_sort_by_tag(\'' + field.sort_by + '\');"'; }
+            if('sort_by' in field){ onclick = 'onclick="generic_sort_by_tag(\'' + field.sort_by + '\', \'' + specs.id + '\');"'; }
             html += "<div " + onclick + " class='header maroon " + cl.class + ((fields_printed == 0) ? " flex" : "") + "'>";
             if('display' in field){
-                html += row_cnt + "<span " + ((fields_printed==0) ?  "style='padding-left:5px;'" : "")+ " class='no-padding col-12 font-13'>" + field.display + "</span>";
+                html += row_cnt + "<span " + ((fields_printed==0) ?  "style='padding-left:10px;'" : "")+ " class='no-padding col-12 font-12'>" + field.display + "</span>";
             }
             else{
-                html += row_cnt + "<span " + ((fields_printed==0) ?  "style='padding-left:5px;'" : "")+ " class='no-padding col-12 font-13'><span class='no-padding dtop'>" + field.dtop_display + "</span><span class='no-padding mob'>" + field.mob_display + "</span></span>";
+                html += row_cnt + "<span " + ((fields_printed==0) ?  "style='padding-left:10px;'" : "")+ " class='no-padding col-12 font-12'><span class='no-padding dtop'>" + field.dtop_display + "</span><span class='no-padding mob'>" + field.mob_display + "</span></span>";
             }
             html += "</div>";
             fields_printed += 1;
@@ -172,7 +201,7 @@ function generic_create_table(td, specs=null){
                     fmt = td.fmt[fields_printed]; fields_printed += 1;
                     html += "<li style='' class='table-li "+sub_cl.class+"'><div class='large-cell-holder no-padding'>";
 
-                    html += "<span " + ((fields_printed==0) ?  "style='padding-left:5px;'" : "")+ "  class='no-padding col-12 font-13'>" + generic_format(row, field, fmt) + "</span>";
+                    html += "<span " + ((fields_printed==0) ?  "style='padding-left:5px;'" : "")+ "  class='no-padding col-12 font-12'>" + generic_format(row, field, fmt) + "</span>";
                     html += "</div></li>";
                 }
                 html += "</ul></div>";
@@ -180,9 +209,15 @@ function generic_create_table(td, specs=null){
             else{
                 field = td.fields[fields_printed];
                 fmt = td.fmt[fields_printed]; 
-                row_cnt = (fields_printed == 0 && !('no_row_count' in td)) ? "<div class='no-padding font-13' style='width:25px; padding-left:5px;'>" + (c + 1) + "</div>" : ""; 
+                row_cnt = (fields_printed == 0 && !('no_row_count' in td)) ? "<div class='no-padding font-12' style='width:25px; padding-left:5px;'>" + (c + 1) + "</div>" : ""; 
                 html += "<div class='" + cl.class + ((fields_printed == 0) ? " flex" : "") + "'>";
-                html += row_cnt + "<span " + ((fields_printed==0 && row_cnt == "") ?  "style='padding-left:5px;'" : "")+ "  class='no-padding col-12 font-13'>" + generic_format(row, field, fmt) + "</span>";
+                if('no_row_count' in td){ 
+                    html += "<span " + ((fields_printed==0) ?  "style='padding-left:10px;'" : "")+ "  class='no-padding col-12 font-12'>" + generic_format(row, field, fmt) + "</span>";
+                }
+                else{
+                    html += "<span class='no-padding font-12'>" + row_cnt + "</span>";
+                    html += "<span " + ((fields_printed==0 && row_cnt == "") ?  "style='padding-left:10px;'" : "")+ "  class='no-padding col-12 font-12'>" + generic_format(row, field, fmt) + "</span>";
+                }
                 html += "</div>";
                 fields_printed += 1;
             }
@@ -293,7 +328,8 @@ function openCity(cityName) {
 
 var team_stats_clicks = [];
 function team_stats_set_offense(val){
-    offense = val;
+    show_offense = val;
+    console.log("Set show offense to " + show_offense);
     team_stats_clicks.push("off" + val);
     if(val){ 
         $("#offense_tag").removeClass("tag-off").addClass("tag-on"); 
@@ -398,13 +434,13 @@ function team_stats_display(){
         var send_val = team_stats_clicks.join('|');
         __gaTracker('send', 'event', 'TeamStatsContent', 'enable', send_val);
     }
-    
+    console.log("Display stats with " + show_offense);
     for(var a = 0;a<misc.rows.length;a++){
         var row = misc.rows[a];
         //console.log(row);
         var display = false;
-        if(offense && (row.offense == null || row.offense == 1)){ display = true; }
-        else if(!offense && (row.offense == null || row.offense == 0)){ display = true; }
+        if(show_offense && (row.offense == null || row.offense == 1)){ display = true; }
+        else if(!show_offense && (row.offense == null || row.offense == 0)){ display = true; }
         
         if(display){
             if(row.class == "team-bg"){

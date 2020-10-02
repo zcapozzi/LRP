@@ -14,8 +14,8 @@
     <div class='col-12 dtop flex menu-header-bar'>
         <div class='col-12'>
             <a href='/' class='menu-link active'><span class='menu-link' style='padding-left:10px;'><span class='active-link font-15'>Home</span></span></a>
-            <a href='/team_opponents' class='menu-link'><span class='menu-link' style='padding-left:10px;'><span class='font-15'>My Opponents</span></span></a>
-            <a href='/team_my_team' class='menu-link'><span class='menu-link' style=''><span class='font-15'>My Team</span></span></a>
+            <a href='/team_my_schedule' class='menu-link'><span class='menu-link' style='padding-left:10px;'><span class='font-15'>My Opponents</span></span></a>
+            <a href='/team_my_stats' class='menu-link'><span class='menu-link' style=''><span class='font-15'>My Team</span></span></a>
             <a href='/team_explore' class='menu-link'><span class='menu-link' style=''><span class='font-15'>Explore</span></span></a>
         </div>
     </div> 
@@ -57,6 +57,9 @@
 
 
 <script>
+    var console_log = [];
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
+    
     $( "#threedot" ).click(function( event ) {
       event.stopPropagation(); menu_toggle();
     });

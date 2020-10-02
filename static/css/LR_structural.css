@@ -3,6 +3,7 @@
 div.block{ display:block; }
 div.flex { display:flex; }
 div.flex-block { display:flex; }
+div.block-flex { display:block; }
 div.inline-flex { display:inline-flex; vertical-align: middle; padding: 10px; }
 div.inline { display:inline; padding: 5px; }
 div.inline-block { display:inline-block; padding: 5px; }
@@ -16,6 +17,8 @@ div.inline-block { display:inline-block; padding: 5px; }
 
 .hidden { display:none!important; }
 .visible { display:block!important; }
+.icon-visible{ display:none; }
+.icon-visible{ display:block; }
 
 
 .mob{ display:none; }
@@ -175,6 +178,7 @@ div.inline-block { display:inline-block; padding: 5px; }
     
     
     div.flex-block { display:block; }
+    div.block-flex { display:flex; }
     
     
     li.mob{ display: block; }

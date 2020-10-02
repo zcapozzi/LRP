@@ -35,9 +35,9 @@
         {% for e in misc.explanations %}
             <FORM action='/explanations' method=POST><input type=hidden name='ID' value='{{e.ID}}' />
             <div class='flex'>
-                <div class='col-3'><span class='bold font-15 contents'>{{e.html_page}}</span></div>
-                <div class='col-3'><span class='bold font-15 contents'>{{e.tag}}</span></div>
-                <div class='col-5'><span class='bold font-15 contents'>{{e.header_text}}</span></div>
+                <div class='col-3'><span class=' font-15 contents'>{{e.html_page}}</span></div>
+                <div class='col-3'><span class=' font-15 contents'>{{e.tag}}</span></div>
+                <div class='col-5'><span class=' font-15 contents' style='color:{{e.color}};'>{{e.header_text}}</span></div>
                 <div class='col-1'><button name='action' value='view_explanation' class='action-button'><span class='font-12'>EDIT</span></button></div>
             </div>
             </FORM>

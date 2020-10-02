@@ -73,7 +73,7 @@
                             <div class='col-6 right'>
                                 {% if user_obj.active_group_admin %}
                                     <FORM action='/subscription' method=POST><input type=hidden name='confirmed' value='no'>
-                                    <button type=submit id='edit_subscription_button' class='action-button'><span class='action-button font-15'>EDIT SUBSCRIPTION</span></button>
+                                    <button type=submit id='edit_subscription_button_group' class='action-button'><span class='action-button font-15'>EDIT SUBSCRIPTION</span></button>
                                 </FORM>
                                 {% endif %}
                              </div>
@@ -98,7 +98,7 @@
                             <div class='col-6 right'>
                               
                                 <FORM action='/subscription' method=POST><input type=hidden name='confirmed' value='no'>
-                                    <button id='edit_subscription_button' type=submit class='action-button'><span class='action-button font-15'>EDIT SUBSCRIPTION</span></button>
+                                    <button id='edit_subscription_button_individual' type=submit class='action-button'><span class='action-button font-15'>EDIT SUBSCRIPTION</span></button>
                                 </FORM>
                                 
                              </div>

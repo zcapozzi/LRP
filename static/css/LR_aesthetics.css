@@ -7,12 +7,21 @@ img { cursor:pointer; padding:none; margin:none; }
 .pink { background-color: #FEE; color:red; }
 
 .bold { font-weight:700; } 
+text.white { fill: white; }
 
+
+rect.green{ fill: #2A2; }
+rect.red{ fill: #B22; }
 
 
 .error{ color:red; }
 
 .bbottom{ border-bottom:solid 1px black; }
+.bbottom.light { border-bottom:solid 1px #888; }
+.interior-top-borders{
+    border-top:solid 1px #AAA;
+}
+.interior-top-borders:first-child {border-top:none;}
 
 span.error{ color:red; display:inline-block; }
 span.msg{ display:inline-block; }
