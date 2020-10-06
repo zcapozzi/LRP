@@ -200,7 +200,7 @@ div.overlay.shown{
     display:block;
 }
 
-.margin{ margin:5px;padding:0px 5px; }
+.margin{ margin:5px;padding:0px 5px; border-radius:5px; }
 .margin.white{ background-color: white;  }
 
 
@@ -224,6 +224,14 @@ div.home-page-section-header {
 .home-page-section-header {
     
     font: 1.7em/.6em Oswald, sans-serif;
+    padding-left:5px;
+}
+
+
+
+.dashboard-label {
+    
+    font: 1.1em/1.1em Oswald, sans-serif;
     padding-left:5px;
 }
 
@@ -346,7 +354,7 @@ span.tile-message{
 
 
 rect.spark-bar-background{
-    stroke: #DDD;
+    stroke: #ECECEC;
 }
 
 .dashboard-tile-header{

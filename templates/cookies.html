@@ -1,0 +1,80 @@
+
+{% extends layout %}
+
+
+{% block body %}
+
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
+
+        <div class='col-12 page-title centered'>
+            <span class='font-24 pointer bold'>
+                <span class='dtop'>LacrosseReference PRO: Cookie Policy</span>
+                <span class='mob'>LR PRO: Cookie Policy</span>
+            </span>
+        </div>
+            <div class='flex' style='margin:5px;'>
+                <div class='col-1 mob no-padding'></div>
+                <div class='col-12-10 no-padding'>
+                    <div class='col-12 flex-block'>
+                        <div class='col-12 no-padding'>
+                            <div style='padding:10px 5px 10px 20px;'>
+                                <span class='font-15 contents'>
+                                    Our cookie policy is pretty straightforward: keep the minimum amount of information possible to maximize the user's experience using the site. In practice, that means that we store a cookie for each device so that we can do 2 things:
+                                </span>
+                            </div>
+                            <div style='padding:10px 5px 10px 20px;'>
+                                <ul>
+                                    <li><span class=''>avoid having to sign-in every time you return to LRP</span></li>
+                                    <li><span class=''>maintain a user cart for those in the process of making a purchase</span></li>
+                                </ul>
+                            </div>
+                            <div style='padding:10px 5px 10px 20px;'>
+                                <span class='font-15 contents'>
+                                    Things that we do not do with cookies:
+                                </span>
+                            </div>
+                            <div style='padding:10px 5px 10px 20px;'>
+                                <ul>
+                                    <li><span class=''>Leverage external parties to access your browsing history to serve ads (because we do not serve ads)</span></li>
+                                    <li><span class=''>Share your browsing history on LRP with anyone (I focus on building a product you want, not on monetizing your attention)</span></li>
+                                    <li><span class=''>Whatever other gray-area things some sites do with cookies and browsing history</span></li>
+                                </ul>
+                            </div>
+                            
+                            <div style='padding:10px 5px 10px 20px;'>
+                                <span class='font-15 contents'>
+                                    The cookies that we store have no personally identifying information in them. They are just randomly generated numbers and characters that are linked to you only inside our database (i.e. even if someone got a hold of your cookie information, they wouldn't be able to connect it to you).
+                                </span>
+                            </div>
+                            
+                            <div style='padding:10px 5px 10px 20px;'>
+                                <span class='font-15 contents'>
+                                    I trust my customers not to abuse my guarantee policy, and I want to earn your trust by being open about what I do with cookies AND by making sure those things are not shady.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class='col-1 mob no-padding'></div>
+            </div>
+    </div>
+        
+
+
+
+<script src="/static/js/create.js"></script>
+<script>
+    $( "#threedot" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    $( "#personicon" ).click(function( event ) {
+      event.stopPropagation(); menu_toggle();
+    });
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+</script>
+{% endblock %}

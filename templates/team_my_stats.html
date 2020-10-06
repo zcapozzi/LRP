@@ -627,8 +627,163 @@
                             
                         </div>
                         <div class='right-content-panel' id='goalkeepers_panel'>
+                            <div class='col-12 no-padding'>
+                                <div class='col-12 no-padding'>
+                                <div class='non-dashboard-section card col-12' id='goalkeepers_ranks_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        
+                                        <div onclick='drill_down_header(this.id, 1);' id='goalkeepers_ranks_label' route="|goalkeepers_ranks" class='col-11-9 no-padding non-dashboard-label'>Goalkeepers Ranks</div>
+                                        
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible mob' id='goalkeepers_ranks_filtericon' style='margin-top:2px;'><img onclick='toggle_settings_bar("goalkeepers-ranks-settings-bar");' class='icon-15 settings'  src="static/img/gray_Filter150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='goalkeepers_ranks_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|goalkeepers_ranks" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='goalkeepers_ranks_img' class='icon-15 toggle' onclick='toggle_tile_visibility("goalkeepers_ranks");' src="static/img/Gray_Minus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content bigger visible' id='goalkeepers_ranks_div'>
+                                        <div class='no-padding'>
+                                            <div class='mob no-padding' style=''>
+                                                <div class='settings-bar rounded not-shown no-padding' id='goalkeepers-ranks-settings-bar'>
+                                                    <div class='' style='margin-bottom:25px;'>
+                                                        <div class='no-padding col-12 flex'>
+                                                            <div class='col-6 margin white'>
+                                                                <div class='light col-12 no-padding'><span class=' no-padding font-15'>Comparison</span></div>
+                                                                <div class='col-12 flex no-padding' id='goalkeepers_ranks_mob_peers'></div>
+                                                                
+                                                            </div>
+                                                            <div class='col-6 margin white'>
+                                                                <div class='light col-12 no-padding'><span class=' no-padding font-15'>Calculation</span></div>
+                                                                <div class='col-12 flex no-padding' id='goalkeepers_ranks_mob_calculation'></div>
+                                                                
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div class='margin white no-padding'>
+                                                            <div class='light no-padding'><span class='font-15'>Filters</span></div>
+                                                            <div id='goalkeepers_ranks_filter_options_ranks_mob' class='block-flex filter-options'></div>
+                                                        </div>
+                                                        
+                                                    
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>
+                                            <div class='flex no-padding'>
+                                                <div class='col-8-12 non-dashboard-tile-section' id='goalkeepers_ranks_graph_div' style=''>
+                                                
+                                                </div>
+                                            
+                                              
+                                                <div class='col-2 dtop non-dashboard-tile-section' style=''>
+                                                    
+                                                    <div class='col-12 no-padding'><span class='no-padding font-15 bold'>Calculation</span></div>
+                                                    <div class='col-12 flex no-padding'>
+                    
+                                                    <div class='col-10 no-padding' style='padding-left:10px;'><span class='contents font-11'>Raw</span></div>
+                                                    <div class='col-2 no-padding right'><input value='goalkeepers_calculation_raw' type=radio name='radio19' class='goalkeepers_calculation_radio' onclick='toggler(this);'></div>
+                                                    </div>
+                                                    <div class='col-12 flex no-padding'>
+                    
+                                                    <div class='col-10 no-padding' style='padding-left:10px;'><span class='contents font-11'>Adjusted</span></div>
+                                                    <div class='col-2 no-padding right'><input value='goalkeepers_calculation_adjusted'  class='goalkeepers_calculation_radio' type=radio name='radio20' onclick='toggler(this);'></div>
+                                                    </div>
+                                                </div>
+                                            
+                                              
+                                                <div class='col-2 dtop non-dashboard-tile-section'>
+                                                    <div class='col-12 no-padding'><span class='no-padding font-15 bold'>Filter</span></div>
+                                                    <div id='goalkeepers_ranks_filter_options_dtop' class='filter-options'></div>
+                                                    
+                                                    {% if misc.data.conference_ID %}
+                                                    <div class='col-12 no-padding' style='padding-top:10px;'><span class='no-padding font-15 bold'>Comparison</span></div>
+                                                    <div class='col-12 flex no-padding'>
+                    
+                                                    <div class='col-10 no-padding' style='padding-left:5px;'><span class='contents font-11'>League-wide</span></div>
+                                                    <div class='col-2 no-padding right'><input value='goalkeepers_peers_league' type=radio name='radio21' class='goalkeepers_peers_radio' onclick='toggler(this);'></div>
+                                                    </div>
+                                                    <div class='col-12 flex no-padding'>
+                    
+                                                    <div class='col-10 no-padding' style='padding-left:5px;'><span class='contents font-11'>Conference</span></div>
+                                                    <div class='col-2 no-padding right'><input value='goalkeepers_peers_conference' class='goalkeepers_peers_radio' type=radio name='radio22' onclick='toggler(this);'></div>
+                                                    </div>
+                                                {% endif %}
+                                                </div>
+                                                
+                                                
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                            <div class='col-12 flex-block no-padding'>
+                                <div class='non-dashboard-section card col-6-12' id='goalkeepers_adjusted_shotclock_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div class='col-11-10 no-padding non-dashboard-label'>by Shot Clock Bucket</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='goalkeepers_adjusted_shotclock_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|goalkeepers_adjusted_shotclock" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='goalkeepers_adjusted_shotclock_img' class='icon-15 toggle' onclick='toggle_tile_visibility("goalkeepers_adjusted_shotclock");' src="static/img/Gray_Plus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content' id='goalkeepers_adjusted_shotclock_div' style='padding-bottom:10px;'>
+                                        
+                                    </div>
+
+                                </div>
+                                <div class='non-dashboard-section card col-6-12' id='goalkeepers_adjusted_manup_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div class='col-11-10 no-padding non-dashboard-label'>by Man-up/Even</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='goalkeepers_adjusted_manup_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|goalkeepers_adjusted_manup" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='goalkeepers_adjusted_manup_img' class='icon-15 toggle' onclick='toggle_tile_visibility("goalkeepers_adjusted_manup");' src="static/img/Gray_Plus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content' id='goalkeepers_adjusted_manup_div'>
+                                        
+                                    </div>
+
+                                </div>
+                            </div>
+                            <div class='col-12 flex-block no-padding'>
+                                <div class='non-dashboard-section card col-6-12' id='goalkeepers_adjusted_leading_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div class='col-11-10 no-padding non-dashboard-label'>by Game Status</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='goalkeepers_adjusted_leading_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|goalkeepers_adjusted_leading" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='goalkeepers_adjusted_leading_img' class='icon-15 toggle' onclick='toggle_tile_visibility("goalkeepers_adjusted_leading");' src="static/img/Gray_Plus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content' id='goalkeepers_adjusted_leading_div'>
+                                        
+                                    </div>
+
+                                </div>
+                                <div class='non-dashboard-section card col-6-12' id='goalkeepers_adjusted_possessiontype_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div class='col-11-10 no-padding non-dashboard-label'><!--by Possession Type--></div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='goalkeepers_adjusted_possessiontype_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|goalkeepers_adjusted_possessiontype" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='goalkeepers_adjusted_possessiontype_img' class='icon-15 toggle' onclick='toggle_tile_visibility("goalkeepers_adjusted_possessiontype");' src="static/img/Gray_Plus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content' id='goalkeepers_adjusted_possessiontype_div'>
+                                        
+                                    </div>
+
+                                </div>
+                            </div>
                             
                         </div>
+                        
                     </div>
                 </div>
             </div>
@@ -655,7 +810,7 @@
     //console.log(misc);
     var explanations = {{user_obj.explanations|to_json2}};
     
-    var ranks_stat_tag = {'offense': "efficiency", 'defense': "efficiency", 'faceoffs': 'faceoff_win_rate'}; var filters = {'offense': [], 'defense': [], 'faceoffs': [], 'goalkeepers': []};
+    var ranks_stat_tag = {'offense': "efficiency", 'defense': "efficiency", 'faceoffs': 'faceoff_win_rate', 'goalkeepers': 'save_pct'}; var filters = {'offense': [], 'defense': [], 'faceoffs': [], 'goalkeepers': []};
     var calc_specs = {'offense': null, 'defense': null, 'faceoffs': null, 'goalkeepers': null}
     filters.offense.options = [{'tag': 'WinProb', 'desc': 'Game Situation', 'choices': [{'desc': 'Garbage Time', 'val': 'NonCompetitive'}, {'desc': 'Competitive', 'val': 'Competitive'}]}];
     filters.defense.options = [{'tag': 'WinProb', 'desc': 'Game Situation', 'choices': [{'desc': 'Garbage Time', 'val': 'NonCompetitive'}, {'desc': 'Competitive', 'val': 'Competitive'}]}];
@@ -695,7 +850,8 @@
             }
         }
     }
-    
+    console.log(calc_specs.faceoffs);
+    console.log("Set true: input[value='faceoffs_calculation_" + calc_specs.faceoffs.calculation + "']");
     
     $("input[value='offensive_peers_" + calc_specs.offense.peers + "']").prop("checked", true);
     $("input[value='offensive_calculation_" + calc_specs.offense.calculation + "']").prop("checked", true);
@@ -779,7 +935,7 @@
             team = teams[a];
             team.radius = 10;
             team_data = data.filter(r => r.team_ID == team.ID);
-            //if(team.ID == 1){ console.log(team_data); }
+            if(team.ID == 62){  console.log(team_data);   }
             sum = 0.0; n = 0.0;
             if(stat_key.calc.operation == "divide"){
                 sum1 = 0.0; sum2 = 0.0; adj_val = 0.0;
@@ -1071,7 +1227,7 @@
             
             
             html = "";
-            html += "<select onchange='click_tag(\"offense\",this.value);' class='stat-select font-12'>";
+            html += "<select onchange='click_tag(\"" + unit + "\",this.value);' class='stat-select font-12'>";
             html += "<option ></option>";
             for(var a = 0 ;a<misc.data.ranks.stat_keys.length;a++){
                 var key = misc.data.ranks.stat_keys[a];
@@ -1285,7 +1441,7 @@
         if([null, 'faceoffs', '', '', '', ''].indexOf(panel) == -1){ return; }
 
         id = 'faceoff_ranks'; success = false;
-        console.log(calc_specs[unit]); 
+ 
         ranks = calculate_ranks(misc.extra_data.db_team_game_summaries, misc.extra_data.db_teams, misc.data.ranks.keys, calc_specs[unit], ranks_stat_tag[unit]);
 
         try{
@@ -1391,6 +1547,7 @@
                 return second.faceoff_ELO - first.faceoff_ELO;
                             });
         
+            misc.data.fogos= misc.data.fogos.filter(r => r.display);
             
             /* visualization */
             elem = $("#faceoff_elo_div"); elem.empty();
@@ -1398,19 +1555,19 @@
             html = "";
             html += "<div class='flex col-12 no-padding bbottom'>";
             
-            html += "<div class='col-6-3 no-padding'>";
+            html += "<div class='col-6 no-padding'>";
             html += "<span class='font-15 bold'>Player</span>";
             html += "</div>";
             
-            html += "<div class='col-2-3 no-padding centered'>";
+            html += "<div class='col-2 no-padding centered'>";
             html += "<span class='font-15 bold'>Win %</span>";
             html += "</div>";
             
-            html += "<div class='col-2-3 no-padding centered'>";
+            html += "<div class='col-2 no-padding centered'>";
             html += "<span class='font-15 bold'>ELO</span>";
             html += "</div>";
             
-            html += "<div class='col-2-3 no-padding centered'>";
+            html += "<div class='col-2 no-padding centered'>";
             html += "<span class='font-15 bold'>Season</span>";
             html += "</div>";
             
@@ -1423,28 +1580,58 @@
                 html += "<div class='table-row'>";
                 html += "<div class='flex col-12 no-padding'>"
                 
-                html += "<div class='col-6-3 no-padding'>";
+                html += "<div class='col-6 no-padding'>";
                 html += "<span class='font-15'>" + fogo.player + "</span>";
                 html += "</div>";
                 
-                html += "<div class='col-2-3 no-padding centered'>";
+                html += "<div class='col-2 no-padding centered'>";
                 html += "<span class='font-15'>" + fogo.faceoff_pct_str + "</span>";
                 html += "</div>";
                 
-                html += "<div class='col-2-3 no-padding centered'>";
+                html += "<div class='col-2 no-padding centered'>";
                 html += "<span class='font-15'>" + fogo.faceoff_ELO_str + "</span>";
                 html += "</div>";
                 
-                html += "<div class='col-2-3 no-padding centered' id='faceoff_elo_spark" + a + "'></div>";
+                html += "<div class='col-2 no-padding centered' id='faceoff_elo_spark" + a + "'></div>";
                 
                 html += "</div>";
                 html += "</div>";
                 elem.append(html);
             }
+            var min_val = null; var max_val = null;
+            for(var a = 0;a<misc.data.fogos.length;a++){
+                fogo = misc.data.fogos[a];
+                for(var b = 0;b<fogo.faceoff_ELO_history.length;b++){
+                    y = fogo.faceoff_ELO_history[b].y;
+                    if(min_val == null || min_val > y){ min_val = y; }
+                    if(max_val == null || max_val < y){ max_val = y; }
+                }
+            }
+            if(min_val < 1400 && max_val > 1600){  // Both ends are outside of the range
+                if((max_val - 1500) > (1500 - min_val)){ // Check which is farther away; here it is the max
+                    y_max = max_val; y_min = 1500 - (max_val - 1500);
+                }
+                else{
+                    y_min = min_val; y_max = 1500 + (1500 - min_val);
+                }
+            }
+            else if(min_val >= 1400 && max_val > 1600){ 
+                y_max = max_val; y_min = 1500 - (max_val - 1500);
+            }
+            else if(min_val < 1400 && max_val <= 1600){ 
+                y_min = min_val; y_max = 1500 + (1500 - min_val) ;
+            }
+            else if(min_val >= 1400 && max_val <= 1600){ 
+                y_min = 1400; y_max = 1600;
+            }
+            y_min -= 25; y_max += 25;
+            
+            // Use the min of any team member FOGO and the max for all the charts instead of a min/max that is chart-specific
+            
             for(var a = 0;a<misc.data.fogos.length;a++){
                 fogo = misc.data.fogos[a];
                 
-                specs = {'highlight': 1, 'margin_left': 10, 'margin_right': 10, 'margin_top': 0, 'margin_bottom': 0, 'chart_size': 'spark', 'flip': 0};
+                specs = {'highlight': 1, 'margin_left': 10, 'margin_right': 10, 'margin_top': 2, 'margin_bottom': 0, 'chart_size': 'spark', 'flip': 0};
             
                 data = {'data': []};
                 if(fogo.faceoff_ELO_history.length > 1){
@@ -1465,16 +1652,12 @@
                     data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
                     y_ticks = create_numeric_y_ticks(data.data)
                     data['y_ticks'] = y_ticks.ticks;
-                    data['max_y'] = 2000;  data['min_y'] = 1000;
+                    data['max_y'] = y_max;  data['min_y'] = y_min;
                     
                 }
-                if(on_mobile){
-                    specs.width = $('#' + id + '_container_div').width() * .25 - 20;
-                }
-                else{
-                    specs.width = $('#' + id + '_container_div').width() * .166;
-                }
-                specs.height = 20;
+                specs.width = $('#' + id + '_container_div').width() * .166;
+                
+                specs.height = 19;
                 spark_line(data, "faceoff_elo_spark" + a, specs);
                 
             }
@@ -1492,9 +1675,51 @@
         id = 'faceoff_splits'; success = false;
         try{
             /* data */
+            
+            console.log("misc.data.fogo_splits");
+            console.log(misc.data.fogo_splits);
+            
                 
             /* visualization */
-             
+  
+            html = ""; $("#" + id + "_div").empty();
+            for(var a = 0;a<misc.data.fogo_splits.length;a++){
+                sp = misc.data.fogo_splits[a];
+                
+                if(a % 2 == 0){ html += "<div class='flex no-padding'>"; }
+                    html += "<div class='col-6' style='margin:5px; background-color: #EEF;'><div class='no-padding'>";
+                        html += "<div class='col-12 no-padding'><span class='light font-11'>" + sp.header + "</span></div>";
+                        for(var b = 0;b<sp.options.length;b++){
+                            o = sp.options[b];
+                      
+                            spark_bar_id = "spark_bar_fogo_splits_div" + a + "_" + b;
+                            
+                            html += "<div class='col-12 no-padding flex'>";
+                            html += "<div class='col-6 no-padding'><span class='font-12'>" + o.label + "</span></div>";
+                            html += "<div class='col-6 no-padding'><div class='no-padding spark-bar ' id='" + spark_bar_id + "' style=''></div></div>";
+                            /*html += "<div class='col-4 no-padding right'><span class='font-12' style='font-style:italic;'>n = " + o.cnt_str + "</span></div>";*/
+                            html += "</div>";  
+                        }
+                    html += "</div></div>";
+                
+                if(a % 2 == 1 || a == misc.data.fogo_splits.length-1){ html += "</div>"; }
+               
+                
+                
+                
+            }
+            $("#" + id + "_div").append(html)
+            for(var a = 0;a<misc.data.fogo_splits.length;a++){
+                sp = misc.data.fogo_splits[a];
+                for(var b = 0;b<sp.options.length;b++){
+                    o = sp.options[b];
+                    spark_bar_id = "spark_bar_fogo_splits_div" + a + "_" + b;
+                    
+                    w = $('#faceoff_splits_container_div').width() * .5 * .5 * .95;
+                    spark_bar(spark_bar_id, {'width': w, 'chart_size': 'small', 'label': (o.pct != null) ? (zFormat(100.0 * o.pct, 0) + "%") : null, 'margin_left': 0, 'margin_top': 0, 'margin_bottom': 0, 'margin_right': 0, 'height': 15, 'bar_width': o.pct, 'bar_fill': "#FFF", 'fill': "#88F"});
+                }
+            }
+            
             /* mark complete */
             success = true;
         }
@@ -1507,53 +1732,187 @@
     }
     
     function display_goalkeepers(panel){
+        unit = "goalkeepers"; unit_desc = unit;
         if([null, 'goalkeepers', '', '', '', ''].indexOf(panel) == -1){ return; }
+
+        id = 'goalkeepers_ranks'; success = false;
+ 
+        ranks = calculate_ranks(misc.extra_data.db_team_game_summaries, misc.extra_data.db_teams, misc.data.ranks.keys, calc_specs[unit], ranks_stat_tag[unit]);
+
+        try{
+            /* data */
+            stat_key = misc.data.ranks.stat_keys.filter( r => r.tag == ranks_stat_tag[unit])[0];
+       
+                
+            /* visualization */
+            if(calc_specs[unit].peers == "league"){
+                specs = {'highlight': 1, 'margin_left': 25, 'chart_size': 'bigger', 'flip': 0};
+            
+                data = {'axis_labels': {'y': 'Number of teams grouped by ' + stat_key.desc, 'x': stat_key.desc}, 'data': []};
+                tmp = {'stroke-dasharray': '3-3', 'stroke': "#666", 'points': []}
+
+                tmp.points = ranks.buckets;
+                data.data.push(tmp)
+                
+                x_ticks = create_game_x_ticks(data.data);
+                data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
+                y_ticks = create_numeric_y_ticks(data.data)
+                data['y_ticks'] = y_ticks.ticks;
+                data['max_y'] = y_ticks.max;  data['min_y'] = 0;
+                if(on_mobile){
+                    specs.width = $('#' + unit_desc + '_ranks_container_div').width()-20;
+                }
+                else{
+                    specs.width = $('#' + unit_desc + '_ranks_container_div').width()*.66667-20;
+                }
+                data.text = [{'x': specs.width-35, 'y': on_mobile ? 15 : -15, 'align': 'end', 'text': on_mobile ? ranks.me_mob_str : ranks.me_str}];
+                
+                data['legend'] = {'items': [], 'layout': 'horizontal'}
+                data.legend.items.push({'icon_type': 'rect', 'fill': 'orange', 'label': misc.data.short_code + " Bucket"})
+                
+                vertical_bars(data, unit_desc + '_ranks_graph_div', specs);
+            }
+            else{ // Show the conference line bubbles
+                specs = {'highlight': 1, 'margin_left': 60, 'margin-right': 60, 'chart_size': 'bigger', 'flip': 0};
+            
+                data = {'show-data-labels': 'short_code', 'axis_labels': {'y': 'Conf teams; axis = ' + stat_key.desc, 'x': stat_key.desc}, 'data': []};
+                tmp = {'stroke-dasharray': '3-3', 'stroke': "#666", 'points': []}
+                tmp.points = ranks.teams.filter(r => r.conference_ID == misc.data.conference_ID);
+                data.data.push(tmp)
+                
+                x_ticks = create_game_x_ticks(data.data);
+                data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
+                y_ticks = create_numeric_y_ticks(data.data)
+                data['y_ticks'] = y_ticks.ticks;
+                data['max_y'] = y_ticks.max;  data['min_y'] = 0;
+                if(on_mobile){
+                    specs.width = $('#' + unit_desc + '_ranks_container_div').width()-20;
+                }
+                else{
+                    specs.width = $('#' + unit_desc + '_ranks_container_div').width()*.66667-20;
+                }
+                data.text = [{'x': specs.width-65, 'y': on_mobile ? 15 : -15, 'align': 'end', 'text': on_mobile ? ranks.me_mob_conf_str : ranks.me_conf_str}];
+                
+                data['legend'] = {'items': [], 'layout': 'horizontal'}
+                data.legend.items.push({'icon_type': 'rect', 'fill': 'orange', 'label': misc.data.short_code + " Bucket"})
+                
+                horizontal_trainmap(data, unit_desc + '_ranks_graph_div', specs);
+                
+            }
+            
+            
+            filter_options_goalkeepers_dtop = $("#goalkeepers_ranks_filter_options_dtop"); filter_options_goalkeepers_dtop.empty();
+            filter_options_goalkeepers_mob = $("#goalkeepers_ranks_filter_options_mob"); filter_options_goalkeepers_mob.empty();
+            
+            
+            for(var a = 0 ;a<filters[unit].options.length;a++){
+                var fltr = filters[unit].options[a];
+                html = "";
+                html += "<div class='col-12-4 no-padding'>";
+                html += "<div class='col-12 no-padding'><span class=' font-11 light'>" + fltr.desc + "</span></div>";
+                
+                for(var b = 0;b<fltr.choices.length;b++){
+                    choice = fltr.choices[b];
+                    html += "<div class='flex no-padding'>";
+                    
+                    html += "<div class='col-10 no-padding' style='padding-left:10px;'><span class='no-padding font-11'>" + choice.desc + "</span></div>";
+                    html += "<div class='col-2 no-padding'><input id=\'" + [unit, fltr.tag].join("|") + "' " + (choice.selected ? " checked" : "") + " value='" + [unit, fltr.tag, choice.val].join("|") + "' type=checkbox onclick='toggle_rank_filter(this.id, this.value, this.checked);'></div>";
+                    html += "</div>";
+                    
+                    
+                }
+                html += "</div>";
+                filter_options_goalkeepers_dtop.append(html); filter_options_goalkeepers_mob.append(html);
+            }
+            /* mark complete */
+            success = true;
+        }
+        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+        if(!success){
+            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+        }
+         
+        mappings = []
+        mappings.push({'db_tag': 'leading_status', 'div_tag': "leading"});
+        mappings.push({'db_tag': 'man_up', 'div_tag': "manup"});
+        mappings.push({'db_tag': 'shot_clock_remaining_bucket', 'div_tag': "shotclock"});
+        //mappings.push({'db_tag': 'possession_started_with_bucket', 'div_tag': "possessiontype"});
         
-        id = '[id panel one]'; success = false;
-        try{
-            /* data */
+        for(var a = 0;a<mappings.length;a++){
+            m = mappings[a];
+            id = 'goalkeepers_adjusted_' + m.div_tag; success = false;
+            try{
+                //  This is the shooting profile graph
+                /* data */
+                console.log("misc.data.goalkeepers_adjusted_shooting[" + m.db_tag+ "]");
+                data = misc.data.goalkeepers_adjusted_shooting.filter(r => r.tag == m.db_tag)[0];
                 
-            /* visualization */
-             
-            /* mark complete */
-            success = true;
-        }
-        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
-        if(!success){
-            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
-            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
-        }
-         
-        id = 'id panel 2'; success = false;
-        try{
-            /* data */
+                /* visualization */
+                 
+                html = ""; $("#" + id + "_div").empty();
+                html += "<div class='col-12 no-padding'>";
+        
+                    
+                html += "<div class='col-12 no-padding flex bbottom'>";
+                html += "<div class='col-3 no-padding'><span class='font-12'>Category</span></div>";
+                html += "<div class='col-2 no-padding centered'><span class='font-12' style=''>S.O.G.</span></div>";
+                html += "<div class='col-5 no-padding'><span class='font-12' style=''>Save % Comparison</span></div>";
+                html += "<div class='col-2 no-padding right'><span class='font-12'>vs Avg.</span></div>";
+                html += "</div>";  
+                        
+                html += "</div>";
                 
-            /* visualization */
-             
-            /* mark complete */
-            success = true;
-        }
-        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
-        if(!success){
-            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
-            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
-        }
-         
-        id = 'id panels 3'; success = false;
-        try{
-            /* data */
+                for(var b = 0;b<data.buckets.length;b++){
+                    bkt = data.buckets[b];
+                    bkt.save_pct = 1.0 - bkt.pct_sog;
+                    bkt.league_avg_save_pct = 1.0 - bkt.league_avg_on_goal;
+                    bkt.excess_save_pct = bkt.save_pct - bkt.league_avg_save_pct;
+                    bkt.excess_save_pct_str = (bkt.excess_save_pct > 0 ? "+" : "") + zFormat(bkt.excess_save_pct * 100.0) + "%";
+                    bkt.save_pct_str = zFormat(bkt.save_pct * 100.0) + "%";
+                    bkt.league_avg_save_pct_str = zFormat(bkt.league_avg_save_pct * 100.0) + "%";
+                    
+                    spark_bar_id = "spark_bar_goalkeepers_splits_div" + a + "_" + b;
+                    
+                    html += "<div class='col-12 no-padding'>";
+        
+                    
+                    html += "<div class='col-12 no-padding flex'>";
+                    html += "<div class='col-3 no-padding'><span class='font-12' style='padding:3px;'>" + bkt.label + "</span></div>";
+                    html += "<div class='col-2 no-padding centered'><span class='font-12' style='padding:3px;'>" + bkt.sog + "</span></div>";
+                    html += "<div class='col-5 no-padding'><div class='no-padding spark-bar ' id='" + spark_bar_id + "' style=''></div></div>";
+                    html += "<div class='col-2 no-padding right'><span class='font-12' style='padding:3px; color: " + (bkt.excess_save_pct >= 0 ? "#3B3" : "#800") + "'>" + (bkt.sog > 0 ? bkt.excess_save_pct_str : "") + " </span></div>";
+                    html += "</div>";  
+                        
+                    html += "</div>";
                 
-            /* visualization */
-             
-            /* mark complete */
-            success = true;
+
+                   
+                    
+                    
+                    
+                }
+                $("#" + id + "_div").append(html)
+                for(var b = 0;b<data.buckets.length;b++){
+                    bkt = data.buckets[b];
+                    spark_bar_id = "spark_bar_goalkeepers_splits_div" + a + "_" + b;
+                        
+                    //w = $('#goalkeepers_splits_container_div').width() * .5 * .5 * .95;
+                    comparison_bar(spark_bar_id, {'show_labels': 1, 'chart_size': 'small', 'margin_left': 5, 'margin_top': 0, 'margin_bottom': 0, 'margin_right': 28, 'height': 13, 'label': zFormat(100.0*bkt.save_pct, 0) + "%", 'comp_label': zFormat(100.0*bkt.league_avg_save_pct, 0) + "%", 'comp_value': bkt.league_avg_save_pct, 'value': bkt.save_pct, 'bar_fill': "#FFF", 'fill': "#88F"});
+                    
+                }
+                console.log(data);
+                
+                
+                /* mark complete */
+                success = true;
+            }
+            catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+            if(!success){
+                $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+                report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+            }
         }
-        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
-        if(!success){
-            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
-            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
-        }
-         
     }
     
     function redraw(panel=null){
@@ -1627,7 +1986,7 @@
     
     // Select the appropriate panel to display
     if('active_element' in misc){ choose_left_menu_item(misc.active_element); }
-    else{ choose_left_menu_item("offense"); }
+    else{ choose_left_menu_item("goalkeepers"); }
     
     console_log.push({'msg': 'Start finish load...'});
     finish_load(JSON.parse({{user_obj.notifications|to_json2}}));

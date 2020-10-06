@@ -40,12 +40,12 @@
                 <div id='my_team_schedule' class='home-page-section-details normal flex-block'>
                     {% if misc.data.last_game %}
                         <div class='col-4-12'>
-                            <div class='margin white dashboard-tile' id='last_game_container_div'>
+                            <div class='margin card white dashboard-tile' id='last_game_container_div'>
                                 
                     
                                 {% if misc.data.completed_games_cnt == 1 %}
                                     <div class='col-12 flex dashboard-tile-header'>
-                                        <div class='col-11 no-padding'><span class='font-20 lightish contents'>Last: {{misc.data.last_game.opponent_display}} ({{misc.data.last_game.score_str}})</span></div>
+                                        <div class='col-11 no-padding dashboard-label'>Last: {{misc.data.last_game.opponent_display}} ({{misc.data.last_game.score_str}})</div>
                                         
                                         <div class='col-1 right no-padding' style='margin-top:2px;'></div>
                                     
@@ -62,7 +62,7 @@
                                 {% endif %}
                                 {% if 1 < misc.data.completed_games_cnt and misc.data.completed_games_cnt < 3 %}
                                     <div class='col-12 flex'>
-                                        <div class='col-11 no-padding'><span class='font-20 lightish contents'>Last: {{misc.data.last_game.opponent_display}} ({{misc.data.last_game.score_str}})</span></div>
+                                        <div class='col-11 no-padding dashboard-label'>Last: {{misc.data.last_game.opponent_display}} ({{misc.data.last_game.score_str}})</div>
                                         
                                         <div class='col-1 right no-padding' style='margin-top:2px;'></div>
                                     
@@ -73,7 +73,7 @@
                                 {% if 3 < misc.data.completed_games_cnt %}
                                 
                                     <div class='col-12 flex'>
-                                        <div class='col-11-10 no-padding'><span class='font-20 lightish contents'>Last: {{misc.data.last_game.opponent_display}} ({{misc.data.last_game.score_str}})</span></div>
+                                        <div class='col-11-10 no-padding dashboard-label'>Last: {{misc.data.last_game.opponent_display}} ({{misc.data.last_game.score_str}})</div>
                                         
                                         <div class='col-1 right no-padding dashboard-tile-help-icon' id='last_game_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|last_game_whiskers" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game");' src="static/img/Gray_Plus150.png" /></div>
@@ -90,9 +90,9 @@
                     
                     {% if misc.data.next_game %}
                         <div class='col-4-12'>
-                            <div class='margin white dashboard-tile'>
+                            <div class='margin card white dashboard-tile'>
                                 <div class='col-12 flex'>
-                                    <div class='col-11-10 no-padding'><span class='font-20 lightish contents'>Next: {{misc.data.next_game.opponent_display}}</span></div>
+                                    <div class='col-11-10 no-padding dashboard-label'>Next: {{misc.data.next_game.opponent_display}}</div>
                                     
                                     <div class='col-1 right no-padding dashboard-tile-help-icon' id='next_game_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|next_game_split_summary" src="static/img/Gray_Info150.png" id='next_game_info' /></div>
                                     <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='next_game_img' class='icon-15 toggle' onclick='toggle_tile_visibility("next_game");' src="static/img/Gray_Plus150.png" /></div>
@@ -103,9 +103,9 @@
                         </div>
                     {% else %}    
                         <div class='col-4-12'>
-                            <div class='margin white dashboard-tile'>
+                            <div class='margin card white dashboard-tile'>
                                 <div class='col-12 flex'>
-                                    <div class='col-11-10 no-padding'><span class='font-20 lightish contents'>Next</span></div>
+                                    <div class='col-11-10 no-padding dashboard-label'>Next</div>
                                     
                                     
                                     <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='next_game_no_game_img' class='icon-15 toggle' onclick='toggle_tile_visibility("next_game_no_game");' src="static/img/Gray_Plus150.png" /></div>
@@ -118,9 +118,9 @@
                     
                     {% if misc.data.future_games %}
                         <div class='col-4-12'>
-                            <div class='margin white dashboard-tile' id='upcoming_schedule_div'>
+                            <div class='margin card white dashboard-tile' id='upcoming_schedule_div'>
                                 <div class='col-12 flex'>
-                                    <div class='col-11-10 no-padding'><span class='font-20 lightish contents'>Upcoming Schedule</span></div>
+                                    <div class='col-11-10 no-padding dashboard-label'>Upcoming Schedule</div>
                                     
                                     <div class='col-1 right no-padding dashboard-tile-help-icon' id='upcoming_games_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|upcoming_games" src="static/img/Gray_Info150.png" /></div>
                                     <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='upcoming_games_img' class='icon-15 toggle' onclick='toggle_tile_visibility("upcoming_games");' src="static/img/Gray_Plus150.png" /></div>
@@ -151,9 +151,9 @@
                         </div>
                     {% else %}    
                         <div class='col-4-12'>
-                            <div class='margin white dashboard-tile'>
+                            <div class='margin card white dashboard-tile'>
                                 <div class='col-12 flex'>
-                                    <div class='col-11-10 no-padding'><span class='font-20 lightish contents'>Upcoming Schedule</span></div>
+                                    <div class='col-11-10 no-padding dashboard-label'>Upcoming Schedule</div>
                                     
                                     
                                     <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='future_games_no_game_img' class='icon-15 toggle' onclick='toggle_tile_visibility("future_games_no_game");' src="static/img/Gray_Plus150.png" /></div>
@@ -205,9 +205,9 @@
                 <div id='my_team_details' class='home-page-section-details small flex-block'>
                     {% if misc.data.my_team_summary %}
                     <div class='col-4-12'>
-                        <div onclick='drill_down_header(this.id);' route="team_my_stats|offense" class='margin white dashboard-tile' id='my_team_details_offense_container_div'>
+                        <div onclick='drill_down_header(this.id);' route="team_my_stats|offense" class='margin card white dashboard-tile' id='my_team_details_offense_container_div'>
                             <div class='col-12 flex'>
-                                <div class='col-11-10 no-padding'><span class='font-20 lightish contents'>Offensive Efficiency</span></div>
+                                <div class='col-11-10 no-padding dashboard-label'>Offensive Efficiency</div>
                                 
                                 <div class='col-1 right no-padding dashboard-tile-help-icon' id='my_team_details_offense_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|offensive_efficiency_line_chart" src="static/img/Gray_Info150.png" /></div>
                                 <div class='col-1 mob right no-padding' style='margin-top:2px;'><img class='icon-15' id='my_team_details_offense_img' onclick='toggle_tile_visibility("my_team_details_offense");' src="static/img/Gray_Plus150.png" /></div>
@@ -217,9 +217,9 @@
                          </div>
                     </div>
                     <div class='col-4-12'>
-                        <div onclick='drill_down_header(this.id);' route="team_my_stats|defense" class='margin white dashboard-tile' id='my_team_details_defense_container_div'>
+                        <div onclick='drill_down_header(this.id);' route="team_my_stats|defense" class='margin card white dashboard-tile' id='my_team_details_defense_container_div'>
                             <div class='col-12 flex'>
-                                <div class='col-11-10 no-padding'><span class='font-20 lightish contents'>Defensive Efficiency</span></div>
+                                <div class='col-11-10 no-padding dashboard-label'>Defensive Efficiency</div>
                                 
                                 <div class='col-1 right no-padding dashboard-tile-help-icon' id='my_team_details_defense_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|defensive_efficiency_line_chart" src="static/img/Gray_Info150.png" /></div>
                                 <div class='col-1 mob right no-padding' style='margin-top:2px;'><img class='icon-15' id='my_team_details_defense_img' onclick='toggle_tile_visibility("my_team_details_defense");' src="static/img/Gray_Plus150.png" /></div>
@@ -229,9 +229,9 @@
                          </div>
                     </div>
                     <div class='col-4-12'>
-                        <div onclick='drill_down_header(this.id);' route="team_my_stats|faceoffs" class='margin white dashboard-tile' id='my_team_details_fogo_container_div'>
+                        <div onclick='drill_down_header(this.id);' route="team_my_stats|faceoffs" class='margin card white dashboard-tile' id='my_team_details_fogo_container_div'>
                             <div class='col-12 flex'>
-                                <div class='col-11-10 no-padding'><span class='font-20 lightish contents'>Faceoff Win Rate</span></div>
+                                <div class='col-11-10 no-padding dashboard-label'>Faceoff Win Rate</div>
                                 
                                 <div class='col-1 right no-padding dashboard-tile-help-icon' id='my_team_details_fogo_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|faceoff_win_rate_line_chart" src="static/img/Gray_Info150.png" /></div>
                                 <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='my_team_details_fogo_img' class='icon-15 toggle' onclick='toggle_tile_visibility("my_team_details_fogo");' src="static/img/Gray_Plus150.png" /></div>
@@ -242,7 +242,7 @@
                     </div>
                     {% else %}
                         <div class='col-12' style='padding-top:30px;'>
-                            <div class='margin centered'><span class='font-36'>Nothing to report yet.</span></div>
+                            <div class='margin card centered'><span class='font-36'>Nothing to report yet.</span></div>
                         </div>
                     {% endif %}
                     
@@ -259,9 +259,9 @@
                 </div>
                 <div class='home-page-section-details normal flex-block'>
                     <div class='col-4-12'>
-                        <div onclick='drill_down_header(this.id);' route="team_my_rankings|projected_rpi" class='margin white dashboard-tile' id='projected_rpi_container_div'>
+                        <div onclick='drill_down_header(this.id);' route="team_my_rankings|projected_rpi" class='margin card white dashboard-tile' id='projected_rpi_container_div'>
                             <div class='col-12 flex'>
-                                <div class='col-11-10 no-padding'><span class='font-20 lightish contents'>Projected RPI</span></div>
+                                <div class='col-11-10 no-padding dashboard-label'>Projected RPI</div>
                                 
                                 <div class='col-1 right no-padding dashboard-tile-help-icon' id='projected_rpi_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|projected_rpi" src="static/img/Gray_Info150.png" /></div>
                                 <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='projected_rpi_img' class='icon-15 toggle' onclick='toggle_tile_visibility("projected_rpi");' src="static/img/Gray_Plus150.png" /></div>
@@ -273,9 +273,9 @@
                         </div>
                     </div>
                     <div class='col-4-12'>
-                        <div onclick='drill_down_header(this.id);' route="team_my_rankings|laxelo" class='margin white dashboard-tile' id='laxelo_container_div'>
+                        <div onclick='drill_down_header(this.id);' route="team_my_rankings|laxelo" class='margin card white dashboard-tile' id='laxelo_container_div'>
                             <div class='col-12 flex'>
-                                <div class='col-11-10 no-padding'><span class='font-20 lightish contents'>Lax-ELO Lifetime Rating</span></div>
+                                <div class='col-11-10 no-padding dashboard-label'>Lax-ELO Lifetime Rating</div>
                                 
                                 <div class='col-1 right no-padding dashboard-tile-help-icon' id='laxelo_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|laxelo" src="static/img/Gray_Info150.png" /></div>
                                 <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='laxelo_img' class='icon-15 toggle' onclick='toggle_tile_visibility("laxelo");' src="static/img/Gray_Plus150.png" /></div>
@@ -288,9 +288,9 @@
                     </div>
                     <div class='col-4-12'>
                         
-                        <div onclick='drill_down_header(this.id);' route="team_my_rankings|postseason_odds" class='margin white dashboard-tile' id='postseason_odds_container_div'>
+                        <div onclick='drill_down_header(this.id);' route="team_my_rankings|postseason_odds" class='margin card white dashboard-tile' id='postseason_odds_container_div'>
                             <div class='col-12 flex'>
-                                <div class='col-11-10 no-padding'><span class='font-20 lightish contents'>Post-Season Probabilities</span></div>
+                                <div class='col-11-10 no-padding dashboard-label'>Post-Season Probabilities</div>
                                 
                                 <div class='col-1 right no-padding dashboard-tile-help-icon' id='postseason_odds_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|postseason" src="static/img/Gray_Info150.png" /></div>
                                 <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='postseason_odds_img' class='icon-15 toggle' onclick='toggle_tile_visibility("postseason_odds");' src="static/img/Gray_Plus150.png" /></div>
@@ -349,7 +349,7 @@
         
         id = "my_team_details_offense_div";
         data = {'axis_labels': {'y': 'Efficiency Rate (Goals/Possessions)', 'x': 'Games'}, 'data': []};
-        tmp = {'stroke-dasharray': '3-3', 'stroke': "#666", 'points': []}
+        tmp = {'stroke-dasharray': '3-3', 'stroke-width': 2.5, 'stroke': "#33F", 'points': []}
         tmp.points = off_games;
         data.data.push(tmp)
         x_ticks = create_game_x_ticks(data.data);
@@ -369,7 +369,7 @@
         id = "my_team_details_defense_div";
         specs.flip = 1;
         data = {'axis_labels': {'y': 'Efficiency Rate (Goals/Possessions)', 'x': 'Games'},'data': []};
-        tmp = {'stroke': "#666", 'points': []}
+        tmp = {'stroke': "#33F", 'stroke-width': 2.5, 'points': []}
         tmp.points = def_games;
         data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
         data['y_ticks'] = standard_y_ticks.ticks;
@@ -387,7 +387,7 @@
         specs.flip = 0;
         specs.margin_left = 30;
         data = {'axis_labels': {'y': 'Percentage of Faceoffs Won', 'x': 'Games'}, 'data': []};
-        tmp = {'stroke': "#666"}
+        tmp = {'stroke': "#33F", 'stroke-width': 2.5}
         tmp.points = fo_games;
         data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
         specs.width = $('#my_team_details_fogo_container_div').width();

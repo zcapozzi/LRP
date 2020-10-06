@@ -105,7 +105,7 @@ function initiate_svg(id, data, specs, initial_specs){
     
     if(client_height > 50 && initial_specs.chart_type != "spark"){ height -= 5; }
     
-    //console.log("ID: " + id + "  SVG Height: " + height);
+    //console.log("ID: " + id + "  SVG Width: " + width + "  SVG Height: " + height);
     //console.log(client_height, initial_specs.final_margin_top, initial_specs.margin_bottom, initial_specs.final_margin_left, initial_specs.margin_right);
     var svg = null;
 
@@ -714,12 +714,13 @@ function horizontal_trainmap(data, id, arg_specs, arg_initial_specs = null){
           .attr("cx", function(d) { return x(d.x); })
           .attr("r", function(d) { return d.radius; })
           .attr("cy", function(d) { return height/2; })
-          .style("fill", function(d){ return d.final_fill; });
+          .style("fill", function(d){ return d.final_fill; })
+          .style("stroke", "#FFF");
     }
 }
 
 function create_pct_y_ticks(series, specs){
-    var debug = false;
+    var debug = true;
     var res = {'ticks': [], 'max': null, 'min':  null};
     max_eff = null; min_eff = null;
     for(var b = 0;b<series.length;b++){
@@ -740,8 +741,17 @@ function create_pct_y_ticks(series, specs){
     alt_max_eff = max_eff + diff*.2;
     if(debug){ console.log("Alt Eff Range: " + alt_min_eff + " - " + alt_max_eff); }
     
-    rounded_min_eff = Math.round(alt_min_eff * 100.0 / 10)/10;
-    rounded_max_eff = Math.round(alt_max_eff * 100.0 / 10)/10;
+    rounded_min_eff = null; rounded_max_eff = null; 
+    extra = 0.0;
+    while(rounded_min_eff == null || rounded_min_eff > min_eff){
+        rounded_min_eff = Math.round((alt_min_eff - extra) * 100.0 / 10)/10;
+        extra += .1;
+    }
+    extra = 0.0;
+    while(rounded_max_eff == null || rounded_max_eff < max_eff){
+        rounded_max_eff = Math.round((alt_max_eff + extra) * 100.0 / 10)/10;
+        extra += .1;
+    }
     if(rounded_min_eff == rounded_max_eff){
         rounded_max_eff += diff;
     }
@@ -1302,6 +1312,7 @@ function custom_conditional_RPI_tile(misc, id, arg_specs, arg_initial_specs = nu
     var debug = {'on': false, 'spacing': true, 'data': false};
     
     var games = misc.data.future_games.filter(gm => gm.avg_RPI_with_win != null);
+    
     row_height = 29;
     calc_height = 65 + row_height * games.length;
     
@@ -1548,24 +1559,26 @@ function custom_next_game_tile(misc, id, arg_specs, arg_initial_specs = null){
 function rnd(a){ return Math.round(a); }
 
 function spark_bar(id, arg_specs, arg_initial_specs = null){
-    
     var debug = {'on': false, 'spacing': true, 'data': true};
     let {width, height, specs, initial_specs, svg} = initiate_svg(id, null, arg_specs, arg_initial_specs);
     
     if(width <= 0){ return; }
     if(debug.on && debug.spacing){ console.log("SVG Width x Height: " + rnd(width) + " x " + rnd(height)); }
    
-   	svg.append("rect")
-		.attr("x", 0).attr("y", 0)
-		.attr("width", specs.width).attr("height", specs.height)
-		.attr("rx", 3).attr("ry", 3)
-		.attr('id', id + "-spark-bar-div")
-        .style("fill", specs.bar_fill)
-		.attr("class", "spark-bar-background");
+    
+    if('show_border' in initial_specs){
+        svg.append("rect")
+            .attr("x", 0).attr("y", 0)
+            .attr("width", width).attr("height", specs.height)
+            .attr("rx", 3).attr("ry", 3)
+            .attr('id', id + "-spark-bar-div")
+            .style("fill", specs.bar_fill)
+            .attr("class", "spark-bar-background");
+    }
     
     svg.append("rect")
 		.attr("x", 1).attr("y", 1)
-		.attr("width", specs.bar_width*specs.width - 2).attr("height", specs.height-2)
+		.attr("width", specs.bar_width*width - 2).attr("height", specs.height-2)
 		.attr("rx", 1).attr("ry", 1)
 		.attr('id', id + "-spark-bar")
         .style("fill", specs.fill).style("stroke-width", 0)
@@ -1573,12 +1586,133 @@ function spark_bar(id, arg_specs, arg_initial_specs = null){
         
     if(specs.bar_width < 1.0){
         svg.append("rect")
-            .attr("x", specs.bar_width*specs.width - 2).attr("y", 1)
+            .attr("x", specs.bar_width*width - 2).attr("y", 1)
             .attr("width", 1).attr("height", specs.height-2)
             .attr('id', id + "-spark-bar")
             .style("fill", specs.fill).style("stroke-width", 0)
             .attr("class", "spark-bar-fill");
     }
+    
+    // Add data labels if necessary
+    if('label' in initial_specs && initial_specs.label != null){
+        anchr = "end"; clr = "white";
+        label = svg.append("text").attr("text-anchor", anchr )
+            .attr("x", specs.bar_width*width - 5).attr("y", specs.height - 4)
+            .attr("font-size", 10).attr("font-family", "Arial").style("fill", clr).style("opacity", 0)
+            .text(initial_specs.label);
+            
+        if(specs.bar_width < .25){
+            anchr = "start"; clr = "#666";
+            label.attr("x", specs.bar_width*width + 2).attr("text-anchor", anchr ).style("fill", clr);
+        }
+        label.style("opacity", 1);
+    }
+    
+}
+function comparison_bar(id, arg_specs, arg_initial_specs = null){
+    var debug = {'on': false, 'spacing': true, 'data': true};
+    let {width, height, specs, initial_specs, svg} = initiate_svg(id, null, arg_specs, arg_initial_specs);
+    
+    if(width <= 0){ return; }
+    if(debug.on && debug.spacing){ console.log("SVG Width x Height: " + rnd(width) + " x " + rnd(height)); }
+   
+    
+    var better = (specs.value > specs.comp_value);
+
+    var gap = Math.abs(specs.value - specs.comp_value);
+    
+    
+    if(better){
+        
+        svg.append("rect")
+            .attr("x", 0).attr("y", 0)
+            .attr("width", specs.value * width).attr("height", specs.height)
+            .attr("rx", 3).attr("ry", 3)
+            .attr('id', id + "-spark-bar-div")
+            .style("fill", "#88F")
+            .attr("class", "spark-bar-background");
+            
+        svg.append("line")
+            .attr("x1", specs.comp_value * width).attr("y1", 1)
+            .attr("x2", specs.comp_value * width).attr("y2", specs.height - 1)
+            .style("stroke", "#FFF").style("stroke-width", 2);
+            
+        // Add data labels if necessary
+        if('show_labels' in initial_specs && initial_specs.show_labels != null){
+            label = svg.append("text").attr("text-anchor", "start" )
+            .attr("x", specs.value * width + 3).attr("y", specs.height - 2)
+            .attr("font-size", 10).attr("font-family", "Arial").style("fill", "#666")
+            .text(initial_specs.label);
+            
+            if(gap < .2){
+                if(specs.comp_value > .2){
+                    comp_label = svg.append("text").attr("text-anchor", "end" )
+                    .attr("x", specs.comp_value * width - 3).attr("y", specs.height - 2)
+                    .attr("font-size", 10).attr("font-family", "Arial").style("fill", "#FFF")
+                    .text(initial_specs.comp_label);
+                }
+                else{ 
+                    // There wouldn't be enough room to squeeze it in
+                }
+            }
+            else{
+                
+                comp_label = svg.append("text").attr("text-anchor", "start" )
+                .attr("x", specs.comp_value * width + 3).attr("y", specs.height - 2)
+                .attr("font-size", 10).attr("font-family", "Arial").style("fill", "#FFF")
+                .text(initial_specs.comp_label);
+            }
+        }
+    }
+    else{
+        svg.append("rect")
+            .attr("x", 0).attr("y", 0)
+            .attr("width", specs.comp_value * width).attr("height", specs.height)
+            .attr("rx", 3).attr("ry", 3)
+            .attr('id', id + "-spark-bar-div")
+            .style("fill", "#FFF").style("stroke", "#88F")
+            .attr("class", "spark-bar-background");
+            
+        svg.append("rect")
+            .attr("x", 0).attr("y", 1)
+            .attr("width", specs.value*width - 2).attr("height", specs.height-2)
+            .attr("rx", 1).attr("ry", 1)
+            .attr('id', id + "-spark-bar")
+            .style("fill", specs.fill).style("stroke-width", 0)
+            .attr("class", "spark-bar-fill");
+            
+        // Add data labels if necessary
+        if('show_labels' in initial_specs && initial_specs.show_labels != null){
+            comp_label = svg.append("text").attr("text-anchor", "start" )
+            .attr("x", specs.comp_value * width + 3).attr("y", specs.height - 2)
+            .attr("font-size", 10).attr("font-family", "Arial").style("fill", "#666")
+            .text(initial_specs.comp_label);
+            
+            if(gap < .2){
+                if(specs.value > .2){
+                    label = svg.append("text").attr("text-anchor", "end" )
+                    .attr("x", specs.value * width - 3).attr("y", specs.height - 2)
+                    .attr("font-size", 10).attr("font-family", "Arial").style("fill", "#FFF")
+                    .text(initial_specs.label);
+                }
+                else{ 
+                    // There wouldn't be enough room to squeeze it in
+                }
+            }
+            else{
+                
+                label = svg.append("text").attr("text-anchor", "start" )
+                .attr("x", specs.value * width + 3).attr("y", specs.height - 2)
+                .attr("font-size", 10).attr("font-family", "Arial").style("fill", "#666")
+                .text(initial_specs.label);
+            }
+        }
+    }
+    
+    
+       
+   
+    
     
     
 }

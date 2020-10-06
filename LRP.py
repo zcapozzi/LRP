@@ -1686,6 +1686,81 @@ class TermsHandler(webapp2.RequestHandler):
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
         path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         
+class GiftLRPHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+    
+        misc = {'target_template': "index.html"}
+        default_get(self)
+    
+    def get(self):
+        
+       
+        misc = {'target_template': 'giftLRP.html', 'time_log': [], 'handler': 'giftLRP', 'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                user_obj['user_cookie'] = None
+                layout = "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"
+            else:
+                user_obj = process_non_auth(self); user_obj['ID'] = None
+                layout = "layout_no_auth.html"
+        else: 
+            user_obj = process_non_auth(self); user_obj['ID'] = None
+            layout = "layout_no_auth.html"
+        
+        tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        
+class CookiesPolicyHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+    
+        misc = {'target_template': "index.html"}
+        default_get(self)
+    
+    def get(self):
+        
+       
+        misc = {'target_template': 'cookies.html', 'time_log': [], 'handler': 'cookies', 'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                user_obj['user_cookie'] = None
+                layout = "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"
+            else:
+                user_obj = process_non_auth(self); user_obj['ID'] = None
+                layout = "layout_no_auth.html"
+        else: 
+            user_obj = process_non_auth(self); user_obj['ID'] = None
+            layout = "layout_no_auth.html"
+        
+       
+        tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        
 class PrivacyHandler(webapp2.RequestHandler):
     def dispatch(self):
         self.session_store = sessions.get_store(request=self.request)
@@ -5306,6 +5381,12 @@ class ProductSummaryHandler(webapp2.RequestHandler):
                 misc['AB_group'] = "A" if user_obj['AB_group'] < 24 else "B"
                 if self.request.get('v') != "": misc['AB_group'] = self.request.get('v')
                 misc['target_template'] = "product_summary_%s%s.html" % (product_tag, misc['AB_group'])
+                
+                conn, cursor = mysql_connect()
+                cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [12, user_obj['ID'], datetime.now()]); conn.commit()
+                cursor.close(); conn.close()
+                
+                
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
 
             else:
@@ -5328,6 +5409,69 @@ class ProductSummaryHandler(webapp2.RequestHandler):
             
         cursor.close(); conn.close()
         
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+
+class FAQHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        self.url_regex = re.compile(r'faq\-?(.*?)',re.IGNORECASE)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+    
+        misc = {'target_template': "index.html"}
+        default_get(self)
+    
+    def get(self, orig_url):
+        
+        misc = {'target_template': 'faq.html', 'time_log': [], 'handler': 'faq', 'user_ID': None}; user_obj = None
+        
+        url_match = self.url_regex.search(orig_url)
+        
+        product_tag = url_match.group(1)
+        lg("product_tag: %s" % product_tag)
+        if product_tag is not None and product_tag.strip() in [-1, '']:
+            product_tag = None
+        else:
+            product_tag = product_tag.lower()
+        
+        conn, cursor = mysql_connect()
+        products = get_products(cursor)
+        query = "SELECT * from LRP_FAQ where active order by seq asc"
+        cursor.execute(query, [])
+        misc['faq'] = zc.dict_query_results(cursor)
+        cursor.close(); conn.close()
+        
+        
+        misc['product'] = None if product_tag is None else products[ [z['tag'] for z in products].index(product_tag.lower()) ]
+        
+        misc['faq'] = [z for z in misc['faq'] if z['context'] in [product_tag, None]]
+        
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                misc['user_ID'] = user_obj['ID']
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+
+            else:
+            
+                user_obj = process_non_auth(self)
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+        else: 
+        
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+        
+       
         path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
 def generate_stripe_response(intent):
@@ -6308,6 +6452,7 @@ app = webapp2.WSGIApplication([
     ,('/contact', ContactHandler)
     ,('/report', ReportHandler)
     ,('/explanations', ExplanationsHandler)
+    ,('/cookies-policy', CookiesPolicyHandler)
     ,('/help', HelpHandler)
     ,('/cron-(.+)', CronHandler)
     ,('/logger-(.+)', LoggerHandler)
@@ -6319,6 +6464,8 @@ app = webapp2.WSGIApplication([
     ,('/team_my_stats', TeamsMyStatsHandler)
     
     ,('/(product-summary.+)', ProductSummaryHandler)
+    ,('/(faq.*?)', FAQHandler)
+    ,('/(giftLRP)', GiftLRPHandler)
     
 ], config=config)
 
