@@ -27,18 +27,16 @@
 
 
 <script>
+    var on_mobile = null;
+    var console_log = []; var success = null;
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
+    
 
     var profile = {{user_obj.profile|to_json2}};
     var misc = {{misc|to_json2}};
     
     populate_profile(profile);    
-    
-    $( "#threedot" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
-    $( "#personicon" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
+
     finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 {% endblock %}

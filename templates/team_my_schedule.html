@@ -18,7 +18,7 @@
         
         
         {% if misc.error %}
-            <div class='col-12 error centered'><span class='error' >{{misc.error}}</span></div>
+            <div class='col-12 error centered'><span class='error' >{{misc.error|safe}}</span></div>
         {% endif %}
         {% if misc.msg %}
             <div class='col-12 error centered'><span class='' >{{misc.msg}}</span></div>
@@ -60,199 +60,130 @@
             <div id='' class='non-dashboard-landing'>
                 <div class='col-12 mob centered no-padding'>
                     <select style='width:80%; margin: 0% 10%;' id='top_menu_select' onChange='choose_left_menu_item(this.value);'>
-                        <option id='projected_rpi_option' value='projected_rpi'>Projected RPI</option>
-                        <option id='laxelo_option' value='laxelo'>Lax-ELO</option>
-                        <option id='postseason_odds_option' value='postseason_odds'>Post-Season Odds</option>
+                        <option id='next_game_option' value='next_game'>Next Game</option>
+                        <option id='last_game_option' value='last_game'>Last Game</option>
+                        <option id='full_schedule_option' value='full_schedule'>Full Schedule</option>
                     </select>
                 </div>
                 <div class='flex col-12 no-padding'>
                     <div class='left-menu col-2-12 dtop'>
-                        <div id='projected_rpi_menu_item' onclick='choose_left_menu_item(this.id);' class='active left-menu-item'><span class='mouseover-link pointer font-15'>Projected RPI</span></div>
-                        <div id='laxelo_menu_item' onclick='choose_left_menu_item(this.id);' class='left-menu-item'><span class='mouseover-link pointer font-15'>Lax-ELO</span></div>
-                        <div id='postseason_odds_menu_item' onclick='choose_left_menu_item(this.id);' class='left-menu-item'><span class='mouseover-link pointer font-15'>Post-season Odds</span></div>
+                        <div id='next_game_menu_item' onclick='choose_left_menu_item(this.id);' class='active left-menu-item'><span class='mouseover-link pointer font-15'>Next Game</span></div>
+                        <div id='last_game_menu_item' onclick='choose_left_menu_item(this.id);' class='left-menu-item'><span class='mouseover-link pointer font-15'>Last Game</span></div>
+                        <div id='full_schedule_menu_item' onclick='choose_left_menu_item(this.id);' class='left-menu-item'><span class='mouseover-link pointer font-15'>Full Schedule</span></div>
                     </div>
                     <div class='right-content col-10-12' id='right-content-panel'>
-                        <div class='right-content-panel' id='projected_rpi_panel'>
+                        <div class='right-content-panel' id='next_game_panel'>
+                            <div class='col-12 block no-padding'>
+                                <div class='non-dashboard-section card col-12' id='film_guide_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div class='col-11-10 no-padding non-dashboard-label'>Film Guide</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='film_guide_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|film_guide" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='film_guide_img' class='icon-15 toggle' onclick='toggle_tile_visibility("film_guide");' src="static/img/Gray_Plus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content' id='film_guide_div'>
+                                        <div class='flex-block col-12'>
+                                            <div class='col-6-12 non-dashboard-tile-section' style=''>
+                                                <div class='col-12 no-padding'><span class='font-18'>Their Defense: film to learn from</span></div>
+                                                <div class='col-12 no-padding' id='film_guide_defense'></div>
+                                            </div>
+                                            <div class='col-6-12 non-dashboard-tile-section' style=''>
+                                                <div class='col-12 no-padding'><span class='font-18'>Their Offense: film to learn from</span> </div>
+                                                <div class='col-12 no-padding' id='film_guide_offense'></div>
+                                            </div>
+                                        </div>
+                                    
+                                    </div>
+
+                                </div>
+                            </div>
+                            <div class='col-12 block no-padding'>
+                                <div class='non-dashboard-section card col-12' id='matchup_advantages_shooting_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div class='col-11-10 no-padding non-dashboard-label'>Match-Up Advantages: Shot Clock Management</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='matchup_advantages_shooting_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|matchup_advantages_shooting" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='matchup_advantages_shooting_img' class='icon-15 toggle' onclick='toggle_tile_visibility("matchup_advantages_shooting");' src="static/img/Gray_Minus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content visible bigger' id='matchup_advantages_shooting_div'>
+                                        <div class='flex-block col-12'>
+                                            <div class='col-6-12 non-dashboard-tile-section' style=''>
+                                                <div class='col-12 no-padding'><span class='font-18'>Your Offense vs Their Defense </span></div>
+                                                <div class='col-12 no-padding' id='matchup_advantages_shooting_offense'></div>
+                                            </div>
+                                            <div class='col-6-12 non-dashboard-tile-section' style=''>
+                                                <div class='col-12 no-padding'><span class='font-18'>Their Offense vs Your Defense</span> </div>
+                                                <div class='col-12 no-padding' id='matchup_advantages_shooting_defense'></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                            <div class='col-12 block no-padding'>
+                                <div class='non-dashboard-section card col-12' id='matchup_advantages_pacing_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div class='col-11-10 no-padding non-dashboard-label'>Match-Up Advantages: Pacing</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='matchup_advantages_pacing_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|matchup_advantages_pacing" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='matchup_advantages_pacing_img' class='icon-15 toggle' onclick='toggle_tile_visibility("matchup_advantages_pacing");' src="static/img/Gray_Minus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content visible bigger' id='matchup_advantages_pacing_div'>
+                                        <div class='flex-block col-12'>
+                                            <div class='col-6-12 non-dashboard-tile-section' style=''>
+                                                <div class='col-12 no-padding'><span class='font-18'>Your Offense vs Their Defense </span></div>
+                                                <div class='col-12 no-padding' id='matchup_advantages_pacing_offense'></div>
+                                            </div>
+                                            <div class='col-6-12 non-dashboard-tile-section' style=''>
+                                                <div class='col-12 no-padding'><span class='font-18'>Their Offense vs Your Defense</span> </div>
+                                                <div class='col-12 no-padding' id='matchup_advantages_pacing_defense'></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
                             <div class='col-12 flex-block no-padding'>
-                                <div class='non-dashboard-section card col-6-12' id='conditional_rpi_container_div'>
+                                <div class='non-dashboard-section card col-12' id='matchup_history_container_div'>
                                     <div class='non-dashboard-section-header'>
-                                        <div class='col-11-10 no-padding non-dashboard-label'>Conditional RPI</div>
+                                        <div class='col-11-10 no-padding non-dashboard-label'>Match-Up History</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='conditional_rpi_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|conditional_rpi" src="static/img/Gray_Info150.png" /></div>
-                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='conditional_rpi_img' class='icon-15 toggle' onclick='toggle_tile_visibility("conditional_rpi");' src="static/img/Gray_Minus150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='matchup_history_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|matchup_history" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='matchup_history_img' class='icon-15 toggle' onclick='toggle_tile_visibility("matchup_history");' src="static/img/Gray_Minus150.png" /></div>
                                                 
                                                     
                                         
                                     </div>
-                                    <div class='non-dashboard-tile-content visible' id='conditional_rpi_div'>
-                                        
-                                    </div>
-
-                                </div>
-                                <div class='non-dashboard-section card col-6-12' id='rpi_distribution_container_div'>
-                                    <div class='non-dashboard-section-header'>
-                                        <div class='col-11-10 no-padding non-dashboard-label'>Projected RPI Distribution</div>
-                                                    
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='rpi_distribution_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|rpi_distribution" src="static/img/Gray_Info150.png" /></div>
-                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='rpi_distribution_img' class='icon-15 toggle' onclick='toggle_tile_visibility("rpi_distribution");' src="static/img/Gray_Plus150.png" /></div>
-                                                
-                                                    
-                                        
-                                    </div>
-                                    <div class='non-dashboard-tile-content' id='rpi_distribution_div'>
+                                    <div class='non-dashboard-tile-content visible' id='matchup_history_div'>
                                         
                                     </div>
 
                                 </div>
                             </div>
-                            <div class='col-12 no-padding flex-block'>
-                                <div class='non-dashboard-section card col-12' id='deconstructed_rpi_container_div'>
-                                    <div class='non-dashboard-section-header'>
-                                        <div class='col-11-10 no-padding non-dashboard-label'>RPI: Deconstructed</div>
-                                                    
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='deconstructed_rpi_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|deconstructed_rpi" src="static/img/Gray_Info150.png" /></div>
-                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='deconstructed_rpi_img' class='icon-15 toggle' onclick='toggle_tile_visibility("deconstructed_rpi");' src="static/img/Gray_Plus150.png" /></div>
-                                                
-                                                    
-                                        
-                                    </div>
-                                    <div class='non-dashboard-tile-content' id='deconstructed_rpi_div'>
-                                        
-                                    </div>
-
-                                </div>
-                            </div>
-                            
                             
                             
                         </div>
-                        <div class='right-content-panel' id='laxelo_panel'>
+                        <div class='right-content-panel' id='last_game_panel'>
                             <div class='flex-block'>
-                            <div class='col-4-12 no-padding'>
-                                <div class='col-12 flex-block no-padding vertical-fill'>
-                                    <div class='non-dashboard-section card col-12' id='laxelo_game_results_container_div'>
-                                        <div class='non-dashboard-section-header'>
-                                            <div class='col-11-10 no-padding non-dashboard-label'>Lax-ELO Results</div>
-                                                        
-                                            <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='laxelo_game_results_helpicon' style='margin-top:2px;'><img class='icon-15' onclick="" src="static/img/Gray_Info150.png" /></div>
-                                            <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='laxelo_game_results_img' class='icon-15 toggle' onclick='toggle_tile_visibility("laxelo_game_results");' src="static/img/Gray_Minus150.png" /></div>
-                                                    
-                                                        
-                                            
-                                        </div>
-                                        <div class='non-dashboard-tile-content visible' id='laxelo_game_results_div'>
-                                            
-                                        </div>
-
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class='col-8-12 no-padding'>
-                                <div class='col-12 flex-block no-padding'>
-                                    <div class='non-dashboard-section card col-12' id='laxelo_history_container_div'>
-                                        <div class='non-dashboard-section-header'>
-                                            <div class='col-11-10 no-padding non-dashboard-label'>Lifetime History</div>
-                                                        
-                                            <div class='col-1 right no-padding dashboard-tile-help-icon' id='laxelo_history_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|laxelo_history" src="static/img/Gray_Info150.png" /></div>
-                                            <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='laxelo_history_img' class='icon-15 toggle' onclick='toggle_tile_visibility("laxelo_history");' src="static/img/Gray_Plus150.png" /></div>
-                                                    
-                                                        
-                                            
-                                        </div>
-                                        <div class='non-dashboard-tile-content' id='laxelo_history_div'>
-                                            
-                                        </div>
-
-                                    </div>
-                                </div>
-                                <div class='col-12 no-padding flex-block'>
-                                    <div class='non-dashboard-section card col-12' id='laxelo_movement_container_div'>
-                                        <div class='non-dashboard-section-header'>
-                                            <div class='col-11-10 no-padding non-dashboard-label'>Lax-ELO Movement</div>
-                                                        
-                                            <div class='col-1 right no-padding dashboard-tile-help-icon' id='laxelo_movement_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|laxelo_movement" src="static/img/Gray_Info150.png" /></div>
-                                            <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='laxelo_movement_img' class='icon-15 toggle' onclick='toggle_tile_visibility("laxelo_movement");' src="static/img/Gray_Plus150.png" /></div>
-                                                    
-                                                        
-                                            
-                                        </div>
-                                        <div class='non-dashboard-tile-content' id='laxelo_movement_div'>
-                                            
-                                        </div>
-
-                                    </div>
-                                </div>
-                               
-                           </div>
                             
                             </div>
                         
                         </div>
-                        <div class='right-content-panel' id='postseason_odds_panel'>
+                        <div class='right-content-panel' id='full_schedule_panel'>
                             <div class='col-12 flex-block no-padding'>
-                                <div class='non-dashboard-section card col-6-12' id='conf_seed_probabilities_container_div'>
-                                    <div class='non-dashboard-section-header'>
-                                        <div class='col-11-10 no-padding non-dashboard-label'>Conference Seed Probabilities</div>
-                                                    
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='conf_seed_probabilities_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|conf_seed_probabilities" src="static/img/Gray_Info150.png" /></div>
-                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='conf_seed_probabilities_img' class='icon-15 toggle' onclick='toggle_tile_visibility("conf_seed_probabilities");' src="static/img/Gray_Minus150.png" /></div>
-                                                
-                                                    
-                                        
-                                    </div>
-                                    <div class='non-dashboard-tile-content visible' id='conf_seed_probabilities_div'>
-                                        
-                                    </div>
-
-                                </div>
-                                <div class='non-dashboard-section card col-6-12' id='record_scenarios_container_div'>
-                                    <div class='non-dashboard-section-header'>
-                                        <div class='col-11-10 no-padding non-dashboard-label'>Record Scenarios</div>
-                                                    
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='record_scenarios_helpicon' style='margin-top:2px;'><img class='icon-15' onclick="" src="static/img/Gray_Info150.png" /></div>
-                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='record_scenarios_img' class='icon-15 toggle' onclick='toggle_tile_visibility("record_scenarios");' src="static/img/Gray_Plus150.png" /></div>
-                                                
-                                                    
-                                        
-                                    </div>
-                                    <div class='non-dashboard-tile-content' id='record_scenarios_div'>
-                                        
-                                    </div>
-
-                                </div>
+                            
                             </div>
                             <div class='col-12 flex-block no-padding'>
-                                <div class='non-dashboard-section card col-6-12' id='selection_rivals_container_div'>
-                                    <div class='non-dashboard-section-header'>
-                                        <div class='col-11-10 no-padding non-dashboard-label'>Selection Rivals</div>
-                                                    
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='selection_rivals_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|selection_rivals" src="static/img/Gray_Info150.png" /></div>
-                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='selection_rivals_img' class='icon-15 toggle' onclick='toggle_tile_visibility("selection_rivals");' src="static/img/Gray_Plus150.png" /></div>
-                                                
-                                                    
-                                        
-                                    </div>
-                                    <div class='non-dashboard-tile-content' id='selection_rivals_div'>
-                                        
-                                    </div>
-
-                                </div>
-                                <div class='non-dashboard-section card col-6-12' id='bubble_watch_container_div'>
-                                    <div class='non-dashboard-section-header'>
-                                        <div class='col-11-10 no-padding non-dashboard-label'>Bubble Watch</div>
-                                                    
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='bubble_watch_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|bubble_watch" src="static/img/Gray_Info150.png" /></div>
-                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='bubble_watch_img' class='icon-15 toggle' onclick='toggle_tile_visibility("bubble_watch");' src="static/img/Gray_Plus150.png" /></div>
-                                                
-                                                    
-                                        
-                                    </div>
-                                    <div class='non-dashboard-tile-content' id='bubble_watch_div'>
-                                        
-                                    </div>
-
-                                </div>
+                            
                             </div>
                             
                         </div>
@@ -263,7 +194,7 @@
         </div>
     
 
-<script src="static/js/d3.v4.min.js"></script><script src="static/js/laxrefpro_graphing.js?dt=1"></script>
+<script src="static/js/d3.v4.min.js"></script><script src="static/js/laxrefpro_graphing.js?dt=200"></script>
 <script>
     var on_mobile = null;
     var console_log = []; var success = null;
@@ -277,213 +208,289 @@
     console_log.push({'msg': 'Loaded user settings...'});
     //console.log(misc);
     var explanations = {{user_obj.explanations|to_json2}};
-    
-    function display_projected_RPI(panel){ 
-        if([null, 'projected_rpi', 'conditional_rpi', 'rpi_distribution', 'deconstructed_rpi'].indexOf(panel) == -1){ return; }
-    
-        id = 'rpi_distribution_div'; success = false;
-        try{
-            if(typeof misc.data.RPI_ranks_histogram != "undefined" && misc.data.RPI_ranks_histogram.length > 0){
-                specs = {'margin_left': 30, 'chart_size': 'small', 'flip': 0};
-                
-                data = {'axis_labels': {'y': '% of Simulations', 'x': 'Final RPI Rank'}, 'data': []};
-                tmp = {'stroke-dasharray': '3-3', 'stroke': "#666", 'points': []}
-                tmp.points = misc.data.RPI_ranks_histogram;
-                data.data.push(tmp)
-                
-                x_ticks = create_game_x_ticks(data.data);
-                data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
-                y_ticks = create_pct_y_ticks(data.data,{})
-                data['y_ticks'] = y_ticks.ticks;
-                data['max_y'] = y_ticks.max;  data['min_y'] = 0;
-                specs.width = $('#rpi_distribution_container_div').width()-20;
-                
-                vertical_bars(data, id, specs);
-                
-            }
-            else{
-                $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Could not calculate RPI distribution."));
-            }
-            success = true;
-        }
-        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
-        
-        if(!success){
-            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
-            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
-        }
-        
-        id = 'conditional_rpi_div'; success = false;
-        try{
-            if(typeof misc.data.future_games != "undefined" && misc.data.future_games != null && misc.data.future_games.length > 0){
-                custom_specs = {'chart_size': 'small', 'margin_top': 0, 'margin_right': 0, 'margin_bottom': 0, 'margin_left': 0};
-                custom_specs.width = $('#conditional_rpi_container_div').width() - 20;
-                custom_conditional_RPI_tile(misc, id, custom_specs);
-            }
-            else{
-                $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "No scheduled games"));
-            }
-            success = true;
-        }
-        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
-        
-        if(!success){
-            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
-            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
-        }
-        
-        id = 'deconstructed_rpi_div'; success = false;
-        try{
-            if(typeof misc.data.RPI_factors != "undefined" && misc.data.RPI_factors.length > 0){
-                generic_create_table(JSON.parse(misc.data.RPI_factors), {'id': id, 'target_elem': id});
-            }
-            else{
-                $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Could not calculate deconstructed RPI."));
-            }
-            success = true;
-        }
-        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
-        
-        if(!success){
-            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
-            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
-        }
-    }
-    
-    
-    function display_laxelo(panel){
-        //console.log("display_laxelo: " + panel);
-        if([null, 'laxelo', 'laxelo_history', 'laxelo_game_results', 'laxelo_movement'].indexOf(panel) == -1){ return; }
-        
-        
-        id = 'laxelo_game_results'; success = false;
-        try{
-            // Print the history
-            if(misc.data.completed_games_cnt == 0){ // Print Last Year
-                
-                games = misc.data.completed_games.filter( gm => gm.last_year == 1);
-                document.getElementById('laxelo_game_results_helpicon').setAttribute( "onclick", "show_explanation('team_my_rankings.html|laxelo_game_results_last_year')");
-            
-            }
-            else{ // Print this year
-                
-                games = misc.data.completed_games.filter( gm => gm.this_year == 1);
-                document.getElementById('laxelo_game_results_helpicon').setAttribute( "onclick", "show_explanation('team_my_rankings.html|laxelo_game_results_this_year')");
-            }
-            
-            
-            var js_data = {'no_row_count': 1}
-            js_data.classes = [{'class': 'col-3'}, {'class': 'col-3 centered'}, {'class': 'col-3 centered'}, {'class': 'col-3 centered'}];
-            js_data.fmt = [{'fmt': ""}, {'fmt': ""}, {'fmt': ""}, {'fmt': ""}];
-            js_data.fields = [{'sort_by': 'game_date_YYYYmmdd', 'tag': 'opp_short_code', 'display': 'Game'}
-            , {'sort_by': 'game_date_YYYYmmdd', 'tag': 'score_str_html', 'display': 'Result'}
-            , {'sort_by': 'this_team_elo_transfer', 'tag': 'this_team_elo_transfer_html', 'display': 'Change'}
-            , {'sort_by': 'end_elo', 'tag': 'end_elo', 'display': 'Lax-ELO'}
-            ];
-            
-            
-            js_data.data = games;
-            generic_create_table(js_data, {'id': id, 'target_elem': 'laxelo_game_results_div'});
-            //console.log("misc.extra_data")
-            //console.log(misc.extra_data)
-            success = true;
-        }
-        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
-        
-        if(!success){
-            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
-            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
-        }
-                
-        
-        id = "laxelo_history_div"; success = false;
-        try{
-            specs = {'margin_bottom': 40, 'chart_size': 'small', 'flip': 0};
-            
-            misc = process_laxelo_history(misc);
-            data = {'axis_labels': {'y': 'Lax-ELO Rating', 'x': ''}, 'data': []};
-            data.data = misc.all_teams_laxelo_history;
-            
-            x_ticks = create_game_x_ticks(data.data);
-            data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
-            
-            for(var a = 0;a<misc.all_teams_laxelo_history.length;a++){
-                var tmp_data = data.data[a];
-                
-                for(var c = 0;c<tmp_data.points.length;c++){
-                    pt = tmp_data.points[c];
-                    if(laxelo_dates.indexOf(pt.dt) == -1){
-                        laxelo_dates.push(pt.dt);
-                    }
-                    
-                }
-            }
-        
-            laxelo_dates = laxelo_dates.sort(function(first, second) {
-                    return first - second;
-            });
-            var slider_start = null;
-            for(var a = 0;a<laxelo_dates.length;a++){
-                
-                if(laxelo_dates[a] >= misc.laxelo_movement_start_date){
-                    
-                    slider_start = a/laxelo_dates.length;
-                    break;
-                }
-            }
-            if(slider_start == null){ slider_start = 1; }
-            
-            
-            y_ticks = create_numeric_y_ticks(data.data)
-            
-            data['y_ticks'] = y_ticks.ticks;
-            data['max_y'] = y_ticks.max;  data['min_y'] = y_ticks.min;
-            
-            specs.width = $('#laxelo_history_container_div').width() - 20;
-            specs.height = 200;
-            data['legend'] = {'items': [], 'layout': 'horizontal'}
-            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': '#88F', 'label': 'Your Rating'})
-            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': 'maroon', 'label': 'Conf Avg.'})
-            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': '#DDD', 'label': 'Conf Team'}) 
-            
-            horizontal_line(data, id, specs);
-            success = true;
-        }
-        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
-        
-        if(!success){
-            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
-            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
-        }
-            
-            
-        id = "laxelo_movement_div"; success = false;
-        
-        try{
-            data = {'axis_labels': {'y': 'Change in Lax-ELO Rating; 100 = Rating on ' + days_to_date(misc.laxelo_movement_start_date, '%b %d %Y'), 'x': ''}, 'data': []};
-            data.data = misc.all_teams_laxelo_change_history;
 
-            x_ticks = create_game_x_ticks(data.data);
-            data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
-            y_ticks = create_numeric_y_ticks(data.data)
-            data['y_ticks'] = y_ticks.ticks;
-            data['max_y'] = y_ticks.max;  data['min_y'] = y_ticks.min;
+    if(misc.data.next_game == null){
+        
+        $("#next_game_panel").empty();
+        $("#next_game_panel").append("<div class='col-12 centered no-padding'><span class='error font-18'>There is no \"next game\" to display yet.</span></div>");
+        
+    }
+
+    if(misc.data.last_game == null){
+
+        $("#last_game_panel").empty();
+        $("#last_game_panel").append("<div class='col-12 centered no-padding'><span class='error font-18'>There is no \"last game\" to display yet.</span></div>");
+    }
+    
+    function display_next_game(panel){ 
+        if([null, 'next_game', 'matchup_advantages_shooting', 'film_guide', 'opp_profile_offense'].indexOf(panel) == -1){ return; }
+    
+        
+        
+        if(misc.data.next_game != null){
+        
+            cell_width = $("#matchup_advantages_shooting_container_div").width()/4/2;
+            if(on_mobile){ cell_width *= 2; }
             
-            specs.width = $('#laxelo_movement_container_div').width() - 20;
-            specs.height = 200; specs.margin_top= 30;
+            id = 'film_guide_div'; success = false;
+            try{
+                // Data
+                max_rows = Math.max(misc.data.next_game.film_guide.offense.key_stretches.length, misc.data.next_game.film_guide.defense.key_stretches.length);
+                //console.log("misc.data.next_game.film_guide");
+                //console.log(misc.data.next_game.film_guide);
+                // Visualization
+                for (tag in {'offense': 1, 'defense': 1}){
+                    elem = $("#film_guide_" + tag); elem.empty();
+                    html = "";
+                    
+                    html += "<div class='no-padding'>";
+                    
+                    html += "<div class='flex bbottom no-padding'>";
+                    html += " <div class='col-4 no-padding'><span class='font-12 bold'>Opp</span></div>";
+                    html += " <div class='col-2 no-padding'><span class='font-12 bold contents'>Start</span></div>";
+                    html += " <div class='col-2 no-padding'><span class='font-12 bold contents'>End</span></div>";
+                    html += " <div class='col-2 no-padding centered'><span class='font-12 bold contents'>Goals</span></div>";
+                    html += " <div class='col-2 no-padding centered'><span class='font-12 bold contents'>Poss</span></div>";
+                    html += "</div>";
+                    printed = 0; show_last_year = false;
+                    for(var a = 0;a<misc.data.next_game.film_guide[tag].key_stretches.length;a++){
+                        bkt = misc.data.next_game.film_guide[tag].key_stretches[a];
+                        if(bkt.last_year){ show_last_year = true; }
+                        html += "<div class='flex table-row no-padding'>";
+                        html += " <div class='col-4 no-padding'><span class='font-12'>" + bkt.opp_short_code + " (" + bkt.short_date_str + (bkt.last_year ? "*" : "") + ")</span></div>";
+                        html += " <div class='col-2 no-padding'><span class='font-12 contents'>" + bkt.start_timestamp + "</span></div>";
+                        html += " <div class='col-2 no-padding'><span class='font-12 contents'>" + bkt.end_timestamp + "</span></div>";
+                        html += " <div class='col-2 no-padding centered'><span class='font-12 contents'>" + zFormat(bkt.goals, 0) + "</span></div>";
+                        html += " <div class='col-2 no-padding centered'><span class='font-12 contents'>" + zFormat(bkt.possessions, 0) + "</span></div>";
+                        html += "</div>";
+                    }
+                    elem.append(html); printed += 1;
+                    while(printed < max_rows){
+                        html += "<div class='flex no-padding'>";
+                        html += " <div class='col-12 no-padding'><span class='font-12'>&nbsp;</span></div>";
+                        html += "</div>";
+                        printed += 1;
+                    }
+                    if(show_last_year){
+                        html += "<div class='flex no-padding'>";
+                        html += " <div class='col-12 right'><span class='font-12'>* Last Season</span></div>";
+                        html += "</div>";
+                    }
+                }
+                
+                // Mark complete
+                success = true;
+            }
+            catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
             
-            data['legend'] = {'items': [], 'layout': 'horizontal'}
-            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': '#88F', 'label': 'Your Rating'})
-            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': 'maroon', 'label': 'Conf Avg.'})
-            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': '#DDD', 'label': 'Conf Team'}) 
+            if(!success){
+                $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+                report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+            }
+            id = 'matchup_advantages_shooting_div'; success = false;
+            try{
+                // Data
+                
+                tmp_data = {};
+                tmp_data.shooting_offense = misc.data.full_shooting_profile_offense.this_year.filter(r=> r.tag == "shot_clock_remaining_bucket")[0];
+                tmp_data.shooting_defense = misc.data.full_shooting_profile_defense.this_year.filter(r=> r.tag == "shot_clock_remaining_bucket")[0];
+                //console.log(tmp_data);
+                // Visualization
+                for (tag in {'offense': 1, 'defense': 1}){
+                    elem = $("#matchup_advantages_shooting_" + tag); elem.empty();
+                    html = "";
+                    
+                    html += "<div class='no-padding'>";
+                    
+                    html += "<div class='flex bbottom'>";
+                    html += " <div class='col-3'><span class='font-12 bold'>Clock Rem.</span></div>";
+                    html += " <div class='col-3 centered'><span class='font-12 bold contents'>" + (tag=="offense" ? "Your": "Their") + " Share</span></div>";
+                    html += " <div class='col-3 centered'><span class='font-12 bold contents'>Opportunity</span></div>";
+                    html += " <div class='col-3 centered'><span class='font-12 bold contents'>Risk</span></div>";
+                    html += "</div>";
+                    
+                    for(var a = 0;a<tmp_data['shooting_' + tag].buckets.length;a++){
+                        bkt = tmp_data['shooting_' + tag].buckets[a];
+                        bkt.label = (bkt.bucket) + (a < tmp_data['shooting_' + tag].buckets.length - 1 ? "-" + (bkt.bucket +9) + "s" : "+")
+                        //console.log(bkt)
+                        html += "<div class='flex table-row'>";
+                        html += " <div class='col-3'><span class='font-12'>" + bkt.label + "</span></div>";
+                        html += " <div class='col-3 centered'><span class='font-12 contents'>" + zFormat(100.0*bkt.share, 0) + "%</span></div>";
+                        html += " <div class='col-3 centered' id='shotclock_pct" + a + "_" + tag + "'></div>";
+                        html += " <div class='col-3 centered' id='shotclock_share" + a + "_" + tag + "'></div>";
+                        html += "</div>";
+                    }
+                    elem.append(html);
+                    for(var a = 0;a<tmp_data['shooting_' + tag].buckets.length;a++){
+                        bkt = tmp_data['shooting_' + tag].buckets[a];
+                        id = "shotclock_share" + a + "_" + tag;
+                        
+                        if(bkt.share_effect_weighted > .002){
+                            dir = "up"; fill = '#282'; color = "#FFF";
+                        }
+                        else if(bkt.share_effect_weighted < -.002){
+                            dir = "down"; fill = '#800'; color = "#FFF";
+                        }
+                        else{
+                            dir = "sideways"; fill = '#EE1'; color = "#333";
+                        }
+                        
+                        harvey_ball(id, {'width': cell_width, 'height':21, 'harvey_width': 18, 'chart_size': 'small', 'chart_type': 'harvey', 'fill': [fill, fill], color: color});
+                        
+                        id = "shotclock_pct" + a + "_" + tag;
+                        
+                        if(bkt.pct_effect_weighted > .02){
+                            dir = "up"; fill = '#282'; color = "#FFF";
+                        }
+                        else if(bkt.pct_effect_weighted < -.02){
+                            dir = "down"; fill = '#800'; color = "#FFF";
+                        }
+                        else{
+                            dir = "sideways"; fill = '#EE1'; color = "#333";
+                        }
+                        
+                        labeled_arrow(id, {'width': cell_width, 'height':21, 'dir': dir, 'arrow_width': 33, 'chart_size': 'small', 'chart_type': 'arrow', 'fill': fill, color: color, 'label': zFormat(100.0*bkt.pct_effect_weighted, 1) + "%"});
+                    }
+                }
+                // Mark complete
+                success = true;
+            }
+            catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
             
-            slider_width = $('#laxelo_movement_container_div').width() - 200
+            if(!success){
+                $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+                report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+            }
             
-            data.slider = {'pct_loc': slider_start,'loc_x': $('#laxelo_movement_container_div').width() - slider_width - 125, 'loc_y': -20, 'orientation': 'horizontal', 'dragStarted': null, 'drag': show_laxelo_date, 'dragEnded': redraw_laxelo_movement, 'id': id, 'text_align': 'right', 'width': slider_width, 'height': 10, 'svg_stops': 10, 'show_value_on_drag': 1};
-            data.slider.start_label = days_to_date(laxelo_dates[0], '%b %Y')
-            data.slider.end_label = days_to_date(laxelo_dates[laxelo_dates.length-1], '%b %Y')
+            id = 'matchup_advantages_pacing_div'; success = false;
+            try{
+                // Data
+
+                
+                
+                tmp_data = {};
+                tmp_data.pacing_offense = {'tag': 'poss_length', 'buckets': misc.data.offensive_pace_profile.length_data};
+                tmp_data.pacing_defense = {'tag': 'poss_length', 'buckets': misc.data.defensive_pace_profile.length_data};
+                //console.log(tmp_data);
+                // Visualization
+                for (tag in {'offense': 1, 'defense': 1}){
+                    elem = $("#matchup_advantages_pacing_" + tag); elem.empty();
+                    html = "";
+                    
+                    html += "<div class='no-padding'>";
+                    
+                    html += "<div class='flex bbottom'>";
+                    html += " <div class='col-3'><span class='font-12 bold'>Poss. Length</span></div>";
+                    html += " <div class='col-3 centered'><span class='font-12 bold contents'>" + (tag=="offense" ? "Your": "Their") + " Share</span></div>";
+                    html += " <div class='col-3 centered'><span class='font-12 bold contents'>Opportunity</span></div>";
+                    html += " <div class='col-3 centered'><span class='font-12 bold contents'>Risk</span></div>";
+                    html += "</div>";
+                    
+                    for(var a = 0;a<tmp_data['pacing_' + tag].buckets.length;a++){
+                        bkt = tmp_data['pacing_' + tag].buckets[a];
+                        bkt.label = (bkt.min_t) + (a < tmp_data['pacing_' + tag].buckets.length - 1 ? "-" + (bkt.max_t - 1) + "s" : "+")
+                        //console.log(bkt)
+                        html += "<div class='flex table-row'>";
+                        html += " <div class='col-3'><span class='font-12'>" + bkt.label + "</span></div>";
+                        html += " <div class='col-3 centered'><span class='font-12 contents'>" + zFormat(100.0*bkt.share_this_year, 0) + "%</span></div>";
+                        html += " <div class='col-3 centered' id='pacing_pct" + a + "_" + tag + "'></div>";
+                        html += " <div class='col-3 centered' id='pacing_share" + a + "_" + tag + "'></div>";
+                        html += "</div>";
+                    }
+                    elem.append(html);
+                    for(var a = 0;a<tmp_data['pacing_' + tag].buckets.length;a++){
+                        bkt = tmp_data['pacing_' + tag].buckets[a];
+                        id = "pacing_share" + a + "_" + tag;
+                        
+                        if(bkt.share_effect > .002){
+                            dir = "up"; fill = '#282'; color = "#FFF";
+                        }
+                        else if(bkt.share_effect < -.002){
+                            dir = "down"; fill = '#800'; color = "#FFF";
+                        }
+                        else{
+                            dir = "sideways"; fill = '#EE1'; color = "#333";
+                        }
+                        
+                        harvey_ball(id, {'width': cell_width, 'height':21, 'harvey_width': 18, 'chart_size': 'small', 'chart_type': 'harvey', 'fill': [fill, fill], color: color});
+                        
+                        id = "pacing_pct" + a + "_" + tag;
+                        
+                        if(bkt.pct_effect > .02){
+                            dir = "up"; fill = '#282'; color = "#FFF";
+                        }
+                        else if(bkt.pct_effect < -.02){
+                            dir = "down"; fill = '#800'; color = "#FFF";
+                        }
+                        else{
+                            dir = "sideways"; fill = '#EE1'; color = "#333";
+                        }
+                        
+                        labeled_arrow(id, {'width': cell_width, 'height':21, 'dir': dir, 'arrow_width': 33, 'chart_size': 'small', 'chart_type': 'arrow', 'fill': fill, color: color, 'label': zFormat(100.0*bkt.pct_effect, 1) + "%"});
+                    }
+                }
+                // Mark complete
+                success = true;
+            }
+            catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
             
-            horizontal_line(data, id, specs);
+            if(!success){
+                $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+                report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+            }
+        }
+        
+        id = 'matchup_history_div'; success = false;
+        try{
+            // Data
+            console.log("misc.data.matchup_history");
+            console.log(misc.data.matchup_history);
+            // Visualization
+            elem = $("#" + id); elem.empty();
+            html = "";
+            
+            tags = []
+            tags.push({'class': '', 'label': 'Adj Off.', 'tag': 'adj_efficiency_offense', 'fmt': '%'})
+            tags.push({'class': '', 'label': 'Adj Def.', 'tag': 'adj_efficiency_defense', 'fmt': '%'})
+            tags.push({'class': '', 'label': 'FO %', 'tag': 'fo_win_rate', 'fmt': '%'})
+            tags.push({'class': '', 'label': 'Save %', 'tag': 'save_pct', 'fmt': '%'})
+            tags.push({'class': '', 'label': 'GB %', 'tag': 'gb_win_rate', 'fmt': '%'})
+            tags.push({'class': 'dtop', 'label': 'Man-Up Off.', 'tag': 'man_up_offense', 'fmt': ""})
+            tags.push({'class': 'dtop', 'label': 'Total Poss.', 'tag': 'total_possessions', 'fmt': 0})
+            html += "<div class='no-padding'>";
+            
+            html += "<div class='flex bbottom'>";
+            html += " <div class='col-2'><span class='font-12 bold'>Date</span></div>";
+            html += " <div class='col-1'><span class='font-12 bold contents'>Result</span></div>";
+            html += " <div class='col-9'><ul class='table-ul left' style='background-color:inherit;'>";
+            for(var a = 0;a<tags.length;a++){ tag = tags[a];
+            
+                html += " <li style='' class='" + tag.class + " table-li no-padding centered'><div class='cell-holder no-padding'><span class='font-12 bold contents'>" + tag.label + "</span></div></li>";
+            }
+            html += "</ul></div>";
+            html += "</div>";
+            
+            for(var a = 0;a<misc.data.matchup_history.length;a++){
+                gm = misc.data.matchup_history[a];
+               
+                html += "<div class='flex table-row'>";
+                html += " <div class='col-2'><span class='font-12'>" + gm.game_date_str + "</span></div>";
+                html += " <div class='col-1'><span class='font-12 contents'>" + gm.result_str + "</span></div>";
+                html += " <div class='col-9'><ul class='table-ul left' style='background-color:inherit;'>";
+                for(var b = 0;b<tags.length;b++){ tag = tags[b];
+                    if([null, ''].indexOf(gm[tag.tag]) > -1){ txt = ""; }
+                    else if(tag.fmt == "%"){ txt = zFormat(100.0*gm[tag.tag], 1) + "%"; }
+                    else if(tag.fmt == ""){ txt = gm[tag.tag]; }
+                    else{ txt = zFormat(gm[tag.tag], tag.fmt); }
+                    
+                    html += " <li style='' class='" + tag.class + " table-li no-padding centered'><div class='cell-holder no-padding'><span class='font-12 contents'>" + txt + "</span></div></li>";
+                }
+                html += "</ul></div>";
+                html += "</div>";
+            }
+            elem.append(html);
+    
+            // Mark complete
             success = true;
         }
         catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
@@ -492,94 +499,80 @@
             $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
             report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
         }
-        
     }
     
-    function display_post_season_odds(panel){
-        if([null, 'postseason_odds', 'record_scenarios', 'bubble_watch', 'conf_seed_probabilities', 'selection_rivals'].indexOf(panel) == -1){ return; }
+    
+    function display_last_game(panel){
+        //console.log("display_last_game: " + panel);
+        if([null, 'last_game', 'last_game_history', 'last_game_game_results', 'last_game_movement'].indexOf(panel) == -1){ return; }
+        
+        if(misc.data.last_game == null){
+        
+        }
+        else{
+            id = 'last_game_game_results'; success = false;
+            try{
+                // Data
+                
+                // Visualization
+                
+                // Mark complete
+                success = true;
+            }
+            catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+            
+            if(!success){
+                $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+                report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+            }
+                    
+            
+            id = "last_game_history_div"; success = false;
+            try{
+                // Data
+                
+                // Visualization
+                
+                // Mark complete
+                success = true;
+            }
+            catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+            
+            if(!success){
+                $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+                report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+            }
+                
+                
+            id = "last_game_movement_div"; success = false;
+            
+            try{
+                // Data
+                
+                // Visualization
+                
+                // Mark complete
+                success = true;
+            }
+            catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+            
+            if(!success){
+                $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+                report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+            }
+        }
+    }
+    
+    function display_full_schedule(panel){
+        if([null, 'full_schedule', 'record_scenarios', 'bubble_watch', 'conf_seed_probabilities', 'selection_rivals'].indexOf(panel) == -1){ return; }
         
         id = 'record_scenarios'; success = false;
         try{
-            var cur_wins = parseInt(misc.data.record.split("-")[0].trim());
-            var cur_losses = parseInt(misc.data.record.split("-")[1].trim());
+            // Data
             
-            var likely = misc.data.win_loss_records.filter(gm => gm.frequency > 0);
-            n_likely = likely.length;
-            if(n_likely <= 8){ // Just show the win-loss scenarios
+            // Visualization
             
-                document.getElementById('record_scenarios_helpicon').setAttribute( "onclick", "show_explanation('team_my_rankings.html|record_scenarios_records')");
-                    
-                    
-                likely.sort(function(first, second) {
-                        return second.pct_in - first.pct_in;
-                });
-                likely = likely.slice(0,8);
-                var record_scenarios_js_data = {'no_row_count': 1}
-                record_scenarios_js_data.classes = [{'class': 'col-4'}, {'class': 'col-4 centered'}, {'class': 'col-4 centered'}];
-                record_scenarios_js_data.fmt = [{'fmt': ""}, {'fmt': "0%"}, {'fmt': "0%"}];
-                record_scenarios_js_data.fields = [{'sort_by': 'win_pct', 'tag': 'rec', 'display': 'Final Record'}
-                , {'sort_by': 'frequency', 'tag': 'frequency', 'display': 'Likelihood'}
-                , {'sort_by': 'pct_in', 'tag': 'pct_in', 'display': 'NCAA %'}
-                ];
-                
-                
-                record_scenarios_js_data.data = likely;
-                generic_create_table(record_scenarios_js_data, {'id': 'record_scenarios', 'target_elem': 'record_scenarios_div'});
-            }
-            else{ // Show the overall win total scenarios
-                document.getElementById('record_scenarios_helpicon').setAttribute( "onclick", "show_explanation('team_my_rankings.html|record_scenarios_wins')");
-                
-                misc.data.future_wins.sort(function(first, second) {
-                    return first.future_wins - second.future_wins;
-                });
-                wins = misc.data.future_wins;
-                
-                last_zero_index = null; last_zero_wins = null;
-                first_100_index = null; first_100_wins = null;
-                for(var a = 0;a<wins.length;a++){
-                    var rec = wins[a];
-                    if(rec.pct_in == 0){ last_zero_index = a; last_zero_wins = rec.future_wins; }
-                    if(rec.pct_in == 1 && first_100_index == null){ first_100_index = a; first_100_wins = rec.future_wins; }
-                }
-                var cum_0 = 0; var cum_100 = 0;
-                for(var a = 0;a<=last_zero_index;a++){ 
-                    cum_0 += wins[a].frequency;
-                }
-                if(first_100_index != null){
-                    for(var a = first_100_index;a<wins.length;a++){
-                        cum_100 += wins[a].frequency;
-                    }
-                }
-                else{
-                    first_100_index = wins.length;
-                    cum_100 = null;
-                }
-                
-                //console.log("First non zero: " + last_zero_wins);
-                //console.log("Last sub 100: " + first_100_wins);
-                table_data = [];
-                table_data.push({'wins_str': (cur_wins + last_zero_wins) + " or less", 'wins': cur_wins + last_zero_wins, 'frequency': cum_0, 'pct_in': 0.0});
-                for(var a =last_zero_index + 1;a<first_100_index;a++){
-                    var rec = wins[a];
-                    table_data.push({'wins_str': cur_wins + rec.future_wins, 'wins': cur_wins + rec.future_wins, 'frequency': rec.frequency, 'pct_in': rec.pct_in});
-                }
-                if(cum_100 != null){
-                    table_data.push({'wins_str': (cur_wins + first_100_wins) + " or more", 'wins': cur_wins + first_100_wins, 'frequency': cum_100, 'pct_in': 1.0});
-                }
-                
-                var record_scenarios_js_data = {'no_row_count': 1}
-                record_scenarios_js_data.classes = [{'class': 'col-4'}, {'class': 'col-4 centered'}, {'class': 'col-4 centered'}];
-                record_scenarios_js_data.fmt = [{'fmt': ""}, {'fmt': "0%"}, {'fmt': "0%"}];
-                record_scenarios_js_data.fields = [{'sort_by': 'wins', 'tag': 'wins_str', 'display': 'Final Wins'}
-                , {'sort_by': 'frequency', 'tag': 'frequency', 'display': 'Likelihood'}
-                , {'sort_by': 'pct_in', 'tag': 'pct_in', 'display': 'NCAA %'}
-                ];
-                
-                
-                record_scenarios_js_data.data = table_data;
-                generic_create_table(record_scenarios_js_data, {'id': 'record_scenarios', 'target_elem': 'record_scenarios_div'});
-
-            }
+            // Mark complete
             success = true;
         }
         catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
@@ -592,23 +585,11 @@
     
         id =  'selection_rivals_div'; success = false;
         try{
-            misc.data.selection_rivals.bubble_rivals.sort(function(first, second) {
-                return -(first.diff - second.diff);
-            });
-            rivals = misc.data.selection_rivals.bubble_rivals.slice(0, 8);
-        
-            var js_data = {'no_row_count': 1}
-            js_data.classes = [{'class': 'col-4'}, {'outer_class': 'col-8', 'classes': [{'class': 'col-3 centered'}, {'class': 'col-3 centered'}, {'class': 'col-3 centered'}]}];
-            js_data.fmt = [{'fmt': ""}, {'fmt': "0%"}, {'fmt': "0%"}, {'fmt': "0%"}];
-            js_data.fields = [{'sort_by': 'display_name', 'tag': 'display_name', 'display': 'Team'}
-            , {'sort_by': 'in_pct_val', 'tag': 'in_pct_val', 'display': 'In when In'}
-            , {'sort_by': 'out_pct_val', 'tag': 'out_pct_val', 'display': 'In when Out'}
-            , {'sort_by': 'diff', 'tag': 'diff', 'display': 'Net'}
-            ];
+            // Data
             
-            js_data.data = rivals;
-            generic_create_table(js_data, {'id':id, 'target_elem': 'selection_rivals_div'});
+            // Visualization
             
+            // Mark complete
             success = true;
         }
         catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
@@ -622,56 +603,11 @@
         
         id = 'conf_seed_probabilities_div'; success = false;
         try{
-            misc.data.seed_instances;
-            seed_data = []
+            // Data
             
-            var total = 0; var total_positive = 0;
-            si = misc.data.seed_instances
-            for(var a = 0;a<si.length;a++){
-                var seed = si[a];
-                if(typeof seed == "number"){
-                    total += seed;
-                    if(seed > 0){ total_positive += 1; }
-                }
-            }
-            si = si.slice(0, misc.data.num_conf_tournament_teams);
-            if(total_positive == 1){ // Just tell them what they've won
-                var seed = null;
-                for(var b = 0;b<si.length;b++){ if(si[b] > 0){ seed = b + 1; } }
-                
-                var msg = "<div class='centered' style='padding-top:30px;'><span class='font-18 contents'>You are locked in as the #" + seed + " seed.</span></div>";
-                $("#" + id).empty(); $("#" + id).append(msg);
-            }
-            else if(total_positive > 1){ // Show the graph of the remaining possibilities
-                if(total > 0){
-                    for(var a = 0;a<si.length;a++){
-                        var seed = si[a];
-                        
-                        d = {'label': (a+1), 'x': a, 'y': seed/total};
-                        
-                        seed_data.push(d);
-                    }
-                    specs = {'chart_size': 'small', 'flip': 0, 'margin_right': 20};
-                        
-                    data = {'axis_labels': {'y': 'Chance of each seed in Conf. Tournament', 'x': 'Conference Tournament Seed'}, 'data': []};
-                    tmp = {'stroke-dasharray': '3-3', 'stroke': "#666", 'points': []}
-                    tmp.points = seed_data;
-                    data.data.push(tmp)
-                    
-                    x_ticks = create_game_x_ticks(data.data);
-                    data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
-                    y_ticks = create_pct_y_ticks(data.data,{})
-                    data['y_ticks'] = y_ticks.ticks;
-                    data['max_y'] = y_ticks.max;  data['min_y'] = 0;
-                    specs.width = $('#conf_seed_probabilities_container_div').width() - 20;
-                    
-                    vertical_bars(data, id, specs);
-                }
-            }
-            else{
-                $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Could not calculate seed distribution."));
-
-            }  
+            // Visualization
+            
+            // Mark complete
             success = true;
         }
         catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
@@ -683,28 +619,11 @@
 
         id = 'bubble_watch_div'; success = false;
         try{
-            if(typeof misc.data.bubble_watch_games != "undefined" && misc.data.bubble_watch_games.length > 0){
-                specs = {'margin_left': 30, 'chart_size': 'small', 'flip': 0};
-                
-                data = {'axis_labels': {'y': '% of Simulations', 'x': 'Final RPI Rank'}, 'data': []};
-                tmp = {'stroke-dasharray': '3-3', 'stroke': "#666", 'points': []}
-                tmp.points = misc.data.RPI_ranks_histogram;
-                data.data.push(tmp)
-                
-                x_ticks = create_game_x_ticks(data.data);
-                data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
-                y_ticks = create_pct_y_ticks(data.data,{})
-                data['y_ticks'] = y_ticks.ticks;
-                data['max_y'] = y_ticks.max;  data['min_y'] = 0;
-                specs.width = $('#bubble_watch_container_div').width() - 20;
-                
-                vertical_bars(data, id, specs);
-                
-            }
-            else{
-                $("#" + id).empty();
-                $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "No relevant (to you) bubble watch games have been identified."));
-            }
+            // Data
+            
+            // Visualization
+            
+            // Mark complete
             success = true;
         }
         catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
@@ -724,12 +643,12 @@
         
         console_log.push({'msg': 'Check misc.data...'});
         if('data' in misc && [{}, null].indexOf(misc.data) == -1){
-            console_log.push({'msg': 'projected rpi...'});
-            display_projected_RPI(panel);
-            console_log.push({'msg': 'projected laxelo...'});
-            display_laxelo(panel);
+            console_log.push({'msg': 'next_game...'});
+            display_next_game(panel);
+            console_log.push({'msg': 'last_game...'});
+            display_last_game(panel);
             console_log.push({'msg': 'post season...'});
-            display_post_season_odds(panel);
+            display_full_schedule(panel);
             
             
             
@@ -739,7 +658,7 @@
     
     // Select the appropriate panel to display
     if('active_element' in misc){ choose_left_menu_item(misc.active_element); }
-    else{ choose_left_menu_item("projected_rpi"); }
+    else{ choose_left_menu_item("next_game"); }
     
     console_log.push({'msg': 'Start finish load...'});
     finish_load(JSON.parse({{user_obj.notifications|to_json2}}));

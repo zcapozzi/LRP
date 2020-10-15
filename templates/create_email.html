@@ -1,0 +1,109 @@
+
+{% extends 'layout_main.html' %}
+
+
+{% block body %}
+    <STYLE>
+        div.msg{ display:none; }
+        div.msg.show{ display:block; }
+    </STYLE>
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
+    <FORM action='/create-email' method=POST><input type=hidden name='ID' value='{{misc.ID}}' />
+        <div class='col-12 right action-button'><a href='/email' id='back_button' class='action-button font-15'><span>EMAIL HOME</span></a></div>
+        {% if misc.error %}
+            <div class='col-12 error'><span class='error' >{{misc.error|safe}}</span></div>
+        {% endif %}
+        {% if misc.msg %}
+            <div class='col-12'><span class='msg' style='color:blue;' >{{misc.msg}}</span></div>
+        {% endif %}
+        <div class='col-12'>
+            
+         
+            <div class='col-12'>
+                <div class='col-12'><span class='light font-18 bold'>Subject</span></div>
+                
+                <div class='col-12'><textarea rows=1 style='font-family:Arial; width:100%;' id='subject' name='subject'>{{misc.subject}}</textarea></div>
+                <div class='col-12'><span class='light font-18 bold'>Send As</span></div>
+                
+                <div class='col-12'><textarea rows=1 style='font-family:Arial; width:100%;' id='send_as' name='send_as'>{{misc.send_as}}</textarea></div>
+                
+                
+                <div class='col-12'><span class='light font-18 bold'>Recipients
+                {% if misc.num_recipients %}
+                 ({{misc.num_recipients}})
+                {% endif %}
+                </span></div>
+                
+                <div class='col-12'><textarea rows=2 style='font-family:Arial; width:100%;' id='recipients' name='recipients'>{{misc.recipients}}</textarea></div>
+                
+                
+                <div class='col-12 flex'>
+                    <div class='col-9'><span class='light font-18 bold'>Email Message</span></div>
+                    <div class='col-3 right'><span class='light font-18 bold'>Edit</span> <input id='edit_checkbox' type=checkbox onclick='toggle_edit();'/></div>
+                </div>
+                <div class='col-12 msg' id='msg_edit'><textarea onchange='preview()' rows=10 style='font-family:Arial; width:100%;' id='msg_body' name='msg_body'>{{misc.msg_body}}</textarea></div>
+                <div class='col-12 msg' id='msg_preview'>{{misc.msg_body|safe}}</div>
+                
+                
+                
+                <div class='col-12'><span class='light font-18 bold'>Send Time</span></div>
+                
+                <div class='col-12 flex-block'>
+                    <div class='col-6-12'>
+                        <span class='font-14'>Date</span><input name='send_date' value='{{misc.send_date_str}}' type=date />
+                    </div>
+                    <div class='col-6-12'>
+                        <span class='font-14'>Time (ET)</span><input name='send_time' value='{{misc.send_time_str}}' type=time />
+                    </div>
+                </div>
+                
+            </div>
+    
+            <div class='col-12 right action-button'><button id='action_button' type=submit name='action' value='{{misc.action}}' class='action-button font-15'>SUBMIT</button></div>
+            
+        </div>
+    </FORM>
+        
+
+
+<script>
+    var on_mobile = null;
+    var console_log = [];
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
+
+
+    var edit = {{misc.msg_is_plain_text}};
+    console.log("Edit: " + edit);
+    function toggle_edit(){
+        if(edit == false) { // User is trying to show them
+            $("div#msg_edit").addClass("show");
+            $("div#msg_preview").removeClass("show");
+        }
+        else{
+            $("div#msg_edit").removeClass("show");
+            $("div#msg_preview").addClass("show");
+        }
+        edit = !edit;
+    }
+    $("#edit_checkbox").prop("checked", edit ? true : false);
+    if(edit){
+        $("div#msg_edit").addClass("show");
+    }
+    else{
+        $("div#msg_preview").addClass("show");
+    }
+    
+    function preview(){
+        document.getElementById('msg_preview').innerHTML = document.getElementById('msg_body').value;
+    }
+    
+
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+</script>
+
+{% endblock %}

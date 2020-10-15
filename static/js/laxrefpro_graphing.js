@@ -50,6 +50,13 @@ function finish_specs(specs){
     defaults.push({'tag': 'flip', 'val': false});
     defaults.push({'tag': 'fill', 'val': '#88F'});
     
+    if('chart_type' in specs && ['harvey', 'arrow'].indexOf(specs.chart_type) > -1){
+        defaults.filter(r=> r.tag=="margin_top")[0]['val'] = 0;
+        defaults.filter(r=> r.tag=="margin_left")[0]['val'] = 0;
+        defaults.filter(r=> r.tag=="margin_right")[0]['val'] = 0;
+        defaults.filter(r=> r.tag=="margin_bottom")[0]['val'] = 0;
+    }
+    
     for(var a = 0;a<defaults.length;a++){
         d = defaults[a];
         if(!(d['tag'] in specs)){
@@ -103,7 +110,7 @@ function initiate_svg(id, data, specs, initial_specs){
     var width = client_width - initial_specs.margin_left - initial_specs.margin_right,
                 height = client_height - initial_specs.final_margin_top - initial_specs.margin_bottom;
     
-    if(client_height > 50 && initial_specs.chart_type != "spark"){ height -= 5; }
+    if(client_height > 50 && initial_specs.chart_type != "arrow" && initial_specs.chart_type != "spark"){ height -= 5; }
     
     //console.log("ID: " + id + "  SVG Width: " + width + "  SVG Height: " + height);
     //console.log(client_height, initial_specs.final_margin_top, initial_specs.margin_bottom, initial_specs.final_margin_left, initial_specs.margin_right);
@@ -1127,44 +1134,10 @@ function graph_create_legend(svg, x, y, width, height, initial_specs, data){
 }
 
 function graph_create_slider(svg, x, y, width, height, initial_specs, data){
+    
     slider = data.slider;
     svg = display_slider(slider, svg, initial_specs);
-    /*
-    start_loc_x = -initial_specs.margin_left + 5;
-    start_loc_y = height + initial_specs.margin_bottom - 10;
     
-    for(var a = 0;a<legend.items.length;a++){
-        var item = legend.items[a];
-        item.loc_x = start_loc_x;
-        item.loc_y = start_loc_y;
-        icon_w = 0;
-        
-        if(item.icon_type == "line"){
-            icon_w = 20;
-            icon_h = 20;
-            svg.append("line")
-            .attr("x1", item.loc_x + 2).attr("y1", item.loc_y - 2)
-            .attr("x2", item.loc_x + 20).attr("y2", item.loc_y - 2)
-            .attr("stroke", item.color).attr("stroke-dasharray", item['stroke-dasharray']).attr("stroke-width", 2);
-        }
-        
-        item.object = svg.append("text")
-        .attr("x", item.loc_x + 25).attr("y", item.loc_y)
-        //.attr("class", 'lightish chart-tick-label ' + initial_specs.chart_size)
-        .attr("class", "font-11").attr("font-family", "Arial")
-        .text(item.label)
-        .attr("width", function(d){ return this.getComputedTextLength(); });
-        
-        item.width = parseFloat(item.object.attr("width"));
-        
-        if(legend.layout == "horizontal"){
-            start_loc_x += item.width + icon_w + 10;
-        }
-        else if(legend.layout == "vertical"){
-            start_loc_y += icon_h;
-        }
-        
-    }*/
     return svg;
 }
 
@@ -1195,7 +1168,7 @@ function graph_add_data_labels(svg, x, y, width, height, chart_type, initial_spe
                 else if(attempts < 50) { // If it's the first time through, just try a standard up and down shift
                     rnd = Math.random(); 
                     sign = (a % 2 == 0) ? 1 : -1;
-                    adj_rnd = .15 + rnd*.25;
+                    adj_rnd = .25 + rnd*.15;
                     loc.y_offset = height * adj_rnd * sign;
                     loc.y = height/2 + 7 + loc.y_offset;
                 }
@@ -1203,7 +1176,7 @@ function graph_add_data_labels(svg, x, y, width, height, chart_type, initial_spe
                     
                     rnd = Math.random();
                     sign = (a % 2 == 0) ? 1 : -1;
-                    adj_rnd = .10 + rnd*.36;
+                    adj_rnd = .20 + rnd*.26;
                     loc.y_offset = height * adj_rnd * sign;
                     loc.y = height/2 + 7 + loc.y_offset;
                 }
@@ -1215,10 +1188,10 @@ function graph_add_data_labels(svg, x, y, width, height, chart_type, initial_spe
                     loc_b = locs[b];
                     
                     //console.log(loc.display, zFormat(loc.y), loc.h, "vs", loc_b.display, zFormat(loc_b.y), loc_b.h);
-                    if(loc.y + loc.h < loc_b.y - 10){ // It's above the other label completely
+                    if(loc.y + loc.h < loc_b.y - 25){ // It's above the other label completely
                         //console.log("  A");
                     }
-                    else if(loc.y > loc_b.y + loc_b.h + 10){ // It's below the other label
+                    else if(loc.y > loc_b.y + loc_b.h + 25){ // It's below the other label
                         //console.log("  B");
                     }
                     else{ // We need to check whether it's overlapping on the x since it could be on the y
@@ -1259,16 +1232,25 @@ function graph_add_data_labels(svg, x, y, width, height, chart_type, initial_spe
             
             pt.x_offset = 0;
             
-            pt.object = svg.append("text")
+            pt.object1 = svg.append("text")
                 .attr("x", x(pt.x) + pt.x_offset).attr("y", height*.5 + pt.y_offset)
                 //.attr("class", 'lightish chart-tick-label ' + initial_specs.chart_size)
                 .attr("class", "graph-data-label font-11").attr("font-family", "Arial")
                 .attr("text-anchor", "middle" )
-                .text(pt[tag] + ": " + pt.val_str)
+                .text(pt[tag])
                 .attr("width", function(d){ return this.getComputedTextLength(); });
-            pt.w = parseFloat(pt.object.attr("width"));
-            pt.cx = parseFloat(pt.object.attr("x"));
-            pt.cy = parseFloat(pt.object.attr("y"));
+            pt.object2 = svg.append("text")
+                .attr("x", x(pt.x) + pt.x_offset).attr("y", height*.5 + pt.y_offset)
+                //.attr("class", 'lightish chart-tick-label ' + initial_specs.chart_size)
+                .attr("class", "graph-data-label font-11").attr("font-family", "Arial")
+                .attr("text-anchor", "middle" )
+                .text(pt.val_str)
+                .attr("width", function(d){ return this.getComputedTextLength(); });
+            pt.w1 = parseFloat(pt.object1.attr("width"));
+            pt.w2 = parseFloat(pt.object2.attr("width"));
+            pt.w = Math.max(pt.w1, pt.w2);
+            pt.cx = parseFloat(pt.object1.attr("x"));
+            pt.cy = parseFloat(pt.object1.attr("y"));
             pt.h = 14;
         
             locs.push(pt);
@@ -1285,22 +1267,41 @@ function graph_add_data_labels(svg, x, y, width, height, chart_type, initial_spe
         for(var b = 0;b<locs.length;b++){
             pt = locs[b];
             pt.cy = pt.y;
+            svg.append("line")
+                .attr("x1", x(pt.x) + pt.x_offset)
+                .attr("x2", x(pt.x) + pt.x_offset)
+                .attr("y1", function(d){ if(pt.y < height/2){ return pt.y + 25; } else { return pt.y - 20; } } )
+                    .attr("y2", height/2)
+                .style("stroke", "#AAA").style("fill", null)
+            ;
+            
+        }
+        for(var b = 0;b<locs.length;b++){
+            pt = locs[b];
+            pt.cy = pt.y;
            
+            svg.append("rect")
+                .attr("x", x(pt.x) - pt.w/2).attr("y", pt.y - 8)
+                .attr("width", pt.w).attr("height", 23)
+                .style("fill", "#FFF")
+                //.attr("class", 'lightish chart-tick-label ' + initial_specs.chart_size)
+                .attr("class", "graph-data-label-rect");
+            
             svg.append("text")
                 .attr("x", x(pt.x) + pt.x_offset).attr("y", pt.y)
                 //.attr("class", 'lightish chart-tick-label ' + initial_specs.chart_size)
                 .attr("class", "graph-data-label font-11").attr("font-family", "Arial")
                 .attr("text-anchor", "middle" )
-                .text(pt[tag] + ": " + pt.val_str)
+                .text(pt[tag])
             ;
-            
-            svg.append("line")
-                .attr("x1", x(pt.x) + pt.x_offset)
-                .attr("x2", x(pt.x) + pt.x_offset)
-                .attr("y1", function(d){ if(pt.y < height/2){ return pt.y + 10; } else { return pt.y - 20; } } )
-                    .attr("y2", height/2)
-                .style("stroke", "#AAA").style("fill", null)
+            svg.append("text")
+                .attr("x", x(pt.x) + pt.x_offset).attr("y", pt.y + 15)
+                //.attr("class", 'lightish chart-tick-label ' + initial_specs.chart_size)
+                .attr("class", "graph-data-label font-11").attr("font-family", "Arial")
+                .attr("text-anchor", "middle" )
+                .text(pt.val_str)
             ;
+
             
         }
         
@@ -1609,6 +1610,123 @@ function spark_bar(id, arg_specs, arg_initial_specs = null){
     }
     
 }
+
+function harvey_ball(id, arg_specs, arg_initial_specs = null){
+    var debug = {'on': false, 'spacing': true, 'data': false};
+    let {width, height, specs, initial_specs, svg} = initiate_svg(id, null, arg_specs, arg_initial_specs);
+    
+    if(width <= 0){ return; }
+    if(debug.on && debug.spacing){ console.log("SVG Width x Height: " + rnd(width) + " x " + rnd(height)); }
+    
+    /* Create graph */
+    var x = d3.scaleLinear().range([0, width]); var y = d3.scaleLinear().range([height, 0]);
+    if(debug.on && debug.data){ console.log(data); }
+    
+        
+    svg.append('circle')
+    .attr('cx', x(.5)).attr('cy', specs.harvey_width/2 + 2 )
+    .attr('r', specs.harvey_width/2)
+    .style('fill', specs.fill[0]).style('stroke', specs.fill[0]);
+
+    if('label' in specs && [null, ''].indexOf(specs.label) == -1){
+        svg.append('text')
+        .attr('x', x(.5)).attr('y', y(.13))
+        .text(specs.label).attr("text-anchor", "middle" )
+        .style('fill', specs.color).attr("font-weight",  "bold")
+        .attr("class", 'lightish chart-tick-label ' + initial_specs.chart_size);
+    }
+    
+
+        
+   
+}
+
+function labeled_arrow(id, arg_specs, arg_initial_specs = null){
+    var debug = {'on': false, 'spacing': true, 'data': false};
+    let {width, height, specs, initial_specs, svg} = initiate_svg(id, null, arg_specs, arg_initial_specs);
+    
+    if(width <= 0){ return; }
+    if(debug.on && debug.spacing){ console.log("SVG Width x Height: " + rnd(width) + " x " + rnd(height)); }
+    
+    /* Create graph */
+    var x = d3.scaleLinear().range([0, width]); var y = d3.scaleLinear().range([height, 0]);
+    if(debug.on && debug.data){ console.log(data); }
+    arrow_ratio = .55; // This is how much of the arrow is base vs arrow shape
+    if(specs.dir != null){
+    
+        var trianglePoints = null;
+        if(specs.dir == "up"){
+            tmp = [
+              x(.5) + ' ' + y(1)
+            , (x(.5) - specs.arrow_width/2 - 10) + ' ' + y(arrow_ratio)
+            , (x(.5) + specs.arrow_width/2 + 10) + ' ' + y(arrow_ratio)
+            , x(.5) + ' ' + y(1)]
+        
+            trianglePoints = [tmp.join(", ")];
+            rect_y = y(arrow_ratio);
+            rect_height = height*arrow_ratio;
+            text_y = y(.23);
+        }   
+        else if(specs.dir == "down"){
+            tmp = [
+              x(.5) + ' ' + y(0)
+            , (x(.5) - specs.arrow_width/2 - 10) + ' ' + (height - y(arrow_ratio))
+            , (x(.5) + specs.arrow_width/2 + 10) + ' ' + (height - y(arrow_ratio))
+            , x(.5) + ' ' + y(0)]
+        
+            trianglePoints = [tmp.join(", ")];
+            rect_y = y(1);
+            rect_height = height*arrow_ratio;
+            text_y = y(.40);
+        }  
+
+        else if(specs.dir == "sideways"){
+            tmp1 = [
+              x(.25) + ' ' + y(.5)
+            , (x(.5) - specs.arrow_width/2) + ' ' + y(1.0)
+            , (x(.5) - specs.arrow_width/2) + ' ' + y(0.0)
+            , x(.25) + ' ' + y(.5)]
+            
+            
+            tmp2 = [
+              x(.75) + ' ' + y(.5)
+            , (x(.5) + specs.arrow_width/2) + ' ' + y(1.0)
+            , (x(.5) + specs.arrow_width/2) + ' ' + y(0.0)
+            , x(.75) + ' ' + y(.5)]
+            
+        
+            trianglePoints = [tmp1.join(", "), tmp2.join(", ")];
+            rect_y = y(.83);
+            rect_height = height * .66;
+            text_y = y(.30);
+        }          
+        
+        for(var b = 0;b<trianglePoints.length;b++){
+            svg.append('polyline')
+            .attr('points', trianglePoints[b])
+            .style('fill', specs.fill).style('stroke', specs.fill);
+        }
+        
+        svg.append('rect')
+        .attr('x', x(.5) - specs.arrow_width/2).attr('y', rect_y)
+        .attr('width', specs.arrow_width).attr('height', rect_height)
+        .style('fill', specs.fill).style('stroke', specs.fill);
+
+        if('label' in specs && [null, ''].indexOf(specs.label) == -1){
+            svg.append('text')
+            .attr('x', x(.5)).attr('y', text_y)
+            .text(specs.label).attr("text-anchor", "middle" )
+            .style('fill', specs.color).attr("font-weight",  "bold")
+            .attr("class", 'lightish chart-tick-label ' + initial_specs.chart_size);
+        }
+        
+
+        
+    }
+}
+
+
+
 function comparison_bar(id, arg_specs, arg_initial_specs = null){
     var debug = {'on': false, 'spacing': true, 'data': true};
     let {width, height, specs, initial_specs, svg} = initiate_svg(id, null, arg_specs, arg_initial_specs);

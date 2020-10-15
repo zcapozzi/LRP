@@ -12,18 +12,18 @@
         {% endif %}
 
         <div class='col-12 page-title'>
-            <span class='font-24 pointer bold'>LaxRef PRO: Explanations</span>
+            <span class='font-24 pointer bold'>LaxRef PRO: Explanations{{misc.missing_str|safe}}</span>
         </div>
         {% if misc.error %}
-            <div class='col-12 error centered'><span class='error' >{{misc.error}}</span></div>
+            <div class='col-12 error centered'><span class='error' >{{misc.error|safe}}</span></div>
         {% endif %}
         {% if misc.msg %}
             <div class='col-12 centered'><span class='msg' style='color:blue;' >{{misc.msg}}</span></div>
         {% endif %}
         <div class='bbottom flex'>
             <div class='col-3'><span class='bold font-15 contents'>HTML Page</span></div>
-            <div class='col-3'><span class='bold font-15 contents'>Tag</span></div>
-            <div class='col-5'><span class='bold font-15 contents'>Header Text</span></div>
+            <div class='col-4'><span class='bold font-15 contents'>Tag</span></div>
+            <div class='col-4'><span class='bold font-15 contents'>Header Text</span></div>
             <div class='col-1'></div>
         </div>
         <div class='right '>
@@ -36,8 +36,8 @@
             <FORM action='/explanations' method=POST><input type=hidden name='ID' value='{{e.ID}}' />
             <div class='flex'>
                 <div class='col-3'><span class=' font-15 contents'>{{e.html_page}}</span></div>
-                <div class='col-3'><span class=' font-15 contents'>{{e.tag}}</span></div>
-                <div class='col-5'><span class=' font-15 contents' style='color:{{e.color}};'>{{e.header_text}}</span></div>
+                <div class='col-4'><span class=' font-15 contents'>{{e.tag}}</span></div>
+                <div class='col-4'><span class=' font-15 contents' style='color:{{e.color}};'>{{e.header_text}}</span></div>
                 <div class='col-1'><button name='action' value='view_explanation' class='action-button'><span class='font-12'>EDIT</span></button></div>
             </div>
             </FORM>
@@ -46,13 +46,10 @@
 
 <script src="/static/js/create.js"></script>
 <script>
+    var on_mobile = null;
+    var console_log = []; var success = null;
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
     
-    $( "#threedot" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
-    $( "#personicon" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
     finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 {% endblock %}

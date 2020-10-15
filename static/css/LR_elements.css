@@ -96,11 +96,11 @@ span.tag-on.blue{ border-bottom: solid 2px blue!important; }
 
 .text-container{
     padding:10px; padding-top:20px;
+    line-height: 24px;
 }
 
 .text-container.medium{
     height: 140px;
-    
 }
 
 .settings-bar.not-shown{
@@ -720,6 +720,9 @@ select.stat-select{
     /* Black & White */
     .site-logo{ font:1.3em/2.0em Oswald, sans-serif; cursor:pointer; padding:10px 5px; }
     
+    .text-container{ 
+        line-height: 22px;
+    }
     .text-container.medium{
         height: 110px;
     }

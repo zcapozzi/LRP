@@ -10,5 +10,6 @@ appengine_config.pyc
 tags/*.pyc
 LocalDocs/
 pre_upload.py
+copy_database.py
 upload_dev.bat
 upload_test.bat

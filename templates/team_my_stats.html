@@ -18,7 +18,7 @@
         
         
         {% if misc.error %}
-            <div class='col-12 error centered'><span class='error' >{{misc.error}}</span></div>
+            <div class='col-12 error centered'><span class='error' >{{misc.error|safe}}</span></div>
         {% endif %}
         {% if misc.msg %}
             <div class='col-12 error centered'><span class='' >{{misc.msg}}</span></div>
@@ -62,7 +62,13 @@
                     <select style='width:80%; margin: 0% 10%;' id='top_menu_select' onChange='choose_left_menu_item(this.value);'>
                         <option id='offense_option' value='offense'>Offense</option>
                         <option id='defense_option' value='defense'>Defense</option>
-                        <option id='faceoffs_option' value='faceoffs'>Faceoffs</option>
+                        <option id='faceoffs_option' value='faceoffs'>
+                            {% if misc.data.gender == "men" %}
+                                Faceoffs
+                            {% else %}
+                                Draws
+                            {% endif %}
+                        </option>
                         <option id='goalkeepers_option' value='goalkeepers'>Goalkeepers</option>
                     </select>
                 </div>
@@ -70,7 +76,13 @@
                     <div class='left-menu col-2-12 dtop'>
                         <div id='offense_menu_item' onclick='choose_left_menu_item(this.id);' class='active left-menu-item'><span class='mouseover-link pointer font-15'>Offense</span></div>
                         <div id='defense_menu_item' onclick='choose_left_menu_item(this.id);' class='left-menu-item'><span class='mouseover-link pointer font-15'>Defense</span></div>
-                        <div id='faceoffs_menu_item' onclick='choose_left_menu_item(this.id);' class='left-menu-item'><span class='mouseover-link pointer font-15'>Faceoffs</span></div>
+                        <div id='faceoffs_menu_item' onclick='choose_left_menu_item(this.id);' class='left-menu-item'><span class='mouseover-link pointer font-15'>
+                            {% if misc.data.gender == "men" %}
+                                Faceoffs
+                            {% else %}
+                                Draws
+                            {% endif %}
+                        </span></div>
                         <div id='goalkeepers_menu_item' onclick='choose_left_menu_item(this.id);' class='left-menu-item'><span class='mouseover-link pointer font-15'>Goalkeepers</span></div>
                     </div>
                     <div class='right-content col-10-12' id='right-content-panel'>
@@ -593,6 +605,7 @@
                                 </div>
                             </div>
                             <div class='col-12 flex-block no-padding'>
+                                {% if misc.data.gender == "men" %}
                                 <div class='non-dashboard-section card col-6-12' id='faceoff_elo_container_div'>
                                     <div class='non-dashboard-section-header'>
                                         <div class='col-11-10 no-padding non-dashboard-label'>Player Ratings</div>
@@ -608,6 +621,7 @@
                                     </div>
 
                                 </div>
+                                {% endif %}
                                 <div class='non-dashboard-section card col-6-12' id='faceoff_splits_container_div'>
                                     <div class='non-dashboard-section-header'>
                                         <div class='col-11-10 no-padding non-dashboard-label'>W/L Splits</div>
@@ -720,7 +734,7 @@
                             <div class='col-12 flex-block no-padding'>
                                 <div class='non-dashboard-section card col-6-12' id='goalkeepers_adjusted_shotclock_container_div'>
                                     <div class='non-dashboard-section-header'>
-                                        <div class='col-11-10 no-padding non-dashboard-label'>by Shot Clock Bucket</div>
+                                        <div class='col-11-10 no-padding non-dashboard-label'>by Shot Clock Remaining</div>
                                                     
                                         <div class='col-1 right no-padding dashboard-tile-help-icon' id='goalkeepers_adjusted_shotclock_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|goalkeepers_adjusted_shotclock" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='goalkeepers_adjusted_shotclock_img' class='icon-15 toggle' onclick='toggle_tile_visibility("goalkeepers_adjusted_shotclock");' src="static/img/Gray_Plus150.png" /></div>
@@ -733,17 +747,17 @@
                                     </div>
 
                                 </div>
-                                <div class='non-dashboard-section card col-6-12' id='goalkeepers_adjusted_manup_container_div'>
+                                <div class='non-dashboard-section card col-6-12' id='goalkeepers_adjusted_mandown_container_div'>
                                     <div class='non-dashboard-section-header'>
-                                        <div class='col-11-10 no-padding non-dashboard-label'>by Man-up/Even</div>
+                                        <div class='col-11-10 no-padding non-dashboard-label'>by Man-down/Even</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='goalkeepers_adjusted_manup_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|goalkeepers_adjusted_manup" src="static/img/Gray_Info150.png" /></div>
-                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='goalkeepers_adjusted_manup_img' class='icon-15 toggle' onclick='toggle_tile_visibility("goalkeepers_adjusted_manup");' src="static/img/Gray_Plus150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='goalkeepers_adjusted_mandown_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|goalkeepers_adjusted_mandown" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='goalkeepers_adjusted_mandown_img' class='icon-15 toggle' onclick='toggle_tile_visibility("goalkeepers_adjusted_mandown");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
                                         
                                     </div>
-                                    <div class='non-dashboard-tile-content' id='goalkeepers_adjusted_manup_div'>
+                                    <div class='non-dashboard-tile-content' id='goalkeepers_adjusted_mandown_div'>
                                         
                                     </div>
 
@@ -767,7 +781,7 @@
                                 </div>
                                 <div class='non-dashboard-section card col-6-12' id='goalkeepers_adjusted_possessiontype_container_div'>
                                     <div class='non-dashboard-section-header'>
-                                        <div class='col-11-10 no-padding non-dashboard-label'><!--by Possession Type--></div>
+                                        <div class='col-11-10 no-padding non-dashboard-label'>by Possession Type</div>
                                                     
                                         <div class='col-1 right no-padding dashboard-tile-help-icon' id='goalkeepers_adjusted_possessiontype_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|goalkeepers_adjusted_possessiontype" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='goalkeepers_adjusted_possessiontype_img' class='icon-15 toggle' onclick='toggle_tile_visibility("goalkeepers_adjusted_possessiontype");' src="static/img/Gray_Plus150.png" /></div>
@@ -791,7 +805,7 @@
         </div>
     
 
-<script src="static/js/d3.v4.min.js"></script><script src="static/js/laxrefpro_graphing.js?dt=1"></script>
+<script src="static/js/d3.v4.min.js"></script><script src="static/js/laxrefpro_graphing.js?dt=200"></script>
 <script>
     var on_mobile = null;
     var console_log = []; var success = null;
@@ -1207,7 +1221,10 @@
             misc.data.ranks.stat_keys.sort(function(first, second) {
                 return !(second.seq - first.seq);
             });
-            subset = misc.data.ranks.stat_keys.slice(0,6);
+            
+            filtered_stats = misc.data.ranks.stat_keys.filter(r => !('exclude' in r) || r.exclude.indexOf(unit) == -1);
+            
+            subset = filtered_stats.slice(0,6);
             active_tag = false;
             for(var a = 0 ;a<subset.length;a++){
                 var key = subset[a];
@@ -1229,8 +1246,9 @@
             html = "";
             html += "<select onchange='click_tag(\"" + unit + "\",this.value);' class='stat-select font-12'>";
             html += "<option ></option>";
-            for(var a = 0 ;a<misc.data.ranks.stat_keys.length;a++){
-                var key = misc.data.ranks.stat_keys[a];
+            
+            for(var a = 0 ;a<filtered_stats.length;a++){
+                var key = filtered_stats[a];
                 html += "<option " + ((key.tag == ranks_stat_tag[unit] && (on_mobile || !active_tag)) ? " selected" : "") + " value='" + key.tag + "'>" + key.display + "</option>";
             }
             html += "</select>";
@@ -1696,7 +1714,7 @@
                             
                             html += "<div class='col-12 no-padding flex'>";
                             html += "<div class='col-6 no-padding'><span class='font-12'>" + o.label + "</span></div>";
-                            html += "<div class='col-6 no-padding'><div class='no-padding spark-bar ' id='" + spark_bar_id + "' style=''></div></div>";
+                            html += "<div class='col-6 no-padding'><div class='no-padding spark-bar ' id=\'" + spark_bar_id + "' style=''></div></div>";
                             /*html += "<div class='col-4 no-padding right'><span class='font-12' style='font-style:italic;'>n = " + o.cnt_str + "</span></div>";*/
                             html += "</div>";  
                         }
@@ -1835,9 +1853,9 @@
          
         mappings = []
         mappings.push({'db_tag': 'leading_status', 'div_tag': "leading"});
-        mappings.push({'db_tag': 'man_up', 'div_tag': "manup"});
+        mappings.push({'db_tag': 'man_up', 'div_tag': "mandown"});
         mappings.push({'db_tag': 'shot_clock_remaining_bucket', 'div_tag': "shotclock"});
-        //mappings.push({'db_tag': 'possession_started_with_bucket', 'div_tag': "possessiontype"});
+        mappings.push({'db_tag': 'possession_started_with_bucket', 'div_tag': "possessiontype"});
         
         for(var a = 0;a<mappings.length;a++){
             m = mappings[a];
@@ -1880,7 +1898,7 @@
                     html += "<div class='col-12 no-padding flex'>";
                     html += "<div class='col-3 no-padding'><span class='font-12' style='padding:3px;'>" + bkt.label + "</span></div>";
                     html += "<div class='col-2 no-padding centered'><span class='font-12' style='padding:3px;'>" + bkt.sog + "</span></div>";
-                    html += "<div class='col-5 no-padding'><div class='no-padding spark-bar ' id='" + spark_bar_id + "' style=''></div></div>";
+                    html += "<div class='col-5 no-padding'><div class='no-padding spark-bar ' id=\'" + spark_bar_id + "' style=''></div></div>";
                     html += "<div class='col-2 no-padding right'><span class='font-12' style='padding:3px; color: " + (bkt.excess_save_pct >= 0 ? "#3B3" : "#800") + "'>" + (bkt.sog > 0 ? bkt.excess_save_pct_str : "") + " </span></div>";
                     html += "</div>";  
                         

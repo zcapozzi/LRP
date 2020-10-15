@@ -778,6 +778,7 @@ function set_panel(val){
 
 
 function menu_toggle(only_if_open=false){
+
     tags = {'dtop': 1, 'mob': 1};
     for(t in tags){
         var elem_name = 'menu_modal_' + t;
@@ -791,6 +792,9 @@ function menu_toggle(only_if_open=false){
             else{
                 document.getElementById(elem_name).style.display = "none";    
             }
+        }
+        else{
+            console.log("Menu objects have not been created correctly...");
         }
     }
 }

@@ -12,7 +12,7 @@
     {% endif %}
     
     {% if misc.error %}
-        <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
+        <div class='col-12 error'><span class='error' >{{misc.error|safe}}</span></div>
     {% endif %}
     {% if misc.msg %}
         <div class='col-12 error'><span  class='msg' style='color:blue;' >{{misc.msg}}</span></div>
@@ -134,13 +134,10 @@
 <script> var stripe = Stripe('{{misc.clientKey}}'); </script>
 <script src="static/js/stripe_payment.js"></script>
 <script>
+    var on_mobile = null;
+    var console_log = []; var success = null;
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
     
-    $( "#threedot" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
-    $( "#personicon" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
     finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
  
 </script>

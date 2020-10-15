@@ -27,12 +27,10 @@
 
 
 <script>
-    $( "#threedot" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
-    $( "#personicon" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
+    var on_mobile = null;
+    var console_log = []; var success = null;
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
+    
     finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 {% endblock %}

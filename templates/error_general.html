@@ -18,7 +18,7 @@
     <div class='col-12 dtop centered'><img src='static/img/500_dtop.png' /></div>
     <div class='col-12 mob centered'><img src='static/img/500_mob.png' /></div>
     {% if misc.error %}
-        <div class='col-12'>{{misc.error|safe}}</div>
+        <div class='col-12' id='error_div'>{{misc.error|safe}}</div>
     {% endif %}
     <script>
      
@@ -26,12 +26,9 @@
   
 </body></html>
 <script>
-    $( "#threedot" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
-    $( "#personicon" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
+    var on_mobile = null;
+    var console_log = []; var success = null;
+    
     finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 {% endblock %}

@@ -22,7 +22,7 @@
         
         
         {% if misc.error %}
-            <div class='col-12 error centered'><span class='error' >{{misc.error}}</span></div>
+            <div class='col-12 error centered'><span class='error' >{{misc.error|safe}}</span></div>
         {% endif %}
         {% if misc.msg %}
             <div class='col-12 error centered'><span class='' >{{misc.msg}}</span></div>
@@ -40,7 +40,7 @@
                 <div id='my_team_schedule' class='home-page-section-details normal flex-block'>
                     {% if misc.data.last_game %}
                         <div class='col-4-12'>
-                            <div class='margin card white dashboard-tile' id='last_game_container_div'>
+                            <div onclick='drill_down_header(this.id);' route="team_my_schedule|last_game"  class='margin card white dashboard-tile' id='last_game_container_div'>
                                 
                     
                                 {% if misc.data.completed_games_cnt == 1 %}
@@ -90,7 +90,7 @@
                     
                     {% if misc.data.next_game %}
                         <div class='col-4-12'>
-                            <div class='margin card white dashboard-tile'>
+                            <div onclick='drill_down_header(this.id);' route="team_my_schedule|next_game" id='next_game_container_div' class='margin card white dashboard-tile'>
                                 <div class='col-12 flex'>
                                     <div class='col-11-10 no-padding dashboard-label'>Next: {{misc.data.next_game.opponent_display}}</div>
                                     
@@ -118,7 +118,7 @@
                     
                     {% if misc.data.future_games %}
                         <div class='col-4-12'>
-                            <div class='margin card white dashboard-tile' id='upcoming_schedule_div'>
+                            <div onclick='drill_down_header(this.id);' route="team_my_schedule|full_schedule" class='margin card white dashboard-tile' id='upcoming_schedule_div'>
                                 <div class='col-12 flex'>
                                     <div class='col-11-10 no-padding dashboard-label'>Upcoming Schedule</div>
                                     
@@ -166,12 +166,7 @@
                     
                     
                 </div>
-                <!--div class='home-page-section-footer flex'>
-                    <div class='col-8-6 no-padding'></div>
-                    <div class='col-4-6 no-padding right'>
-                        
-                    </div>
-                </div-->
+
             </div>
             
             <div class='home-page-section card'>
@@ -316,7 +311,7 @@
         </div>
     <FORM id='drill_down_form' action='' method=POST><input type=hidden name='active_element' id='active_element' value=''></FORM>
 
-<script src="static/js/d3.v4.min.js"></script><script src="static/js/laxrefpro_graphing.js?dt=1"></script>
+<script src="static/js/d3.v4.min.js"></script><script src="static/js/laxrefpro_graphing.js?dt=200"></script>
 <script>
     var on_mobile = null;
     var console_log = [];

@@ -18,7 +18,7 @@
         
         
         {% if misc.error %}
-            <div class='col-12 error centered'><span class='error' >{{misc.error}}</span></div>
+            <div class='col-12 error centered'><span class='error' >{{misc.error|safe}}</span></div>
         {% endif %}
         {% if misc.msg %}
             <div class='col-12 error centered'><span class='' >{{misc.msg}}</span></div>
@@ -263,7 +263,7 @@
         </div>
     
 
-<script src="static/js/d3.v4.min.js"></script><script src="static/js/laxrefpro_graphing.js?dt=1"></script>
+<script src="static/js/d3.v4.min.js"></script><script src="static/js/laxrefpro_graphing.js?dt=200"></script>
 <script>
     var on_mobile = null;
     var console_log = []; var success = null;

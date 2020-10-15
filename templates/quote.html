@@ -136,7 +136,7 @@
                                         {% if misc.login_account_error %}
                                             <div class='col-12 error'><span class='error' >{{misc.login_account_error}}</span></div>
                                         {% endif %}
-                                        <div class='col-12'><button type=submit id='submit_me' name='action' value='login' />Submit</button></div>
+                                        <div class='col-12'><button type=submit id='submit_me_login' name='action' value='login' />Submit</button></div>
                                         <div class='col-12 centered' style='padding-top:15px;'>
                                             
                                             <a class='font-14' href='/forgot'><span class='font-14'>Forgot Password</span></a>
@@ -238,13 +238,10 @@
 
 
 <script>
+    var on_mobile = null;
+    var console_log = []; var success = null;
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
     
-    $( "#threedot" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
-    $( "#personicon" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
     finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 

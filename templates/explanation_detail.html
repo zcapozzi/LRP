@@ -60,18 +60,18 @@
 
 <script src="/static/js/create.js"></script>
 <script>
+    
+    var on_mobile = null;
+    var console_log = []; var success = null;
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
+    
     function edit_html(val){
         $("#preview").empty();
         while(val.indexOf("\n") > -1){ val = val.replace("\n", "<BR>") }
         $("#preview").append(val);
     }
     
-    $( "#threedot" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
-    $( "#personicon" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
+    
     finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
     
     

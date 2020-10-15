@@ -105,7 +105,7 @@
                 <div class='col-4-6'><input class='medium' type=text value='{{misc.valid_until_str}}' name='valid_until' id='valid_until' /></div>
             </div>
            {% if misc.error %}
-                <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
+                <div class='col-12 error'><span class='error' >{{misc.error|safe}}</span></div>
             {% endif %}
             
             {% if misc.msg %}
@@ -119,12 +119,10 @@
 
 
 <script>
-    $( "#threedot" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
-    $( "#personicon" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
+    var on_mobile = null;
+    var console_log = []; var success = null;
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
+    
     finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 

@@ -3,7 +3,10 @@
 
 
 {% block body %}
-
+        <STYLE>
+            div.Sent{ display:none; }
+            div.Sent.show{ display:block; }
+        </STYLE>
         <div class='col-12 centered' id='banner'></div>
         {% if misc.breadcrumbs %}
             <div class='col-12 centered'>
@@ -12,10 +15,13 @@
         {% endif %}
 
         <div class='col-12 page-title'>
-            <span class='font-24 pointer bold'>LaxRef PRO: Email</span>
+            <div class='flex'>
+            <div class='col-6'><span class='font-24 pointer bold'>LaxRef PRO: Email</span></div>
+            <div class='col-3 action-button'><a class='action-button' href='/create-email'><span class='font-14'>Create</span></a></div>
+            <div class='col-3 right'><span class='font-14'>Show Sent</span> <input type=checkbox onclick='toggle_show_sent();'/></div>
         </div>
         {% if misc.error %}
-            <div class='col-12 error centered'><span class='error' >{{misc.error}}</span></div>
+            <div class='col-12 error centered'><span class='error' >{{misc.error|safe}}</span></div>
         {% endif %}
         {% if misc.msg %}
             <div class='col-12 centered'><span class='msg' style='color:blue;' >{{misc.msg}}</span></div>
@@ -28,21 +34,23 @@
                     
                     <div class='panel col-12'>
                         <div class='col-12 flex'>
-                            <div class='col-2'><span class='bold font-12'>Send Date (UTC)</span></div>
+                            <div class='col-2'><span class='bold font-12'>Send Date (ET)</span></div>
                             <div class='col-3'><span class='bold font-12'>Recipient</span></div>
                             <div class='col-3'><span class='bold font-12'>Subject</span></div>
                             <div class='col-1'><span class='bold font-12'>Status</span></div>
                             <div class='col-3'><span class='bold font-12'></span></div>
                         </div>
                         {% for u in misc.emails %}
-                            <div class='table-row'>
-                            <FORM action='/email' method=POST><input type=hidden name='hash' value='{{u.hash}}' /><input type=hidden name='confirmed' value='{{misc.confirmed}}' />
+                            <div class='table-row'><div class='{{u.status_str}}'>
+                            <FORM action='/email' method=POST><input type=hidden name='email_ID' value='{{u.ID}}' /><input type=hidden name='confirmed' value='{{misc.confirmed}}' />
                             <div class='col-12 flex' style=''>
-                                <div class='col-2'><span class='font-12'>{{u.send_date_str}}</span></div>
-                                <div class='col-3'><span class='font-12' title='{{u.recipient_title}}'>{{u.recipient_decrypted}}</span></div>
+                                <div class='col-2'><span class='font-12'>{{u.send_date_str_ET}}</span></div>
+                                <div class='col-3'><span class='font-12'>{{u.recipients_str_preview}}</span></div>
                                 <div class='col-3'><span class='font-12 contents' title='{{u.subject_title}}'>{{u.subject_decrypted}}</span></div>
                                 <div class='col-1'>
-                                    <span class='font-12' style='{{u.status_style}}'>{{u.status_str}}</span>
+                                    
+                                        <span class='font-12' style='{{u.status_style}}'>{{u.status_str}}</span>
+                                    
                                 </div>
                                 
                                 <div class='col-3 right' style=''><div class='no-padding'>
@@ -67,7 +75,7 @@
                                 </div></div>
                             </div>
                             
-                            {% if misc.selected_hash == u.hash %}
+                            {% if misc.selected_ID == u.ID %}
                                 {% if misc.action == "resend" %}
                                     <div class='col-12 centered' style=''>
                                         <span class='' style='color:red;'>{{misc.confirm_msg}}</span>
@@ -76,7 +84,7 @@
                                 {% if misc.action == "reschedule" %}
                                     <div class='col-12 centered flex' style=''>
                                         <div class='col-6'>
-                                            <span class='' style='color:red;'>Time</span><input type=text class='large' name='new_date_str' value='{{misc.new_date_str}}' />
+                                            <span class='' style='color:red;'>Time (ET)</span><input type=text class='large' name='new_date_str' value='{{misc.new_date_str}}' />
                                         </div>
                                         <div class='col-6'>
                                             <span class='' style='color:red;'>{{misc.confirm_msg}}</span>
@@ -95,7 +103,8 @@
                                 {% endif %}
                             {% endif %}
                             </FORM>
-                            </div>
+                            
+                            </div></div>
                         {% endfor %}
                         
                       
@@ -106,15 +115,23 @@
             </div>
             
 
-<script src="/static/js/create.js"></script>
+<script src="/static/js/create.js?dt=200"></script>
 <script>
+    var on_mobile = null;
+    var console_log = [];
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
     
-    $( "#threedot" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
-    $( "#personicon" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
+    var show_sent = false;
+    function toggle_show_sent(){
+        if(show_sent == false) { // User is trying to show them
+            $("div.Sent").addClass("show");
+        }
+        else{
+            $("div.Sent").removeClass("show");
+        }
+        show_sent = !show_sent;
+    }
+    
     finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 {% endblock %}

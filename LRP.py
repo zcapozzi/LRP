@@ -63,6 +63,7 @@ import glob
 
 vendor.add('lib')
 import sqlalchemy
+import telepot
 import stripe
 #sys.path.append('lib\mailin-api-python\V2.0')
 #from mailin import Mailin
@@ -207,6 +208,7 @@ def finish_user_obj(user_obj):
             for n in user_obj['notifications']:
                 n['display_until'] = "" if 'display_until' not in n or n['display_until'] is None else n['display_until'].strftime("%Y-%m-%d")
                 n['first_viewed'] = ""
+
         user_obj['notifications'] = json.dumps(user_obj['notifications'])
     except Exception:
         logging.error("finish_user_obj fail: %s" % traceback.format_exc())
@@ -509,11 +511,24 @@ def finalize_mail_send(msg):
         msg['content'] = msg['content'].replace("\r\n", "\\r\\n").replace("\n", "\\n")
     
     
-    db_payload = "{\"sender\":{\"name\":\"LRP Admin\",\"email\":\"admin@lacrossereference.com\"},\"to\":[{\"email\":\"%s\"}],\"%s\":\"%s\",\"subject\":\"%s\"}" % (msg['email'], msg['content_type'], "[removed-content]", msg['subject'])
+    
+    if 'send_as' not in msg or msg['send_as'] in ['', -1, None]:
+        msg['send_as'] = "admin@lacrossereference.com"
+        msg['send_name'] = msg['send_as']
+        
+    if msg['send_as'] == "admin@lacrossereference.com":
+        msg['send_name'] = "LRP Admin"
+    elif msg['send_as'] == "zack@lacrossereference.com":
+        msg['send_name'] = "Zack from LRP"
+    
+    if 'send_name' not in msg:
+        msg['send_name'] = "LRP Admin"
+        
+    db_payload = "{\"sender\":{\"name\":\"%s\",\"email\":\"%s\"},\"to\":[{\"email\":\"%s\"}],\"%s\":\"%s\",\"subject\":\"%s\"}" % (msg['send_name'], msg['send_as'], msg['email'], msg['content_type'], "[removed-content]", msg['subject'])
     if False and msg['email'] not in ["zcapozzi@gmail.com", "zack@lacrossereference.com", "zack@looseleafguide.com", "zack@mainstreetdataguy.com", "bot@lacrossereference.com", "kyle@lacrossereference.com", "guide@looseleafguide.com", "zack@durhamcornholecompany.com"]:
-        payload = "{\"sender\":{\"name\":\"LRP Admin\",\"email\":\"admin@lacrossereference.com\"},\"to\":[{\"email\":\"%s\"}],\"bcc\":[{\"email\":\"zcapozzi@gmail.com\",\"name\":\"BCC Zack\"}],\"%s\":\"%s\",\"subject\":\"%s\"}" % (msg['email'], msg['content_type'], msg['content'], msg['subject'])
+        payload = "{\"sender\":{\"name\":\"%s\",\"email\":\"%s\"},\"to\":[{\"email\":\"%s\"}],\"bcc\":[{\"email\":\"zcapozzi@gmail.com\",\"name\":\"BCC Zack\"}],\"%s\":\"%s\",\"subject\":\"%s\"}" % (msg['send_name'], msg['send_as'], msg['email'], msg['content_type'], msg['content'], msg['subject'])
     else:
-        payload = "{\"sender\":{\"name\":\"LRP Admin\",\"email\":\"admin@lacrossereference.com\"},\"to\":[{\"email\":\"%s\"}],\"%s\":\"%s\",\"subject\":\"%s\"}" % (msg['email'], msg['content_type'], msg['content'], msg['subject'])
+        payload = "{\"sender\":{\"name\":\"%s\",\"email\":\"%s\"},\"to\":[{\"email\":\"%s\"}],\"%s\":\"%s\",\"subject\":\"%s\"}" % (msg['send_name'], msg['send_as'], msg['email'], msg['content_type'], msg['content'], msg['subject'])
         
     logging.info(payload)
     headers = {
@@ -533,8 +548,13 @@ def finalize_mail_send(msg):
         send_mail = False
         dbrec['status'] = "not-sent"
         dbrec['success'] = 0
-        
+
     if dbrec['recipient'].split("@")[1] in ['email.com', 'user.com']:
+        res = "Success"
+        dbrec['success'] = 1
+        dbrec['status'] = "test"
+        send_mail = False
+    if 'email.com' in msg['subject'] or 'user.com' in msg['subject']:
         res = "Success"
         dbrec['success'] = 1
         dbrec['status'] = "test"
@@ -549,10 +569,11 @@ def finalize_mail_send(msg):
         for r in regexes:
             r['regex'] = re.compile(r['r'], re.IGNORECASE)
             match = r['regex'].search(response.text)
+            
             if match:
                 dbrec['send_in_blue_ID'] = match.group(1)
                 break
-        
+            
         if 'messageId' not in response.text:
             res = "Mail send failed."
             logging.error(response.text)
@@ -628,12 +649,19 @@ def mysql_connect():
         conn=db.raw_connection()
         #conn = MySQLdb.connect(unix_socket='/cloudsql/{}:{}'.format(CLOUDSQL_PROJECT, CLOUDSQL_INSTANCE), user=cloud_dbuser, host=cloud_dbhost, passwd=cloud_dbpass, db=cloud_dbname)
     else:
-    
-        cloud_dbpass = client_secrets['local']['DBPASS']
-        cloud_dbhost = client_secrets['local']['DBHOST']
-        cloud_dbuser = client_secrets['local']['DBUSER']
-        cloud_dbname = client_secrets['local']['DBNAME']
-        cloud_dbport = client_secrets['local']['DBPORT']
+        if client_secrets['local']['test']:
+            cloud_dbpass = client_secrets['test']['DBPASS']
+            cloud_dbhost = client_secrets['test']['DBHOST']
+            cloud_dbuser = client_secrets['test']['DBUSER']
+            cloud_dbname = client_secrets['test']['DBNAME']
+            cloud_dbport = client_secrets['test']['DBPORT']
+        
+        else:
+            cloud_dbpass = client_secrets['local']['DBPASS']
+            cloud_dbhost = client_secrets['local']['DBHOST']
+            cloud_dbuser = client_secrets['local']['DBUSER']
+            cloud_dbname = client_secrets['local']['DBNAME']
+            cloud_dbport = client_secrets['local']['DBPORT']
         #conn = MySQLdb.connect(unix_socket='/cloudsql/{}:{}'.format(CLOUDSQL_PROJECT, CLOUDSQL_INSTANCE), user=cloud_dbuser, host=cloud_dbhost, passwd=cloud_dbpass, db=cloud_dbname)
         conn = MySQLdb.connect(user=cloud_dbuser, host=cloud_dbhost, passwd=cloud_dbpass, db=cloud_dbname)
         
@@ -1128,6 +1156,7 @@ def build_product_data_team(self, user_obj, misc):
     else:
         misc['data'] = {}
         lg("Template: %s" % misc['target_template'])
+        pd(user_obj['active_groups'])
         active_group =user_obj['active_groups'][ [z['ID'] for z in user_obj['active_groups']].index(user_obj['active_group']) ]
         misc['active_team_ID'] = active_group['team_ID']
         
@@ -1229,7 +1258,7 @@ class IndexHandler(webapp2.RequestHandler):
                 # Transfer any cart items held prior to log-in to the actual user's cart
                 user_obj = transfer_cart_items(self, user_obj)
                 
-                
+                user_obj = get_user_obj({'session_ID': user_obj['session_ID']})
                 
                 if misc['target_template'] == "team_home.html":
                     misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
@@ -2041,10 +2070,20 @@ def create_mail_record(dbrec, cursor=None):
         if create_conn:
             conn, cursor = mysql_connect()
 
-        query = "INSERT INTO LRP_Emails(send_date, active, recipient, subject, hash, email_type, status, send_in_blue_ID) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
-        param = [dbrec['send_date'], 1, encrypt(dbrec['recipient']), encrypt(dbrec['subject']), dbrec['hash'], dbrec['content_type'], dbrec['status'], dbrec['send_in_blue_ID']]
+        query = "INSERT INTO LRP_Sent_Email_Records(email_ID, send_date, active, recipient, status, send_in_blue_ID) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Emails fds), %s, %s, %s, %s, %s)"
+        param = [dbrec['send_date'], 1, encrypt(dbrec['recipient']), dbrec['status'], dbrec['send_in_blue_ID']]
         
         cursor.execute(query, param)
+        
+        query = "INSERT INTO LRP_Emails(ID, send_date, active, subject, status, email_type) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Emails fds), %s, %s, %s, %s, %s)"
+        param = [dbrec['send_date'], 1, encrypt(dbrec['subject']), dbrec['status'], dbrec['content_type']]
+        
+        cursor.execute(query, param)
+        
+        if 'email_ID' not in dbrec:
+            cursor.execute("SELECT max(ID) 'email_ID' from LRP_Emails", [])
+            dbrec['email_ID'] = zc.dict_query_results(cursor)[0]['email_ID']
+            
             
         if create_conn:
             conn.commit()
@@ -2052,7 +2091,7 @@ def create_mail_record(dbrec, cursor=None):
         
         # Save it to the storage buckets
         options = {'retry_params': cloudstorage.RetryParams(backoff_factor=1.1)}
-        server_path = "/capozziinc.appspot.com/SentEmailRecords/%s" % (dbrec['hash'])
+        server_path = "/capozziinc.appspot.com/SentEmailRecords/%09d" % (dbrec['email_ID'])
         
         if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'): 
             f_ = cloudstorage.open(server_path, 'w')
@@ -2065,7 +2104,7 @@ def create_mail_record(dbrec, cursor=None):
                     try:
                         f_.write(dbrec['content'].encode('latin-1'))   
                     except UnicodeDecodeError:
-                        logging.error("Could not upload email message (hash=%s) using either utf-8 or latin-1" % dbrec['hash'])
+                        logging.error("Could not upload email message (hash=%09d) using either utf-8 or latin-1" % dbrec['email_ID'])
             f_.close()
         
                     
@@ -2191,6 +2230,8 @@ class RegisterHandler(webapp2.RequestHandler):
             # Transfer any cart items held prior to log-in to the actual user's cart
             user_obj = transfer_cart_items(self, user_obj)
             
+            user_obj = get_user_obj({'session_ID': user_obj['session_ID']})
+            
             msg = email_templates[ [z['template_desc'] for z in email_templates].index('Activate Account') ]
             msg['email'] = misc['email']
             msg['subject'] = "Your LacrosseReference PRO account is ready"
@@ -2268,7 +2309,6 @@ def get_products(cursor, category=None):
     
     for i, p in enumerate(products):
         p['offers'] = [z for z in offers if z['product_ID'] == p['ID'] and z['active']]
-        p['tag'] = p['product_name'].lower().strip()
         
         if p['call_to_action'] == "ADD TO CART" and p['status'] == "pre-register":
             p['call_to_action'] = "GET NOTIFIED"
@@ -2680,11 +2720,11 @@ class SubscriptionHandler(webapp2.RequestHandler):
                                         queries.append("UPDATE LRP_Users set user_type=NULL where ID=%s")
                                         params.append([user_obj['ID']])
                                         
-                                    msg = {'email': user_obj['email_decrypted'], 'subject': "Refund Processed for LacrosseReference PRO", 'content': "Hello,\n\nWe have processed your refund. Please <a href='https://pro.lacrossereference.com/contact'>contact us</a> if, for some reason, the refund hasn't shown up within 1 business day.\n\nThank you for being a valued customer.\n\n-Zack (founder of LacrosseReference)"}
+                                    msg = {'email': user_obj['email_decrypted'], 'subject': "Refund Processed for LacrosseReference PRO", 'content': "Hello,\n\nWe are processing your refund. Please <a href='https://pro.lacrossereference.com/contact'>contact us</a> if, for some reason, the refund hasn't shown up within 1 business day.\n\nThank you for being a valued customer.\n\n-Zack (founder of LacrosseReference)"}
                                     mail_res, dbrec = finalize_mail_send(msg)
                                     if mail_res != "": create_mail_record(dbrec)
                                     misc['target_template'] = "index.html"
-                                    misc['msg'] = "Refund has been processed and sent to %s" % user_obj['email_decrypted']
+                                    misc['msg'] = "We are processing your refund. Thank you for being a customer."
                                     user_obj = get_user_obj({'session_ID': session_ID})
                                     user_obj['email_decrypted'] = decrypt(user_obj['email'])
                                     
@@ -3019,6 +3059,8 @@ class ExplanationsHandler(webapp2.RequestHandler):
                 
                 for m in misc['explanations']:
                     m['color'] = "black" if len(m['explanation_html']) > 0 else "red"
+                nmissing = len([1 for z in misc['explanations'] if z['color'] == "red"])
+                misc['missing_str'] = "" if nmissing == 0 else ("<span class='error'> (%d explanations are  missing)</span>" % nmissing)
                 
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
@@ -3050,7 +3092,8 @@ class ExplanationsHandler(webapp2.RequestHandler):
                 
                 for m in misc['explanations']:
                     m['color'] = "black" if len(m['explanation_html']) > 0 else "red"
-                    
+                nmissing = len([1 for z in misc['explanations'] if z['color'] == "red"])
+                misc['missing_str'] = "" if nmissing == 0 else ("<span class='error'> (%d explanations are  missing)</span>" % nmissing)
                 misc['action'] = "edit_explanation"
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
@@ -3278,6 +3321,7 @@ class ReviewQuoteHandler(webapp2.RequestHandler):
                     misc['target_template'] = "create_quote.html"
                 elif misc['action'] in ['resend_quote', "send_quote"]:
                     misc['period'] = None
+                    misc['target_template'] = "review_quote.html"
                     if misc['price_type'] in ["monthly", "annual"]:
                         misc['period'] = datetime.now().strftime("%Y")
                     
@@ -3330,7 +3374,7 @@ class ReviewQuoteHandler(webapp2.RequestHandler):
                         mail_res, dbrec = finalize_mail_send(msg)
                         if mail_res != "": create_mail_record(dbrec)
                         
-                        if mail_res == "Success" or not ('--no-mail' not in client_secrets['local'] or client_secrets['local']['--no-mail'] not in ["Y", 'y', 'yes']):
+                        if mail_res == "Success" or not ('--no-mail' not in client_secrets['local'] or client_secrets['local']['--no-mail'] not in ["Y", 'y', 'yes']) or test_address(misc['email_decrypted']):
                         
                                 
                             if misc['action'] == "send_quote": # If we are resending the quote, we don't need to add it to the DB
@@ -3493,7 +3537,7 @@ class CreateRefundHandler(webapp2.RequestHandler):
                         
                     elif misc['action'] == "create_refund" and misc['confirmed'] == "yes":
                         # This is where we are actually processing the refund
-                        misc['msg'] = "Refund has been processed and sent to %s" % sub['email']
+                        misc['msg'] = "We are processing your refund. Thank you for being a customer."
                         
                         
                         refund = stripe.Refund.create(
@@ -3993,7 +4037,7 @@ class CreateQuoteHandler(webapp2.RequestHandler):
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
                 misc['target_template'] = "index.html"; user_obj = process_non_auth(self)
-                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                tv = {'user_obj': user_obj, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
             misc['target_template'] = "index.html"; user_obj = process_non_auth(self)
@@ -4044,7 +4088,7 @@ def display_quote(misc):
                     misc['product_user_type'] = "team"
                 elif product['product_name'] == "Media":
                     misc['product_user_type'] = "media"
-                elif product['product_name'] == "Basic":
+                elif product['product_name'] == "Fan":
                     misc['product_user_type'] = "individual"
                 misc = calc_discount(misc, product)                
             if misc['quote']['trial']:
@@ -4318,8 +4362,8 @@ class PreferencesHandler(webapp2.RequestHandler):
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
-                misc['target_template'] = "index.html"
-                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj)}
+                misc['target_template'] = "index.html"; user_obj = process_non_auth(self)
+                tv = {'user_obj': user_obj, 'misc': finish_misc(misc, user_obj)}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
             misc['target_template'] = "index.html"
@@ -4612,49 +4656,67 @@ class CronHandler(webapp2.RequestHandler):
             cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, send_date)  VALUES (%s, %s, %s)", [11, 1, datetime.now()]); conn.commit()
             cursor.close(); conn.close()
         if orig_url == "send-mail":
+            queries = []; params = []
             utc_dt = datetime.utcnow()
             utc_dt_local = datetime.strptime(utc_dt.strftime("%Y%m%d %H%M%S"), "%Y%m%d %H%M%S")
             conn, cursor = mysql_connect()
             cursor.execute("SELECT * from LRP_Emails where active and status='scheduled'", []); 
             emails = zc.dict_query_results(cursor)
+            cursor.execute("SELECT * from LRP_Sent_Email_Records where active", []); 
+            email_records = zc.dict_query_results(cursor)
             cursor.close(); conn.close()
-            
-            
             
             for z in emails:
                 z['seconds_until'] = (z['send_date'] - utc_dt_local).total_seconds()
                 
-            to_send = [z for z in emails if -600 <= z['seconds_until'] <= 600]
+            # If we are within 5 minutes of the scheduled time, just send it
+            to_send = [z for z in emails if -300 <= z['seconds_until'] <= 300]
             
+            for m in to_send:
+                m['recipients'] = list(set([decrypt(z['recipient']) for z in email_records if z['email_ID'] == m['ID'] and z['active']]))
             
             misc['msg'] = "Found %d emails to send (out of %d scheduled)<BR><BR>" % (len(to_send), len(emails))
-            misc['msg'] += "<BR>".join(["Time: %s UTC; Recipient: %s; Subject: %s; Seconds Until: %d" % (z['send_date'].strftime("%b %d, %Y %I:%M %p"), z['recipient'], z['subject'], z['seconds_until']) for z in to_send])
+            misc['msg'] += "<BR>".join(["Time: %s UTC; Recipients: %d; Subject: %s; Seconds Until: %d" % (z['send_date'].strftime("%b %d, %Y %I:%M %p"), len(z['recipients']), decrypt(z['subject']), z['seconds_until']) for z in to_send])
             
             for i, msg in enumerate(to_send):
-                msg['content'] = None
+                msg['subject'] = decrypt(msg['subject'])
                     
-                server_path = "/capozziinc.appspot.com/SentEmailRecords/%s" % (misc['hash'])
-                
-                if env.startswith('Google App Engine/'):
-                    try:
-                        msg['content'] = cloudstorage.open(server_path).read()
-                    except Exception, e:
-                        misc['error'] = "The email record file could not be read from the Storage bucket"
-                        logging.error = "Scheduled email content not found. Hash = %s" % msg['hash']
-                
+                if msg['email_type'] == "storage":
+                    msg['content'] = None
+                    server_path = "/capozziinc.appspot.com/SentEmailRecords/%09d" % (msg['ID'])
+                    
+                    if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+                        try:
+                            msg['content'] = cloudstorage.open(server_path).read()
+                        except Exception, e:
+                            misc['error'] = "The email record file could not be read from the Storage bucket"
+                            logging.error = "Scheduled email content not found. Hash = %09d" % msg['ID']
+                else: 
+                    # Just use the content stored in the database record
+                    pass
+                    
+                all_passed = 1
                 if msg['content'] is not None:
-                    mail_res, dbrec = finalize_mail_send(msg)
-                    if mail_res != "": create_mail_record(dbrec)
-                    if mail_res == "Success" or client_secrets['local']['--no-mail'] in ["Y", 'y', 'yes']:
+                    for r in msg['recipients']:
+                        msg['email'] = r
+                        mail_res, dbrec = finalize_mail_send(msg)
+                        if mail_res == "Success" or client_secrets['local']['--no-mail'] in ["Y", 'y', 'yes'] or test_address(msg['email']):
+                    
+                            # Success
+                            misc['msg'] = "Email was sent."
+                            queries.append("UPDATE LRP_Sent_Email_Records set send_in_blue_ID=%s, status='sent' where email_ID=%s and recipient=%s")
+                            params.append([dbrec['send_in_blue_ID'], msg['ID'], encrypt(msg['email'])])
+                            
+                        else:
+                            all_passed = 0
+                            misc['error'] = "Email send failed"
+                            queries.append("UPDATE LRP_Sent_Email_Records set status='failed' where email_ID=%s and recipient=%s")
+                            params.append([msg['ID'], encrypt(msg['email'])])
+                            misc['msg'] = None
                 
-                        # Success
-                        misc['msg'] = "Email was resent."
-                        
-                    else:
-                        misc['error'] = "Resend failed"
-                        misc['msg'] = None
-            
-    
+                queries.append("UPDATE LRP_Emails set status=%s where ID=%s")
+                params.append(["sent" if all_passed else "failed", msg['ID']])
+            ex_queries(queries, params)
         
         if orig_url == "notify-expiring-subs":
             pass
@@ -4760,7 +4822,15 @@ def check_submission_for_spam(msg):
     # msg_content, subject, email, name
     
     return msg
-
+    
+def test_address(add):
+    if "user.com" in add:
+        return 1
+    elif "email.com" in add:
+        return 1
+    else:
+        return 0
+        
 class ContactHandler(webapp2.RequestHandler):
     def dispatch(self):
         self.session_store = sessions.get_store(request=self.request)
@@ -4828,7 +4898,7 @@ class ContactHandler(webapp2.RequestHandler):
             if misc['spam'] == 0:
                 mail_res, dbrec = finalize_mail_send(msg)
                 if mail_res != "": create_mail_record(dbrec)
-                if mail_res == "Success" or client_secrets['local']['--no-mail'] in ["Y", 'y', 'yes']:
+                if mail_res == "Success" or client_secrets['local']['--no-mail'] in ["Y", 'y', 'yes'] or test_address(misc['email']):
                     
                     # Success
                     pass
@@ -4878,19 +4948,46 @@ class EmailHandler(webapp2.RequestHandler):
     def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
 
     def process_emails(self, misc):
-        
+        import pytz
+           
         for m in misc['emails']:
             m['subject_decrypted'] = decrypt(m['subject'])
-            m['recipient_decrypted'] = decrypt(m['recipient'])
-            if ".com" not in m['recipient_decrypted'] :
-                m['subject_decrypted'] = m['subject']
-                m['recipient_decrypted'] = m['recipient']
+            rcpts = sorted([decrypt(z['recipient']) for z in misc['email_records'] if z['email_ID'] == m['ID']])
+            m['recipients'] = " ".join(rcpts)
+            m['recipients_str'] = "; ".join(rcpts)
+            if len(m['recipients_str']) < 30 :
+                m['recipients_str_preview'] = m['recipients_str']
+            else:
+                if len(rcpts) > 2:
+                    m['recipients_str_preview'] = "%s, %s and %d others." % (rcpts[0], rcpts[1], len(rcpts)-2)
+                elif len(rcpts) == 2:
+                    m['recipients_str_preview'] = "%s and 1 other." % (rcpts[0])
+                elif len(rcpts) == 1:
+                    m['recipients_str_preview'] = rcpts[0]
+                else:
+                    m['recipients_str_preview'] = "???"
+            #m['recipient_decrypted'] = decrypt(m['recipient'])
+            #if ".com" not in m['recipient_decrypted'] :
+            #    m['subject_decrypted'] = m['subject']
+            #    m['recipient_decrypted'] = m['recipient']
             m['subject_decrypted'] = m['subject_decrypted'].replace("LacrosseReference PRO", "LRP")
             m['subject_title'] = ''
             if len(m['subject_decrypted']) > 43:
                 m['subject_title'] = m['subject_decrypted'] 
                 m['subject_decrypted'] = m['subject_decrypted'][0:40] + "..."
                 
+            # Calculate the difference between ET and UTC and add that to the scheduled email date
+            orig_date = m['send_date']
+            utc_dt = datetime.utcnow()
+            utc_dt_local = datetime.strptime(utc_dt.strftime("%Y%m%d %H%M%S"), "%Y%m%d %H%M%S")
+
+            loc_dt = datetime.now(pytz.timezone('US/Eastern'))
+            loc_dt_local = datetime.strptime(loc_dt.strftime("%Y%m%d %H%M%S"), "%Y%m%d %H%M%S")
+            diff = (utc_dt_local - loc_dt_local).total_seconds()
+ 
+                
+            m['send_date_str_ET'] = (orig_date - timedelta(seconds=diff)).strftime("%b %d, %Y %I:%M %p").replace(" 0", " ")
+            
             m['send_date_str'] = m['send_date'].strftime("%Y-%m-%d %H:%M")
             m['new_date_str'] = m['send_date'].strftime("%Y-%m-%d %H:%M")
             m['status_str'] = "" if m['status'] is None else m['status'].title()
@@ -4899,7 +4996,15 @@ class EmailHandler(webapp2.RequestHandler):
             if m['status'] == "inactive":
                 m['status_style'] = "color: #AAA; font-style:italic;"
             if m['status'] == "scheduled":
-                m['status_style'] = "color: #22F; font-weight:700;"
+                if datetime.now() > m['send_date']:
+                    m['status_style'] = "color: red; font-weight:700;"
+                    m['status_str'] = "SEND FAILED"
+                else:
+                    m['status_style'] = "color: #22F; font-weight:700;"
+            if m['status'] == "failed":
+                m['status_style'] = "color: red; font-weight:700;"
+                m['status_str'] = "SEND FAILED"
+                
             if m['status'] == "sent":
                 m['status_style'] = "color: #2F2; font-weight:700;"
             if m['status'] == "failed":
@@ -4912,7 +5017,7 @@ class EmailHandler(webapp2.RequestHandler):
             elif m['status'] == "sent":
                 m['options'] = [{'val':'resend', 'desc': "Re-send"}]
             elif m['status'] == "scheduled":
-                m['options'] = [{'val':'reschedule', 'desc': "Re-schedule"}, {'val':'deactivate', 'desc': "De-activate"}, {'val':'delete', 'desc': "Delete"}]
+                m['options'] = [{'val': 'edit', 'desc': "Edit"}, {'val':'reschedule', 'desc': "Re-schedule"}, {'val':'deactivate', 'desc': "De-activate"}, {'val':'delete', 'desc': "Delete"}]
             elif m['status'] == "inactive":
                 m['options'] = [{'val':'reactivate', 'desc': "Re-activate"}, {'val':'delete', 'desc': "Delete"}]
             else:
@@ -4937,18 +5042,47 @@ class EmailHandler(webapp2.RequestHandler):
             if local or (user_obj['auth'] and user_obj['is_admin']):
                 if misc['error'] is None:
                     
-                    misc['selected_hash'] = misc['hash']
+                    misc['email_ID'] = int(misc['email_ID'])
+                    misc['selected_ID'] = misc['email_ID']
                     conn, cursor = mysql_connect()
                     cursor.execute("SELECT * from LRP_Emails where active order by send_date desc", [])
                     misc['emails'] = zc.dict_query_results(cursor)
+                    cursor.execute("SELECT * from LRP_Sent_Email_Records where active", [])
+                    misc['email_records'] = zc.dict_query_results(cursor)
                     cursor.close(); conn.close()
                     misc = self.process_emails(misc)
                     
-                    msg = misc['emails'][ [z['hash'] for z in misc['emails']].index(misc['hash']) ]
+                    msg = misc['emails'][ [z['ID'] for z in misc['emails']].index(misc['email_ID']) ]
                         
+
                     if misc['action'] == "resend" and misc['confirmed'] == "no":
                         misc['confirm_msg'] = "Are you sure you want to resend this email?"
                         misc['confirmed'] = "yes"
+                        msg['status_str'] = "Scheduled"
+                    elif misc['action'] == "edit":
+                        
+                        misc['send_as'] = msg['send_as']
+                        misc['msg_body'] = msg['content']
+                        misc['recipients'] = msg['recipients']
+                        misc['msg_is_plain_text'] = 1 if "<div" not in msg['content'].lower() else 0
+                        misc['subject'] = decrypt(msg['subject'])
+                        
+                        new_date = msg['send_date']
+                            
+                        # Calculate the difference between ET and UTC and remove that from the scheduled email date
+                        utc_dt = datetime.utcnow()
+                        utc_dt_local = datetime.strptime(utc_dt.strftime("%Y%m%d %H%M%S"), "%Y%m%d %H%M%S")
+        
+                        import pytz
+                        loc_dt = datetime.now(pytz.timezone('US/Eastern'))
+                        loc_dt_local = datetime.strptime(loc_dt.strftime("%Y%m%d %H%M%S"), "%Y%m%d %H%M%S")
+                        diff = (utc_dt_local - loc_dt_local).total_seconds()
+                        new_date -= timedelta(seconds=diff)
+                        misc['send_time_str'] = new_date.strftime("%H:%M")
+                        misc['send_date_str'] = new_date.strftime("%Y-%m-%d")
+                        misc['ID'] = msg['ID']
+                        misc['target_template'] = "create_email.html"
+                        misc['action'] = "update_email"
                     elif misc['action'] == "deactivate" and misc['confirmed'] == "no":
                         misc['confirm_msg'] = "Are you sure you want to deactivate this email?"
                         misc['confirmed'] = "yes"
@@ -4980,11 +5114,10 @@ class EmailHandler(webapp2.RequestHandler):
                                 misc['confirm_msg'] = "Send date can't be in the past."
                                 
                             else:
-                                queries.append("UPDATE LRP_Emails set send_date=%s where hash=%s")
-                                params.append([new_date, misc['hash']])
+                                queries.append("UPDATE LRP_Emails set send_date=%s where ID=%s")
+                                params.append([new_date, misc['email_ID']])
                                 msg['send_date'] = new_date
                                 misc['msg'] = "Email schedule adjusted."
-                                misc['selected_hash'] = None
                                 
                         except Exception:
                             logging.info(traceback.format_exc())
@@ -4992,56 +5125,26 @@ class EmailHandler(webapp2.RequestHandler):
             
                         
                     elif misc['action'] == "delete" and misc['confirmed'] == "yes":
-                        queries.append("UPDATE LRP_Emails set active=0 where hash=%s")
-                        params.append([misc['hash']])
+                        queries.append("UPDATE LRP_Emails set active=0 where ID=%s")
+                        params.append([misc['email_ID']])
                         msg['status'] = "deleted"
                         misc['confirmed'] = "no"
                     elif misc['action'] == "deactivate" and misc['confirmed'] == "yes":
-                        queries.append("UPDATE LRP_Emails set status='inactive' where hash=%s")
-                        params.append([misc['hash']])
+                        queries.append("UPDATE LRP_Emails set status='inactive' where ID=%s")
+                        params.append([misc['email_ID']])
                         msg['status'] = "inactive"
                         misc['confirmed'] = "no"
                     elif misc['action'] == "reactivate" and misc['confirmed'] == "yes":
-                        queries.append("UPDATE LRP_Emails set status='scheduled' where hash=%s")
-                        params.append([misc['hash']])
+                        queries.append("UPDATE LRP_Emails set status='scheduled' where ID=%s")
+                        params.append([misc['email_ID']])
                         msg['status'] = "scheduled"
                         misc['confirmed'] = "no"
                     elif misc['action'] == "resend" and misc['confirmed'] == "yes":
-                        misc['confirmed'] = "no"
-                        msg['email'] = msg['recipient_decrypted']
-                        msg['subject'] = msg['subject_decrypted']
-                        env = os.getenv('SERVER_SOFTWARE')
-                        msg['content'] = None
-                        
-                        server_path = "/capozziinc.appspot.com/SentEmailRecords/%s" % (misc['hash'])
-                        local_path = os.path.join("LocalDocs", "SentEmailRecords", misc['hash'])
-                        
-                        if env.startswith('Google App Engine/'):
-                            try:
-                                msg['content'] = cloudstorage.open(server_path).read()
-                            except Exception, e:
-                                misc['error'] = "The email record file could not be read from the Storage bucket"
-                        else:
-                            try:
-                                msg['content'] = open(local_path, 'r').read()
-                            except Exception, e:
-                                misc['error'] = "The email record file could not be read from the LocalDocs bucket"
-                    
-                        if msg['content'] is not None:
-                            mail_res, dbrec = finalize_mail_send(msg)
-                            if mail_res != "": create_mail_record(dbrec)
-                            if mail_res == "Success" or client_secrets['local']['--no-mail'] in ["Y", 'y', 'yes']:
-                        
-                                # Success
-                                misc['msg'] = "Email was resent."
-                                
-                            else:
-                                misc['error'] = "Resend failed"
-                                misc['msg'] = None
-                    
+                        queries.append("UPDATE LRP_Emails set send_date=%s, status='scheduled' where ID=%s")
+                        params.append([datetime.now() + timedelta(seconds=330), misc['email_ID']])
                     if len(queries) > 0:
                         misc = self.process_emails(misc)
-                        lg("\nQueries\n")
+                        lg("\n%d Queries\n" % len(queries))
                     ex_queries(queries, params)
                 layout = 'layout_admin.html'
             else:
@@ -5078,8 +5181,184 @@ class EmailHandler(webapp2.RequestHandler):
                 conn, cursor = mysql_connect()
                 cursor.execute("SELECT * from LRP_Emails where active order by send_date desc", [])
                 misc['emails'] = zc.dict_query_results(cursor)
+                cursor.execute("SELECT * from LRP_Sent_Email_Records where active", [])
+                misc['email_records'] = zc.dict_query_results(cursor)
                 cursor.close(); conn.close()
                 misc = self.process_emails(misc)
+                
+                layout = "layout_admin.html"
+            else:
+                user_obj = process_non_auth(self); user_obj['ID'] = None
+                layout = 'layout_no_auth.html'
+        else:
+            user_obj = process_non_auth(self); user_obj['ID'] = None
+            layout = 'layout_no_auth.html'
+            
+           
+        tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+
+class CreateEmailHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    def post(self):
+        
+        user_obj = None; queries = []; params = []
+        misc = dict_request(self.request); misc['error'] = None
+        misc['target_template'] = "create_email.html"
+        
+        local = not os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
+        session_ID = self.session.get('session_ID')
+        if local or session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if local or (user_obj['auth'] and user_obj['is_admin']):
+                if misc['error'] is None:
+                    
+                    conn, cursor = mysql_connect()
+                    cursor.execute("SELECT * from LRP_Emails where active order by send_date desc", [])
+                    existing_emails = zc.dict_query_results(cursor)
+                    cursor.execute("SELECT IFNULL(max(ID), 0) + 1 'next_email_ID' from LRP_Emails", [])
+                    next_email_ID = zc.dict_query_results(cursor)[0]['next_email_ID']
+                    cursor.execute("SELECT * from LRP_Sent_Email_Records where active", [])
+                    email_records = zc.dict_query_results(cursor)
+                    cursor.close(); conn.close()
+                    
+                    misc['ID'] = int(misc['ID']) if misc['ID'] not in ['', None, '-1'] else misc['ID']
+
+                    misc['send_date_str'] = misc['send_date']; misc['send_time_str'] = misc['send_time']
+                    if misc['send_date'] not in ['', None] and misc['send_time'] not in ['', None]:
+                        new_date = datetime.strptime("%s %s"% (misc['send_date'], misc['send_time']), "%Y-%m-%d %H:%M")
+                        
+                        # Calculate the difference between ET and UTC and add that to the scheduled email date
+                        utc_dt = datetime.utcnow()
+                        utc_dt_local = datetime.strptime(utc_dt.strftime("%Y%m%d %H%M%S"), "%Y%m%d %H%M%S")
+        
+                        import pytz
+                        loc_dt = datetime.now(pytz.timezone('US/Eastern'))
+                        loc_dt_local = datetime.strptime(loc_dt.strftime("%Y%m%d %H%M%S"), "%Y%m%d %H%M%S")
+                        diff = (utc_dt_local - loc_dt_local).total_seconds()
+                        misc['send_date'] = new_date + timedelta(seconds=diff)
+                            
+                        misc['send_date_str'] =  new_date.strftime("%Y-%m-%d")
+                        misc['send_time_str'] = new_date.strftime("%H:%M")
+                        if datetime.now() > misc['send_date']:
+                            # Can't be within 5 minutes of right now
+                            misc['error'] = "Send date cannot be in the past"
+                        elif (datetime.now() - misc['send_date']).total_seconds() > - 300:
+                            # Can't be within 5 minutes of right now
+                            misc['error'] = "Send date cannot be within 5 minutes of now"
+                    if misc['send_date'] in ['', None]:
+                        misc['error'] = "You must specify a date to send this email"
+                    elif misc['send_as'] in ['', None]:
+                        misc['error'] = "You must specify which email this is coming from"
+                    elif misc['send_time'] in ['', None]:
+                        misc['error'] = "You must specify a time to send this email"
+                        
+                    misc['msg_is_plain_text'] = 1 if "<div" not in misc['msg_body'].lower() else 0
+                    misc['email_type'] = "plainText" if "<div" not in misc['msg_body'].lower() else "htmlContent"
+                    
+                    matches = [{'seq': i, 'email': z.strip().lower()} for i, z in enumerate(list(set(re.findall(email_regex, misc['recipients']))))]
+                    if len(matches) == 0:
+                        misc['error'] = "No email addresses were detected in your entry."
+                    misc['num_recipients'] = len(matches)
+                    if misc['subject'] is None or len(misc['subject']) < 10:
+                        misc['error'] = "Email Subject must be at least 10 characters"
+                    
+                    if misc['msg_body'] is None or len(misc['msg_body']) < 10:
+                        misc['error'] = "Email Body must be at least 10 characters"
+                    
+                    if misc['error'] is None and misc['action'] == "create_email":
+                        
+                        for m in matches:
+                            query = "INSERT INTO LRP_Sent_Email_Records (email_ID, active, recipient, status) VALUES (%s, %s, %s, %s)"
+                            param = [next_email_ID, 1, encrypt(m['email']), 'scheduled']
+                            queries.append(query)
+                            params.append(param)
+                        
+                        query = "INSERT INTO LRP_Emails (ID, send_date, active, subject, email_type, status, content, send_as) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+                        param = [next_email_ID, misc['send_date'], 1, encrypt(misc['subject']), misc['email_type'], 'scheduled', misc['msg_body'], misc['send_as']]
+                        queries.append(query)
+                        params.append(param)
+                        misc['action'] = "update_email"
+                        if misc['error'] is None: misc['msg'] = "Email has been created"
+                        misc['ID'] = next_email_ID; next_email_ID += 1
+                        
+                    elif misc['error'] is None and misc['action'] == "update_email":
+                        existing_recipients = [{'recipient': decrypt(z['recipient']).strip().lower(), 'active': z['active']} for z in email_records if z['email_ID'] == misc['ID']]
+
+                        for m in matches:
+                            if m['email'] in [z['recipient'] for z in existing_recipients]:
+                                existing = existing_recipients[ [z['recipient'] for z in existing_recipients].index(m['email']) ]
+                                if not existing['active']:
+                                    query = "UPDATE LRP_Sent_Email_Records set active=1 where email_ID=%s and recipient=%s"
+                                    param = [misc['ID'], encrypt(m['email'])]
+                                    queries.append(query)
+                                    params.append(param)
+                            else:
+                                query = "INSERT INTO LRP_Sent_Email_Records(email_ID, active, recipient, status) VALUES (%s, %s, %s, %s)"
+                                param = [misc['ID'], 1, encrypt(m['email']), 'scheduled']
+                                queries.append(query)
+                                params.append(param)
+                        removed_recipients = [z for z in existing_recipients if z['recipient'].strip().lower() not in [y['email'] for y in matches]]
+                        for r in removed_recipients:
+                            query = "UPDATE LRP_Sent_Email_Records set active=0 where email_ID=%s and recipient=%s"
+                            param = [misc['ID'], encrypt(r['recipient'])]
+                            queries.append(query)
+                            params.append(param)
+                        
+                        query = "UPDATE LRP_Emails set send_as=%s, send_date=%s, subject=%s, email_type=%s, content=%s where ID=%s"
+                        param = [misc['send_as'], misc['send_date'], encrypt(misc['subject']), misc['email_type'], misc['msg_body'], misc['ID']]
+                        queries.append(query)
+                        params.append(param)
+                    
+                        if misc['error'] is None: misc['msg'] = "Email has been updated"
+        
+                        
+                    ex_queries(queries, params)
+                layout = 'layout_admin.html'
+            else:
+                user_obj = process_non_auth(self); user_obj['ID'] = None
+                layout = 'layout_no_auth.html'
+        else:
+            user_obj = process_non_auth(self); user_obj['ID'] = None
+            layout = 'layout_no_auth.html'                
+                    
+        
+        
+            
+            
+           
+                    
+        tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
+        path = os.path.join("templates", misc['target_template'])
+        self.response.out.write(template.render(path, tv))
+
+    
+        
+        
+    
+    def get(self):
+        
+        misc = {'action': 'create_email', 'msg_is_plain_text': 1, 'target_template': "create_email.html", 'time_log': [], 'handler': 'create_email', 'confirmed': 'no', 'selected_ID': None, 'new_date_str': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+        local = not os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
+        session_ID = self.session.get('session_ID')
+        if local or session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if local or (user_obj['auth'] and user_obj['is_admin']):    
+                user_obj['user_cookie'] = None
+                
+                conn, cursor = mysql_connect()
+                cursor.execute("SELECT * from LRP_Emails where active order by send_date desc", [])
+                misc['emails'] = zc.dict_query_results(cursor)
+                cursor.close(); conn.close()
                 
                 layout = "layout_admin.html"
             else:
@@ -5144,7 +5423,7 @@ class HelpHandler(webapp2.RequestHandler):
                     if misc['spam'] == 0:
                         mail_res, dbrec = finalize_mail_send(msg)
                         if mail_res != "": create_mail_record(dbrec)
-                        if mail_res == "Success" or client_secrets['local']['--no-mail'] in ["Y", 'y', 'yes']:
+                        if mail_res == "Success" or client_secrets['local']['--no-mail'] in ["Y", 'y', 'yes'] or test_address(decrypt(user_obj['email'])):
                     
                             # Success
                             pass
@@ -5169,7 +5448,6 @@ class HelpHandler(webapp2.RequestHandler):
         
     
     def get(self):
-        
         misc = {'target_template': "help.html", 'time_log': [], 'handler': 'help', 'source_handler': self.request.get('c'), 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
@@ -5196,7 +5474,7 @@ def process_non_auth(self):
     if user_cookie in [None, '']:
         user_cookie = create_cart_cookie()
         self.session['cart_cookie'] = user_cookie
-    user_obj = {'user_cookie': user_cookie, 'auth': 0}
+    user_obj = {'user_cookie': user_cookie, 'auth': 0, 'notifications': json.dumps({})}
     
     try:
         conn, cursor = mysql_connect()
@@ -5249,7 +5527,7 @@ class ProductSummaryHandler(webapp2.RequestHandler):
         for z in requests:
             z['tup'] = (z['datestamp'].strftime("%Y%m%d"), z['email'], z['team_ID'], z['product_ID'])
                 
-        misc['product'] = products[ [z['tag'] for z in products].index(product_tag.lower()) ]
+        misc['product'] = products[ [z['product_tag'] for z in products].index(product_tag.lower()) ]
         misc['email'] = self.request.get('email').strip().lower()
         misc['email_decrypted'] = self.request.get('email').strip().lower()
         
@@ -5308,7 +5586,7 @@ class ProductSummaryHandler(webapp2.RequestHandler):
                         
                         mail_res, dbrec = finalize_mail_send(msg)
                         if mail_res != "": create_mail_record(dbrec)
-                        if mail_res == "Success" or client_secrets['local']['--no-mail'] in ["Y", 'y', 'yes']:
+                        if mail_res == "Success" or client_secrets['local']['--no-mail'] in ["Y", 'y', 'yes'] or test_address(misc['email']):
                             
                             # Success
                             pass
@@ -5369,7 +5647,7 @@ class ProductSummaryHandler(webapp2.RequestHandler):
         conn, cursor = mysql_connect()
         products = get_products(cursor)
         cursor.close(); conn.close()
-        misc['product'] = products[ [z['tag'] for z in products].index(product_tag.lower()) ]
+        misc['product'] = products[ [z['product_tag'] for z in products].index(product_tag.lower()) ]
         
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
@@ -5450,7 +5728,7 @@ class FAQHandler(webapp2.RequestHandler):
         cursor.close(); conn.close()
         
         
-        misc['product'] = None if product_tag is None else products[ [z['tag'] for z in products].index(product_tag.lower()) ]
+        misc['product'] = None if product_tag is None else products[ [z['product_tag'] for z in products].index(product_tag.lower()) ]
         
         misc['faq'] = [z for z in misc['faq'] if z['context'] in [product_tag, None]]
         
@@ -6382,6 +6660,26 @@ else:
     config['webapp2_extras.sessions'] = {
         'secret_key': 'my-super-secret-key',
     }
+    
+def send_telegram(msg):
+    lg("bot token: %s" % client_secrets['local']['bot_token'])
+    bot = telepot.Bot(token=client_secrets['local']['bot_token'])
+
+    chat_id = "271282398"
+    if chat_id is None:
+        # Waits for the first incoming message
+        updates = []
+        while not updates:
+            updates = bot.getUpdates()
+
+        # Gets the id for the active chat
+        chat_id=updates[-1]['message']['chat']['id']
+        lg("Telegram Chat ID: %s" % (chat_id))
+
+
+    # Sends a message to the chat
+    bot.sendMessage(chat_id=chat_id, text=msg)
+
 
 def handle_404(request, response, exception):
     logging.exception(exception)
@@ -6405,9 +6703,9 @@ def handle_500(request, response, exception):
             match = r['regex'].search(txt)
             if match:
                 sections = []
-                sections.append("<div class='col-12' style='padding-bottom: 30px;'><span class='font-36 bold' style='display:contents;'>%s</span></div>" % ("%s - %s" % (match.group(1).split("\\")[-1], match.group(2))))
+                sections.append("<div class='col-12' style='padding-bottom: 30px;'><span class='font-36 bold' style='display:contents;' id='error_line'>%s</span></div>" % ("%s - %s" % (match.group(1).split("\\")[-1], match.group(2))))
                 sections.append("<div class='col-12' style='padding-bottom: 30px;'><span class='font-15' style='display:contents;'>%s</span></div>" % (match.group(3)))
-                sections.append("<div class='col-12' style='padding-bottom: 30px;'><span class='font-24' style='display:contents;'>%s</span></div>" % (match.group(4)))
+                sections.append("<div class='col-12' style='padding-bottom: 30px;'><span class='font-24' style='display:contents;' id='error_msg'>%s</span></div>" % (match.group(4)))
                 sections.append("<div class='col-12' style='padding-top:50px;'><span class='font-12' style='display:contents;'>%s</span></div>" % ((misc['error'])))
                 misc['error'] = "".join(sections)
                 break
@@ -6449,6 +6747,7 @@ app = webapp2.WSGIApplication([
     ,('/review-quote', ReviewQuoteHandler)
     ,('/checkout', CheckoutHandler)
     ,('/email', EmailHandler)
+    ,('/create-email', CreateEmailHandler)
     ,('/contact', ContactHandler)
     ,('/report', ReportHandler)
     ,('/explanations', ExplanationsHandler)

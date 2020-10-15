@@ -74,6 +74,9 @@
 
 <script>
 
+    var on_mobile = null;
+    var console_log = []; var success = null;
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
     
     users = JSON.parse({{misc.users_json|to_json2}});
     function toggle(i){
@@ -114,12 +117,7 @@
             row2.style.display = "none";
         }
     }
-    $( "#threedot" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
-    $( "#personicon" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
+
     finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 {% endblock %}

@@ -13,12 +13,12 @@
 
     <div class='col-12 dtop flex menu-header-bar'>
         <div class='col-12'>
-            <a href='/' class='menu-link active'><span class='menu-link' style='padding-left:10px;'><span class='active-link font-15'>Home</span></span></a>
-            <a href='/team_my_schedule' class='menu-link'><span class='menu-link' style='padding-left:10px;'><span class='font-15'>My Opponents</span></span></a>
-            <a href='/team_my_stats' class='menu-link'><span class='menu-link' style=''><span class='font-15'>My Team</span></span></a>
-            <a href='/team_explore' class='menu-link'><span class='menu-link' style=''><span class='font-15'>Explore</span></span></a>
+            <a href='/' class='menu-link'><span class='menu-link' style='padding-left:10px;'><span class='font-15'>Home</span></span></a>
+            <a href='/team_my_schedule' class='menu-link'><span class='menu-link' style='padding-left:10px;'><span class='font-15'>My Schedule</span></span></a>
+            <a href='/team_my_stats' class='menu-link'><span class='menu-link' style=''><span class='font-15'>My Stats</span></span></a>
+            <a href='/team_my_rankings' class='menu-link'><span class='menu-link' style=''><span class='font-15'>My Rankings</span></span></a>
         </div>
-    </div> 
+    </div>
   <div class='col-12 flex'>
         <div class='col-4-1'></div>
         <div class='col-4-10' style='background-color: #F9F9F9;'>
@@ -57,15 +57,10 @@
 
 
 <script>
-    var console_log = [];
+    var on_mobile = null;
+    var console_log = []; var success = null;
     var time_log = JSON.parse({{misc.time_log|to_json2}});
     
-    $( "#threedot" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
-    $( "#personicon" ).click(function( event ) {
-      event.stopPropagation(); menu_toggle();
-    });
     finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>
 {% endblock %}
