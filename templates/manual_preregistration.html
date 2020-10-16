@@ -1,0 +1,57 @@
+
+{% extends "layout_admin.html" %}
+
+
+{% block body %}
+
+        <div class='col-12 centered' id='banner'></div>
+        {% if misc.breadcrumbs %}
+            <div class='col-12 centered'>
+                {{misc.breadcrumbs}}
+            </div>
+        {% endif %}
+
+        <div class='col-12 page-title'>
+            <span class='font-24 pointer bold'>LaxRef PRO: Manual Pre-registration</span>
+        </div>
+        {% if misc.error %}
+            <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
+        {% endif %}
+        {% if misc.msg %}
+            <div class='col-12'><span class='msg' style='color:blue;' >{{misc.msg}}</span></div>
+        {% endif %}
+        <FORM action='/manual-preregistration' method=POST>
+        <div class='flex-block'>
+            <div class='col-6-12'>
+                <div class='col-12 bbottom'><span class='font-18 bold pointer'>Enter  Email</div>
+                <div class='col-12'><input type=text name='email' value='{{misc.email}}'/></div>
+            </div>
+            <div class='col-6-12'>
+                <div class='col-12 bbottom'><span class='font-18 bold pointer'>Select a Product</div>
+                <div class='col-12'>
+                <select name='product_ID'>
+                    <option value=-1></option>
+                    {% for p in misc.products %}
+                        <option value={{p.ID}}>{{p.product_name}}</option>
+                        
+                    {% endfor %}
+                </select>
+                </div>
+            </div>
+        </div>
+        <div class='col-12 centered'>
+            <button type=submit class='action-button blue' name='action' value='create_preregistration'><span class='font-15'>SUBMIT</span></button>
+        </div>
+        </FORM>
+        
+
+
+
+<script src="/static/js/create.js"></script>
+<script>
+    var on_mobile = null;
+    var console_log = []; var success = null;
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+</script>
+{% endblock %}

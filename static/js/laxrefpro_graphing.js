@@ -727,7 +727,7 @@ function horizontal_trainmap(data, id, arg_specs, arg_initial_specs = null){
 }
 
 function create_pct_y_ticks(series, specs){
-    var debug = true;
+    var debug = false;
     var res = {'ticks': [], 'max': null, 'min':  null};
     max_eff = null; min_eff = null;
     for(var b = 0;b<series.length;b++){

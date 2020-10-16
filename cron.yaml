@@ -1,8 +1,4 @@
 cron:
-- description: "message"
-  url: /cron-hello
-  schedule: every day 20:00
-  timezone: America/New_York
 - description: "mail"
   url: /cron-send-mail
   schedule: every 4 minutes

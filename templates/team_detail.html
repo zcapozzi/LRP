@@ -1,0 +1,939 @@
+
+{% extends "layout_main.html" %}
+
+
+{% block body %}
+
+        <div class='col-12 dtop flex menu-header-bar'>
+            <div class='col-12'>
+                <a href='/' class='menu-link'><span class='menu-link' style='padding-left:10px;'><span class='font-15'>Home</span></span></a>
+                <a href='/team_my_schedule' class='menu-link'><span class='menu-link' style='padding-left:10px;'><span class='font-15'>My Schedule</span></span></a>
+                <a href='/team_my_stats' class='menu-link'><span class='menu-link' style=''><span class='font-15'>My Stats</span></span></a>
+                <a href='/team_my_rankings' class='menu-link active'><span class='menu-link' style=''><span class='active-link font-15'>My Rankings</span></span></a>
+            </div>
+        </div>
+
+        <div class='col-12 centered' id='banner'></div>
+        
+        
+        
+        {% if misc.error %}
+            <div class='col-12 error centered'><span class='error' >{{misc.error|safe}}</span></div>
+        {% endif %}
+        {% if misc.msg %}
+            <div class='col-12 error centered'><span class='' >{{misc.msg}}</span></div>
+        {% endif %}
+        <div class=''>
+            <div class='no-padding options-bar col-12 flex'>
+                <div class='no-padding col-9'>
+                {% if misc.breadcrumbs %}
+                    <div class='breadcrumbs'>
+                        {{misc.breadcrumbs|safe}}
+                    </div>
+                {% endif %}
+                </div>
+                <div class='no-padding col-3 right'>
+                    <div class='no-padding col-12 right'>
+                        <div class='gear-settings'>
+                            <img onclick='toggle_settings_bar();' id='settings-icon' class='icon-15 settings' src='/static/img/blue_gear15.png' />
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            <div class='settings-bar single-row not-shown no-padding right' id='settings-bar'>
+                <div class='' style='padding-right:10px;'>
+                    <span class='font-13' style='padding-right:10px;'>Year</span>
+                    <select class='settings-bar' id='general_focus_year' onchange='update_settings(this.id, this.value);'>
+                        <option value=2020>2020</option>
+                        <option value=2019>2019</option>
+                    </select>
+                </div>
+            </div>
+            <div class='refreshing-bar not-shown no-padding right' id='refreshing-bar'>
+                <div class='centered' style=''>
+                    <span class='font-18 bold' style=''>Refreshing content...</span>
+                </div>
+            </div>
+            
+            
+            <div id='' class='non-dashboard-landing'>
+                <div class='col-12 mob centered no-padding'>
+                    <select style='width:80%; margin: 0% 10%;' id='top_menu_select' onChange='choose_left_menu_item(this.value);'>
+                        <option id='projected_rpi_option' value='projected_rpi'>Projected RPI</option>
+                        <option id='laxelo_option' value='laxelo'>Lax-ELO</option>
+                        <option id='postseason_odds_option' value='postseason_odds'>Post-Season Odds</option>
+                    </select>
+                </div>
+                <div class='flex col-12 no-padding'>
+                    <div class='left-menu col-2-12 dtop'>
+                        <div id='projected_rpi_menu_item' onclick='choose_left_menu_item(this.id);' class='active left-menu-item'><span class='mouseover-link pointer font-15'>{{misc.data.display_name}}</span></div>
+                        <div id='laxelo_menu_item' onclick='choose_left_menu_item(this.id);' class='left-menu-item'><span class='mouseover-link pointer font-15'>Lax-ELO</span></div>
+                        <div id='postseason_odds_menu_item' onclick='choose_left_menu_item(this.id);' class='left-menu-item'><span class='mouseover-link pointer font-15'>Post-season Odds</span></div>
+                    </div>
+                    <div class='right-content col-10-12' id='right-content-panel'>
+                        <div class='right-content-panel' id='projected_rpi_panel'>
+                            <div class='col-12 flex-block no-padding'>
+                                <div class='non-dashboard-section card col-6-12' id='conditional_rpi_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div onclick='drill_down_header(this.id, 1);' id='projected_rpi_label' route="|projected_rpi" class='col-11-10 no-padding non-dashboard-label'>Conditional RPI</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='conditional_rpi_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|conditional_rpi" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='conditional_rpi_img' class='icon-15 toggle' onclick='toggle_tile_visibility("conditional_rpi");' src="static/img/Gray_Minus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content visible' id='conditional_rpi_div'>
+                                        
+                                    </div>
+
+                                </div>
+                                <div class='non-dashboard-section card col-6-12' id='rpi_distribution_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div onclick='drill_down_header(this.id, 1);' id='rpi_distribution_label' route="|rpi_distribution" class='col-11-10 no-padding non-dashboard-label'>Projected RPI Distribution</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='rpi_distribution_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|rpi_distribution" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='rpi_distribution_img' class='icon-15 toggle' onclick='toggle_tile_visibility("rpi_distribution");' src="static/img/Gray_Plus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content' id='rpi_distribution_div'>
+                                        
+                                    </div>
+
+                                </div>
+                            </div>
+                            <div class='col-12 no-padding flex-block'>
+                                <div class='non-dashboard-section card col-12' id='deconstructed_rpi_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div onclick='drill_down_header(this.id, 1);' id='deconstructed_rpi_label' route="|deconstructed_rpi" class='col-11-10 no-padding non-dashboard-label'>RPI: Deconstructed</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='deconstructed_rpi_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|deconstructed_rpi" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='deconstructed_rpi_img' class='icon-15 toggle' onclick='toggle_tile_visibility("deconstructed_rpi");' src="static/img/Gray_Plus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content' id='deconstructed_rpi_div'>
+                                        
+                                    </div>
+
+                                </div>
+                            </div>
+                            
+                            
+                            
+                        </div>
+                        <div class='right-content-panel' id='laxelo_panel'>
+                            <div class='flex-block'>
+                            <div class='col-4-12 no-padding'>
+                                <div class='col-12 flex-block no-padding vertical-fill'>
+                                    <div class='non-dashboard-section card col-12' style='margin-right:5px;' id='laxelo_game_results_container_div'>
+                                        <div class='non-dashboard-section-header'>
+                                            <div onclick='drill_down_header(this.id, 1);' id='laxelo_game_results_label' route="|laxelo_game_results" class='col-11-10 no-padding non-dashboard-label'>Lax-ELO Results</div>
+                                                        
+                                            <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='laxelo_game_results_helpicon' style='margin-top:2px;'><img class='icon-15' onclick="" src="static/img/Gray_Info150.png" /></div>
+                                            <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='laxelo_game_results_img' class='icon-15 toggle' onclick='toggle_tile_visibility("laxelo_game_results");' src="static/img/Gray_Minus150.png" /></div>
+                                                    
+                                                        
+                                            
+                                        </div>
+                                        <div class='non-dashboard-tile-content visible' id='laxelo_game_results_div'>
+                                            
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class='col-8-12 no-padding'>
+                                <div class='col-12 flex-block no-padding'>
+                                    <div class='non-dashboard-section card col-12' style='margin-left:5px;' id='laxelo_history_container_div'>
+                                        <div class='non-dashboard-section-header'>
+                                            <div onclick='drill_down_header(this.id, 1);' id='laxelo_history_label' route="|laxelo_history" class='col-11-10 no-padding non-dashboard-label'>Lifetime History</div>
+                                                        
+                                            <div class='col-1 right no-padding dashboard-tile-help-icon' id='laxelo_history_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|laxelo_history" src="static/img/Gray_Info150.png" /></div>
+                                            <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='laxelo_history_img' class='icon-15 toggle' onclick='toggle_tile_visibility("laxelo_history");' src="static/img/Gray_Plus150.png" /></div>
+                                                    
+                                                        
+                                            
+                                        </div>
+                                        <div class='non-dashboard-tile-content' id='laxelo_history_div'>
+                                            
+                                        </div>
+
+                                    </div>
+                                </div>
+                                <div class='col-12 no-padding flex-block'>
+                                    <div class='non-dashboard-section card col-12' id='laxelo_movement_container_div'>
+                                        <div class='non-dashboard-section-header'>
+                                            <div onclick='drill_down_header(this.id, 1);' id='laxelo_movement_label' route="|laxelo_movement" class='col-11-10 no-padding non-dashboard-label'>Lax-ELO Movement</div>
+                                                        
+                                            <div class='col-1 right no-padding dashboard-tile-help-icon' id='laxelo_movement_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|laxelo_movement" src="static/img/Gray_Info150.png" /></div>
+                                            <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='laxelo_movement_img' class='icon-15 toggle' onclick='toggle_tile_visibility("laxelo_movement");' src="static/img/Gray_Plus150.png" /></div>
+                                                    
+                                                        
+                                            
+                                        </div>
+                                        <div class='non-dashboard-tile-content' id='laxelo_movement_div'>
+                                            
+                                        </div>
+
+                                    </div>
+                                </div>
+                               
+                           </div>
+                            
+                            </div>
+                        
+                        </div>
+                        <div class='right-content-panel' id='postseason_odds_panel'>
+                            <div class='col-12 flex-block no-padding'>
+                                <div class='non-dashboard-section card col-6-12' id='conf_seed_probabilities_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div onclick='drill_down_header(this.id, 1);' id='conf_seed_probabilities_label' route="|conf_seed_probabilities" class='col-11-10 no-padding non-dashboard-label'>Conference Seed Probabilities</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='conf_seed_probabilities_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|conf_seed_probabilities" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='conf_seed_probabilities_img' class='icon-15 toggle' onclick='toggle_tile_visibility("conf_seed_probabilities");' src="static/img/Gray_Minus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content visible' id='conf_seed_probabilities_div'>
+                                        
+                                    </div>
+
+                                </div>
+                                <div class='non-dashboard-section card col-6-12' id='record_scenarios_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div onclick='drill_down_header(this.id, 1);' id='record_scenarios_label' route="|record_scenarios" class='col-11-10 no-padding non-dashboard-label'>Record Scenarios</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='record_scenarios_helpicon' style='margin-top:2px;'><img class='icon-15' onclick="" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='record_scenarios_img' class='icon-15 toggle' onclick='toggle_tile_visibility("record_scenarios");' src="static/img/Gray_Plus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content' id='record_scenarios_div'>
+                                        
+                                    </div>
+
+                                </div>
+                            </div>
+                            <div class='col-12 flex-block no-padding'>
+                                <div class='non-dashboard-section card col-6-12' id='selection_rivals_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div onclick='drill_down_header(this.id, 1);' id='selection_rivals_label' route="|selection_rivals" class='col-11-10 no-padding non-dashboard-label'>Selection Rivals</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='selection_rivals_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|selection_rivals" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='selection_rivals_img' class='icon-15 toggle' onclick='toggle_tile_visibility("selection_rivals");' src="static/img/Gray_Plus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content' id='selection_rivals_div'>
+                                        
+                                    </div>
+
+                                </div>
+                                <div class='non-dashboard-section card col-6-12' id='bubble_watch_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div onclick='drill_down_header(this.id, 1);' id='bubble_watch_label' route="|bubble_watch" class='col-11-10 no-padding non-dashboard-label'>Bubble Watch</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='bubble_watch_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|bubble_watch" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='bubble_watch_img' class='icon-15 toggle' onclick='toggle_tile_visibility("bubble_watch");' src="static/img/Gray_Plus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content' id='bubble_watch_div'>
+                                        
+                                    </div>
+
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    
+
+<script src="static/js/d3.v4.min.js"></script><script src="static/js/laxrefpro_graphing.js?dt=200"></script>
+<script>
+    var on_mobile = null;
+    var console_log = []; var success = null;
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
+    
+    function process_laxelo_history(misc){
+        raw = misc.extra_data.all_teams_laxelo_history;
+        start_x = misc.laxelo_movement_start_date;
+        
+        time_log.push({'tag': "process_laxelo_history", 'start': new Date().getTime()});
+        var history = [];
+        var change_history = [];
+        var conf_ID = null;
+        var team_entry = null;
+        var conf = {'add': 1, 'stroke': "maroon", 'stroke-dasharray': null, 'stroke-width': 1, 't': {'display_name': 'Conf Avg'}, 'n': 0.0};
+        var rows = []
+        for(var a = 0;a<raw.length;a++){
+            var row = JSON.parse(JSON.stringify(raw[a]));
+            row.add = 0; row.team = 0;
+            
+            row.conf_agg = false;
+            tokens = row.t.split("|")
+                
+            row.t = {'years': [], 'change_years': [], 'team_ID': parseInt(tokens[0]), 'conf_ID': parseInt(tokens[1]), 'display_name': tokens[2]}
+            years = row.d.split("*");
+            for(var b = 0;b<years.length;b++){
+                yr = {};
+                year_value = parseInt(years[b].substring(0,4));
+                yr.points = years[b].substring(4).split("~");
+                for(var c = 0;c<yr.points.length;c++){
+                    tokens = yr.points[c].split("|")
+                    yr.points[c] = {'label': tokens[0], 'x': parseInt(tokens[1]), 'y': parseInt(tokens[2]), 'dt': parseInt(tokens[3])};
+                    //if(row.t.team_ID == 1){ console.log(  yr.points[c].dt , start_x, yr.points[c].dt == start_x ); }
+                    if(yr.points[c].dt == start_x){
+                        row.start_y = yr.points[c].y;
+                    }
+                }
+                row.t.years.push(yr);
+            }
+            for(var b = 0;b<years.length;b++){
+                change_yr = {};
+                year_value = parseInt(years[b].substring(0,4));
+                change_yr.points = years[b].substring(4).split("~");
+                for(var c = 0;c<change_yr.points.length;c++){
+                    tokens = change_yr.points[c].split("|")
+                    change_yr.points[c] = {'label': tokens[0], 'x': parseInt(tokens[1]), 'y': (parseInt(tokens[2])/row.start_y)* 100.0, 'dt': parseInt(tokens[3])};
+                }
+                change_yr.points = change_yr.points.filter( d => d.dt >= start_x);
+                row.t.change_years.push(change_yr);
+            }
+            //console.log(row.t.display_name, row.start_y);
+            if(row.t.team_ID == misc.active_team_ID){
+                row.stroke = "#77F"; row['stroke-dasharray'] = null; row['stroke-width'] = 2; 
+                conf_ID = row.t.conf_ID;
+                conf.n = 1.0;
+                conf.t.years = JSON.parse(JSON.stringify(row.t.years));
+                conf.t.change_years = JSON.parse(JSON.stringify(row.t.change_years));
+                row.team = 1;
+                team_entry = row;
+            }
+            rows.push(row);
+        }
+        
+        
+        for(var a = 0;a<rows.length;a++){
+            var row = rows[a];
+            if(row.t.team_ID != misc.active_team_ID && row.t.conf_ID == conf_ID){
+                row.stroke = "#DDD"; row['stroke-width'] = 1; row['stroke-dasharray'] = null; row.add = 1;
+                //history.push(row)
+                conf.n += 1.0;
+                
+                for(var c = 0;c<conf.t.years.length;c++){
+                    for(var b = 0;b<conf.t.years[c].points.length;b++){
+                        conf.t.years[c].points[b].y += row.t.years[c].points[b].y;
+                    }
+                }
+                for(var c = 0;c<conf.t.change_years.length;c++){
+                    for(var b = 0;b<conf.t.change_years[c].points.length;b++){
+                        conf.t.change_years[c].points[b].y += row.t.change_years[c].points[b].y;
+                    }
+                }
+            }
+        }
+        for(var c = 0;c<conf.t.years.length;c++){
+            for(var b = 0;b<conf.t.years[c].points.length;b++){
+                conf.t.years[c].points[b].y /= conf.n;
+            }
+        }
+        for(var c = 0;c<conf.t.change_years.length;c++){
+            for(var b = 0;b<conf.t.change_years[c].points.length;b++){
+                conf.t.change_years[c].points[b].y /= conf.n;
+            }
+        }
+        rows.push(conf);
+        for(var a = 0;a<rows.length;a++){
+            var row = rows[a];
+            if(row.add){
+                for(var b = 0;b<row.t.years.length;b++){
+                    yr = row.t.years[b];
+                    d = {'stroke': row.stroke, 'stroke-width': row['stroke-width'], 'stroke-dasharray': row['stroke-dasharray'], 'display_name': row.display_name, 'points': yr.points}
+                    history.push(d);
+                    
+                    change_yr = row.t.change_years[b];
+                    change_d = {'stroke': row.stroke, 'stroke-width': row['stroke-width'], 'stroke-dasharray': row['stroke-dasharray'], 'display_name': row.display_name, 'points': change_yr.points}
+                    change_history.push(change_d);
+                }
+            }
+        }
+        for(var a = 0;a<rows.length;a++){
+            var row = rows[a];
+            if(row.team){
+                for(var b = 0;b<row.t.years.length;b++){
+                    yr = row.t.years[b];
+                    d = {'stroke': row.stroke, 'stroke-width': row['stroke-width'], 'stroke-dasharray': row['stroke-dasharray'], 'display_name': row.display_name, 'points': yr.points}
+                    history.push(d);
+                    
+                    change_yr = row.t.change_years[b];
+                    change_d = {'stroke': row.stroke, 'stroke-width': row['stroke-width'], 'stroke-dasharray': row['stroke-dasharray'], 'display_name': row.display_name, 'points': change_yr.points}
+                    change_history.push(change_d);
+                }
+            }
+        }
+        
+        time_log[time_log.length-1].end = new Date().getTime();
+        misc.all_teams_laxelo_history = history;
+        misc.all_teams_laxelo_change_history = change_history;
+        return misc;
+    }
+    
+    var single_stat = "<div class='col-12'><span class='lightish contents font-20'>[header]</span></div>";
+    single_stat += "<div class='col-12 centered ' style='padding-top:65px;'><span class='tile-message font-18'>[stat]</span></div>";
+    var misc = parse_misc({{misc|to_json2}});
+    console_log.push({'msg': 'Loaded misc...'});
+    var user_obj = {'settings': {{user_obj.settings|to_json2}}};
+    console_log.push({'msg': 'Loaded user settings...'});
+    //console.log(misc);
+    var explanations = {{user_obj.explanations|to_json2}};
+    
+    function display_projected_RPI(panel){ 
+        if([null, 'projected_rpi', 'conditional_rpi', 'rpi_distribution', 'deconstructed_rpi'].indexOf(panel) == -1){ return; }
+    
+        id = 'rpi_distribution_div'; success = false;
+        try{
+            if(typeof misc.data.RPI_ranks_histogram != "undefined" && misc.data.RPI_ranks_histogram.length > 0){
+                specs = {'margin_left': 30, 'chart_size': 'small', 'flip': 0};
+                
+                data = {'axis_labels': {'y': '% of Simulations', 'x': 'Final RPI Rank'}, 'data': []};
+                tmp = {'stroke-dasharray': '3-3', 'stroke': "#666", 'points': []}
+                tmp.points = misc.data.RPI_ranks_histogram;
+                data.data.push(tmp)
+                
+                x_ticks = create_game_x_ticks(data.data);
+                data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
+                y_ticks = create_pct_y_ticks(data.data, {})
+                data['y_ticks'] = y_ticks.ticks;
+                data['max_y'] = y_ticks.max;  data['min_y'] = 0;
+                specs.width = $('#rpi_distribution_container_div').width()-20;
+                
+                vertical_bars(data, id, specs);
+                
+            }
+            else{
+                $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Could not calculate RPI distribution."));
+            }
+            success = true;
+        }
+        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+        
+        if(!success){
+            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+        }
+        
+        id = 'conditional_rpi_div'; success = false;
+        try{
+            if(typeof misc.data.future_games != "undefined" && misc.data.future_games != null && misc.data.future_games.length > 0){
+                custom_specs = {'chart_size': 'small', 'margin_top': 0, 'margin_right': 0, 'margin_bottom': 0, 'margin_left': 0};
+                custom_specs.width = $('#conditional_rpi_container_div').width() - 20;
+                custom_conditional_RPI_tile(misc, id, custom_specs);
+            }
+            else{
+                $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "No scheduled games"));
+            }
+            success = true;
+        }
+        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+        
+        if(!success){
+            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+        }
+        
+        id = 'deconstructed_rpi_div'; success = false;
+        try{
+            if(typeof misc.data.RPI_factors != "undefined" && misc.data.RPI_factors.length > 0){
+                generic_create_table(JSON.parse(misc.data.RPI_factors), {'id': id, 'target_elem': id});
+            }
+            else{
+                $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Could not calculate deconstructed RPI."));
+            }
+            success = true;
+        }
+        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+        
+        if(!success){
+            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+        }
+    }
+    
+    
+    //misc = process_laxelo_history(misc);
+    var laxelo_dates = []
+    function display_laxelo(panel){
+        //console.log("display_laxelo: " + panel);
+        if([null, 'laxelo', 'laxelo_history', 'laxelo_game_results', 'laxelo_movement'].indexOf(panel) == -1){ return; }
+        
+        
+        id = 'laxelo_game_results'; success = false;
+        try{
+            // Print the history
+            if(misc.data.completed_games_cnt == 0){ // Print Last Year
+                
+                games = misc.data.completed_games.filter( gm => gm.last_year == 1);
+                document.getElementById('laxelo_game_results_helpicon').setAttribute( "onclick", "show_explanation('team_my_rankings.html|laxelo_game_results_last_year')");
+            
+            }
+            else{ // Print this year
+                
+                games = misc.data.completed_games.filter( gm => gm.this_year == 1);
+                document.getElementById('laxelo_game_results_helpicon').setAttribute( "onclick", "show_explanation('team_my_rankings.html|laxelo_game_results_this_year')");
+            }
+            
+            
+            var js_data = {'no_row_count': 1}
+            js_data.classes = [{'class': 'col-3'}, {'class': 'col-3 centered'}, {'class': 'col-3 centered'}, {'class': 'col-3 centered'}];
+            js_data.fmt = [{'fmt': ""}, {'fmt': ""}, {'fmt': ""}, {'fmt': ""}];
+            js_data.fields = [{'sort_by': 'game_date_YYYYmmdd', 'tag': 'opp_short_code', 'display': 'Game'}
+            , {'sort_by': 'game_date_YYYYmmdd', 'tag': 'score_str_html', 'display': 'Result'}
+            , {'sort_by': 'this_team_elo_transfer', 'tag': 'this_team_elo_transfer_html', 'display': 'Change'}
+            , {'sort_by': 'end_elo', 'tag': 'end_elo', 'display': 'Lax-ELO'}
+            ];
+            
+            
+            js_data.data = games;
+            generic_create_table(js_data, {'id': id, 'target_elem': 'laxelo_game_results_div'});
+            //console.log("misc.extra_data")
+            //console.log(misc.extra_data)
+            success = true;
+        }
+        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+        
+        if(!success){
+            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+        }
+                
+        
+        id = "laxelo_history_div"; success = false;
+        try{
+            specs = {'margin_bottom': 40, 'chart_size': 'small', 'flip': 0};
+            
+            misc = process_laxelo_history(misc);
+            data = {'axis_labels': {'y': 'Lax-ELO Rating', 'x': ''}, 'data': []};
+            data.data = misc.all_teams_laxelo_history;
+            
+            x_ticks = create_game_x_ticks(data.data);
+            data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
+            
+            for(var a = 0;a<misc.all_teams_laxelo_history.length;a++){
+                var tmp_data = data.data[a];
+                
+                for(var c = 0;c<tmp_data.points.length;c++){
+                    pt = tmp_data.points[c];
+                    if(laxelo_dates.indexOf(pt.dt) == -1){
+                        laxelo_dates.push(pt.dt);
+                    }
+                    
+                }
+            }
+        
+            laxelo_dates = laxelo_dates.sort(function(first, second) {
+                    return first - second;
+            });
+            var slider_start = null;
+            for(var a = 0;a<laxelo_dates.length;a++){
+                
+                if(laxelo_dates[a] >= misc.laxelo_movement_start_date){
+                    
+                    slider_start = a/laxelo_dates.length;
+                    break;
+                }
+            }
+            if(slider_start == null){ slider_start = 1; }
+            
+            
+            y_ticks = create_numeric_y_ticks(data.data)
+            
+            data['y_ticks'] = y_ticks.ticks;
+            data['max_y'] = y_ticks.max;  data['min_y'] = y_ticks.min;
+            
+            specs.width = $('#laxelo_history_container_div').width() - 20;
+            specs.height = 200;
+            data['legend'] = {'items': [], 'layout': 'horizontal'}
+            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': '#88F', 'label': 'Your Rating'})
+            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': 'maroon', 'label': 'Conf Avg.'})
+            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': '#DDD', 'label': 'Conf Team'}) 
+            
+            horizontal_line(data, id, specs);
+            success = true;
+        }
+        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+        
+        if(!success){
+            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+        }
+            
+            
+        id = "laxelo_movement_div"; success = false;
+        
+        try{
+            data = {'axis_labels': {'y': 'Change in Lax-ELO Rating; 100 = Rating on ' + days_to_date(misc.laxelo_movement_start_date, '%b %d %Y'), 'x': ''}, 'data': []};
+            data.data = misc.all_teams_laxelo_change_history;
+
+            x_ticks = create_game_x_ticks(data.data);
+            data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
+            y_ticks = create_numeric_y_ticks(data.data)
+            data['y_ticks'] = y_ticks.ticks;
+            data['max_y'] = y_ticks.max;  data['min_y'] = y_ticks.min;
+            
+            specs.width = $('#laxelo_movement_container_div').width() - 20;
+            specs.height = 200; specs.margin_top= 30;
+            
+            data['legend'] = {'items': [], 'layout': 'horizontal'}
+            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': '#88F', 'label': 'Your Rating'})
+            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': 'maroon', 'label': 'Conf Avg.'})
+            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': '#DDD', 'label': 'Conf Team'}) 
+            
+            slider_width = $('#laxelo_movement_container_div').width() - 200
+            
+            data.slider = {'pct_loc': slider_start,'loc_x': $('#laxelo_movement_container_div').width() - slider_width - 125, 'loc_y': -20, 'orientation': 'horizontal', 'dragStarted': null, 'drag': show_laxelo_date, 'dragEnded': redraw_laxelo_movement, 'id': id, 'text_align': 'right', 'width': slider_width, 'height': 10, 'svg_stops': 10, 'show_value_on_drag': 1};
+            data.slider.start_label = days_to_date(laxelo_dates[0], '%b %Y')
+            data.slider.end_label = days_to_date(laxelo_dates[laxelo_dates.length-1], '%b %Y')
+            
+            horizontal_line(data, id, specs);
+            success = true;
+        }
+        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+        
+        if(!success){
+            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+        }
+        
+    }
+    function redraw_laxelo_movement(){ 
+        
+        slider_obj = d3.select(this);
+        overlay = d3.select("#" + slider_obj.attr('id') + "-overlay");
+        overlay.attr("class", "slider-overlay hidden");
+        overlay_text = d3.select("#" + slider_obj.attr('id') + "-overlay-text");
+        overlay_text.attr("class", "label lightish chart-tick-label small hidden");
+        
+        loc = {'x': slider_obj.attr("offset_x"), 'y': slider_obj.attr("offset_y")}; 
+        
+        if(slider_obj.attr("orientation") == "horizontal"){
+            loc = Math.min(slider_obj.attr("width")-1, Math.max(0, d3.event.x - loc.x));
+            pct = loc / slider_obj.attr("width");
+        }
+        else{
+            loc =  Math.min(slider_obj.attr("height"), Math.max(d3.event.y - loc.y));
+            pct = loc / slider_obj.attr("height");
+        }
+        
+        //pct = Math.min(Math.max(0, d3.event.loc/slider_obj.attr("slider_height")), 1);
+        index = parseInt(pct * laxelo_dates.length);
+        misc.laxelo_movement_start_date = laxelo_dates[index];
+        
+        
+        display_laxelo('laxelo_movement');
+        
+        // Write to the DB that the value of the setting has changed
+        logger_str = [null, misc.nhca, 'laxelo_movement_start_date', misc.laxelo_movement_start_date].join("|");
+        document.getElementById('pixel').src = "/logger-editSettings?c=" + logger_str;
+        
+    }
+    
+    function show_laxelo_date(){ 
+        
+        slider_obj = d3.select(this);
+        overlay = d3.select("#" + slider_obj.attr('id') + "-overlay");
+        overlay.attr("class", "slider-overlay");
+        overlay_text = d3.select("#" + slider_obj.attr('id') + "-overlay-text");
+        overlay_text.attr("class", "label lightish chart-tick-label small");
+        orig_loc = {'x': parseInt(slider_obj.attr("offset_x")), 'y': parseInt(slider_obj.attr("offset_y"))}; 
+        
+        if(slider_obj.attr("orientation") == "horizontal"){
+            loc = Math.min(slider_obj.attr("width")-1, Math.max(0, d3.event.x - orig_loc.x));
+            pct = loc / slider_obj.attr("width");
+            overlay.attr("x", loc + orig_loc.x - 30);
+            overlay_text.attr("x", loc + orig_loc.x);
+            slider_obj.attr("cx", loc + orig_loc.x);
+        }
+        else{
+            loc =  Math.min(slider_obj.attr("height"), Math.max(d3.event.y - orig_loc.y));
+            pct = loc / slider_obj.attr("height");
+            overlay.attr("y", loc + orig_loc.y -15);
+            slider_obj.attr("cy", loc + orig_loc.y);
+            overlay_text.attr("y", loc + orig_loc.y);
+        }
+        
+        
+        //pct = Math.min(Math.max(0, d3.event.loc/slider_obj.attr("slider_height")), 1);
+        index = parseInt(pct * laxelo_dates.length);
+        txt = days_to_date(laxelo_dates[index], '%b %d \'%y')
+        overlay_text.text(txt);
+        
+    }
+    
+    function display_post_season_odds(panel){
+        if([null, 'postseason_odds', 'record_scenarios', 'bubble_watch', 'conf_seed_probabilities', 'selection_rivals'].indexOf(panel) == -1){ return; }
+        
+        id = 'record_scenarios'; success = false;
+        try{
+            var cur_wins = parseInt(misc.data.record.split("-")[0].trim());
+            var cur_losses = parseInt(misc.data.record.split("-")[1].trim());
+            
+            var likely = misc.data.win_loss_records.filter(gm => gm.frequency > 0);
+            n_likely = likely.length;
+            if(n_likely <= 8){ // Just show the win-loss scenarios
+            
+                document.getElementById('record_scenarios_helpicon').setAttribute( "onclick", "show_explanation('team_my_rankings.html|record_scenarios_records')");
+                    
+                    
+                likely.sort(function(first, second) {
+                        return second.pct_in - first.pct_in;
+                });
+                likely = likely.slice(0,8);
+                var record_scenarios_js_data = {'no_row_count': 1}
+                record_scenarios_js_data.classes = [{'class': 'col-4'}, {'class': 'col-4 centered'}, {'class': 'col-4 centered'}];
+                record_scenarios_js_data.fmt = [{'fmt': ""}, {'fmt': "0%"}, {'fmt': "0%"}];
+                record_scenarios_js_data.fields = [{'sort_by': 'win_pct', 'tag': 'rec', 'display': 'Final Record'}
+                , {'sort_by': 'frequency', 'tag': 'frequency', 'display': 'Likelihood'}
+                , {'sort_by': 'pct_in', 'tag': 'pct_in', 'display': 'NCAA %'}
+                ];
+                
+                
+                record_scenarios_js_data.data = likely;
+                generic_create_table(record_scenarios_js_data, {'id': 'record_scenarios', 'target_elem': 'record_scenarios_div'});
+            }
+            else{ // Show the overall win total scenarios
+                document.getElementById('record_scenarios_helpicon').setAttribute( "onclick", "show_explanation('team_my_rankings.html|record_scenarios_wins')");
+                
+                misc.data.future_wins.sort(function(first, second) {
+                    return first.future_wins - second.future_wins;
+                });
+                wins = misc.data.future_wins;
+                
+                last_zero_index = null; last_zero_wins = null;
+                first_100_index = null; first_100_wins = null;
+                for(var a = 0;a<wins.length;a++){
+                    var rec = wins[a];
+                    if(rec.pct_in == 0){ last_zero_index = a; last_zero_wins = rec.future_wins; }
+                    if(rec.pct_in == 1 && first_100_index == null){ first_100_index = a; first_100_wins = rec.future_wins; }
+                }
+                var cum_0 = 0; var cum_100 = 0;
+                for(var a = 0;a<=last_zero_index;a++){ 
+                    cum_0 += wins[a].frequency;
+                }
+                if(first_100_index != null){
+                    for(var a = first_100_index;a<wins.length;a++){
+                        cum_100 += wins[a].frequency;
+                    }
+                }
+                else{
+                    first_100_index = wins.length;
+                    cum_100 = null;
+                }
+                
+                //console.log("First non zero: " + last_zero_wins);
+                //console.log("Last sub 100: " + first_100_wins);
+                table_data = [];
+                table_data.push({'wins_str': (cur_wins + last_zero_wins) + " or less", 'wins': cur_wins + last_zero_wins, 'frequency': cum_0, 'pct_in': 0.0});
+                for(var a =last_zero_index + 1;a<first_100_index;a++){
+                    var rec = wins[a];
+                    table_data.push({'wins_str': cur_wins + rec.future_wins, 'wins': cur_wins + rec.future_wins, 'frequency': rec.frequency, 'pct_in': rec.pct_in});
+                }
+                if(cum_100 != null){
+                    table_data.push({'wins_str': (cur_wins + first_100_wins) + " or more", 'wins': cur_wins + first_100_wins, 'frequency': cum_100, 'pct_in': 1.0});
+                }
+                
+                var record_scenarios_js_data = {'no_row_count': 1}
+                record_scenarios_js_data.classes = [{'class': 'col-4'}, {'class': 'col-4 centered'}, {'class': 'col-4 centered'}];
+                record_scenarios_js_data.fmt = [{'fmt': ""}, {'fmt': "0%"}, {'fmt': "0%"}];
+                record_scenarios_js_data.fields = [{'sort_by': 'wins', 'tag': 'wins_str', 'display': 'Final Wins'}
+                , {'sort_by': 'frequency', 'tag': 'frequency', 'display': 'Likelihood'}
+                , {'sort_by': 'pct_in', 'tag': 'pct_in', 'display': 'NCAA %'}
+                ];
+                
+                
+                record_scenarios_js_data.data = table_data;
+                generic_create_table(record_scenarios_js_data, {'id': 'record_scenarios', 'target_elem': 'record_scenarios_div'});
+
+            }
+            success = true;
+        }
+        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+        
+        if(!success){
+            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+        }
+            
+    
+        id =  'selection_rivals_div'; success = false;
+        try{
+            misc.data.selection_rivals.bubble_rivals.sort(function(first, second) {
+                return -(first.diff - second.diff);
+            });
+            rivals = misc.data.selection_rivals.bubble_rivals.slice(0, 8);
+        
+            var js_data = {'no_row_count': 1}
+            js_data.classes = [{'class': 'col-4'}, {'outer_class': 'col-8', 'classes': [{'class': 'col-3 centered'}, {'class': 'col-3 centered'}, {'class': 'col-3 centered'}]}];
+            js_data.fmt = [{'fmt': ""}, {'fmt': "0%"}, {'fmt': "0%"}, {'fmt': "0%"}];
+            js_data.fields = [{'sort_by': 'display_name', 'tag': 'display_name', 'display': 'Team'}
+            , {'sort_by': 'in_pct_val', 'tag': 'in_pct_val', 'display': 'In when In'}
+            , {'sort_by': 'out_pct_val', 'tag': 'out_pct_val', 'display': 'In when Out'}
+            , {'sort_by': 'diff', 'tag': 'diff', 'display': 'Net'}
+            ];
+            
+            js_data.data = rivals;
+            generic_create_table(js_data, {'id':id, 'target_elem': 'selection_rivals_div'});
+            
+            success = true;
+        }
+        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+        
+        if(!success){
+            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+        }
+            
+        
+        
+        id = 'conf_seed_probabilities_div'; success = false;
+        try{
+            misc.data.seed_instances;
+            seed_data = []
+            
+            var total = 0; var total_positive = 0;
+            si = misc.data.seed_instances
+            for(var a = 0;a<si.length;a++){
+                var seed = si[a];
+                if(typeof seed == "number"){
+                    total += seed;
+                    if(seed > 0){ total_positive += 1; }
+                }
+            }
+            si = si.slice(0, misc.data.num_conf_tournament_teams);
+            if(total_positive == 1){ // Just tell them what they've won
+                var seed = null;
+                for(var b = 0;b<si.length;b++){ if(si[b] > 0){ seed = b + 1; } }
+                
+                var msg = "<div class='centered' style='padding-top:30px;'><span class='font-18 contents'>You are locked in as the #" + seed + " seed.</span></div>";
+                $("#" + id).empty(); $("#" + id).append(msg);
+            }
+            else if(total_positive > 1){ // Show the graph of the remaining possibilities
+                if(total > 0){
+                    for(var a = 0;a<si.length;a++){
+                        var seed = si[a];
+                        
+                        d = {'label': (a+1), 'x': a, 'y': seed/total};
+                        
+                        seed_data.push(d);
+                    }
+                    specs = {'chart_size': 'small', 'flip': 0, 'margin_right': 20};
+                        
+                    data = {'axis_labels': {'y': 'Chance of each seed in Conf. Tournament', 'x': 'Conference Tournament Seed'}, 'data': []};
+                    tmp = {'stroke-dasharray': '3-3', 'stroke': "#666", 'points': []}
+                    tmp.points = seed_data;
+                    data.data.push(tmp)
+                    
+                    x_ticks = create_game_x_ticks(data.data);
+                    data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
+                    y_ticks = create_pct_y_ticks(data.data,{})
+                    data['y_ticks'] = y_ticks.ticks;
+                    data['max_y'] = y_ticks.max;  data['min_y'] = 0;
+                    specs.width = $('#conf_seed_probabilities_container_div').width() - 20;
+                    
+                    vertical_bars(data, id, specs);
+                }
+            }
+            else{
+                $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Could not calculate seed distribution."));
+
+            }  
+            success = true;
+        }
+        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+        
+        if(!success){
+            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+        }
+
+        id = 'bubble_watch_div'; success = false;
+        try{
+            if(typeof misc.data.bubble_watch_games != "undefined" && misc.data.bubble_watch_games.length > 0){
+                specs = {'margin_left': 30, 'chart_size': 'small', 'flip': 0};
+                
+                data = {'axis_labels': {'y': '% of Simulations', 'x': 'Final RPI Rank'}, 'data': []};
+                tmp = {'stroke-dasharray': '3-3', 'stroke': "#666", 'points': []}
+                tmp.points = misc.data.RPI_ranks_histogram;
+                data.data.push(tmp)
+                
+                x_ticks = create_game_x_ticks(data.data);
+                data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
+                y_ticks = create_pct_y_ticks(data.data,{})
+                data['y_ticks'] = y_ticks.ticks;
+                data['max_y'] = y_ticks.max;  data['min_y'] = 0;
+                specs.width = $('#bubble_watch_container_div').width() - 20;
+                
+                vertical_bars(data, id, specs);
+                
+            }
+            else{
+                $("#" + id).empty();
+                $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "No relevant (to you) bubble watch games have been identified."));
+            }
+            success = true;
+        }
+        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+        
+        if(!success){
+            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+        }
+
+        
+    }
+    
+    function redraw(panel=null){
+        on_mobile = $("#main_logo").css('display') == "none";
+        
+        if(typeof panel == "object"){ panel = null; }
+        
+        console_log.push({'msg': 'Check misc.data...'});
+        if('data' in misc && [{}, null].indexOf(misc.data) == -1){
+            console_log.push({'msg': 'projected rpi...'});
+            display_projected_RPI(panel);
+            console_log.push({'msg': 'projected laxelo...'});
+            display_laxelo(panel);
+            console_log.push({'msg': 'post season...'});
+            display_post_season_odds(panel);
+            
+        }
+        
+    }
+    
+    // Select the appropriate panel to display
+    if('active_element' in misc){ choose_left_menu_item(misc.active_element); }
+    else{ choose_left_menu_item("projected_rpi"); }
+    
+    console_log.push({'msg': 'Start finish load...'});
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+    
+    window.addEventListener("resize", redraw); 
+    
+    
+</script>
+{% endblock %}
+

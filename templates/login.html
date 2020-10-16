@@ -13,26 +13,25 @@
 
     <div class='col-12 flex'>
         <div class='col-4-1'></div>
-        <div class='col-4-10' style='background-color: #F9F9F9;'>
-            <FORM action='/' method=POST><input type='hidden' name='from' value='login' />
-            <div class='col-12 centered'>
-                
-                <div class='col-12'><input type=text name='username' id='username'  placeholder="Username" /></div>
-                <div class='col-12'><input type=password name='password' id='password' placeholder="Password" /></div>
+        <div class='col-4-10 credentials-box' style=''>
+            
+            <div class='col-12 no-padding'>
+                <FORM action='/' method=POST><input type='hidden' name='from' value='login' />
+                <div class='col-12'><input class='text-input' type=text name='username' id='username'  placeholder="Email or username" /></div>
+                <div class='col-12'><input class='text-input' type=password name='password' id='password' placeholder="Password" /></div>
+                <div class='col-12'>
+                    <a class='font-12' href='/forgot'><span class='font-12'>Forgot your password?</span></a>
+                </div>
                 {% if misc.error %}
                     <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
                 {% endif %}
-                <div class='col-12'><button class='action-button' type=submit id='submit_me' />Submit</button></div>
-                <div class='col-12 centered' style='padding-top:15px;'>
-                    
-                    <a class='font-14' href='/forgot'><span class='font-14'>Forgot Password</span></a>
-                </div>
-                <div class='col-12 centered'>
-                    <a class='font-14' href='/register'><span class='font-14'>Create Account</span></a>
-                    
+                <div class='col-12' style='padding-top:30px;'><button class='action-button blue' type=submit id='submit_me' />Login</button></div>
+                </FORM>
+                <div class='col-12' style='padding-top:10px;'>
+                   <button class='action-button' onclick='window.location= "/register"' id='create_button'>Create Account</button>
                 </div>
             </div>
-            </FORM>
+            
         </div>
         <div class='col-4-1'></div>
     </div>

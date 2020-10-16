@@ -173,10 +173,143 @@
                             
                         </div>
                         <div class='right-content-panel' id='last_game_panel'>
-                            <div class='flex-block'>
+                            <div class='col-12 block no-padding'>
+                            
+                                <div class='non-dashboard-section card col-12' id='last_game_headline_container_div'>
+                                
+                                    <div class='non-dashboard-section-header'>
+                                        <div class='col-11-10 no-padding non-dashboard-label'>{{misc.data.last_game.headline_result_str}} </div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='last_game_headline_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|last_game_headline" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_headline_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game_headline");' src="static/img/Gray_Plus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content' id='last_game_headline_div'></div>
+
+                                </div>
                             
                             </div>
-                        
+                            <div class='col-12 block no-padding'>
+                                
+                                <div class='non-dashboard-section card col-12' id='last_game_adjusted_performance_primary_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div class='col-11-10 no-padding non-dashboard-label'>Opponent Adjusted Performance (Primary Units)</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='last_game_adjusted_performance_primary_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|last_game_adjusted_performance_primary" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_adjusted_performance_primary_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game_adjusted_performance_primary");' src="static/img/Gray_Plus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content' id='last_game_adjusted_performance_primary_div'>
+                                        <div class='flex-block col-12'>
+                                            <div class='col-6-12 non-dashboard-tile-section' style=''>
+                                                <div class='col-12 no-padding'><span class='font-18'>Your Offense</span></div>
+                                                <div class='col-12 no-padding' id='last_game_adjusted_performance_primary_offense'></div>
+                                            </div>
+                                            <div class='col-6-12 non-dashboard-tile-section' style=''>
+                                                <div class='col-12 no-padding'><span class='font-18'>Your Defense</span></div>
+                                                <div class='col-12 no-padding' id='last_game_adjusted_performance_primary_defense'></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>    
+                            <div class='col-12 block no-padding'>
+                                <div class='non-dashboard-section card col-12' id='last_game_adjusted_performance_specialty_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div class='col-11-10 no-padding non-dashboard-label'>Opponent Adjusted Performance (FO/GK)</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='last_game_adjusted_performance_specialty_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|last_game_adjusted_performance_specialty" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_adjusted_performance_specialty_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game_adjusted_performance_specialty");' src="static/img/Gray_Plus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content' id='last_game_adjusted_performance_specialty_div'>
+                                        <div class='flex-block col-12'>
+                                            <div class='col-6-12 non-dashboard-tile-section' style=''>
+                                                <div class='col-12 no-padding'><span class='font-18'>Your Faceoff Unit</span></div>
+                                                <div class='col-12 no-padding' id='last_game_adjusted_performance_specialty_faceoffs'></div>
+                                            </div>
+                                            <div class='col-6-12 non-dashboard-tile-section' style=''>
+                                                <div class='col-12 no-padding'><span class='font-18'>Your Goalkeepers</span></div>
+                                                <div class='col-12 no-padding' id='last_game_adjusted_performance_specialty_goalkeepers'></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>   
+                            <div class='col-12 flex-block no-padding'>
+                                <div class='non-dashboard-section card col-6-12' id='last_game_positional_breakdown_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div class='col-11-10 no-padding non-dashboard-label'>Positional Breakdown</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='last_game_positional_breakdown_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|last_game_positional_breakdown" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_positional_breakdown_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game_positional_breakdown");' src="static/img/Gray_Plus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content' id='last_game_positional_breakdown_div'>
+                                        
+                                    </div>
+
+                                </div>
+                                <div class='non-dashboard-section card col-6-12' id='last_game_situation_splits_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div class='col-11-10 no-padding non-dashboard-label'>Situational Splits</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='last_game_situation_splits_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|last_game_situation_splits" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_situation_splits_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game_situation_splits");' src="static/img/Gray_Plus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content' id='last_game_situation_splits_div' style='padding-bottom: 10px;'>
+                                        
+                                    </div>
+
+                                </div>
+                            </div>    
+                            <div class='col-12 block no-padding'>
+                                <div class='non-dashboard-section card col-12' id='last_game_key_stretches_offense_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div class='col-11-10 no-padding non-dashboard-label'>Game Stretches: Offensive Perspective</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='last_game_key_stretches_offense_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|last_game_key_stretches_offense" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_key_stretches_offense_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game_key_stretches_offense");' src="static/img/Gray_Plus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content' id='last_game_key_stretches_offense_div'>
+                                        
+                                    </div>
+
+                                </div>
+                            </div>
+                            <div class='col-12 block no-padding'>
+                                <div class='non-dashboard-section card col-12' id='last_game_key_stretches_defense_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div class='col-11-10 no-padding non-dashboard-label'>Game Stretches: Defensive Perspective</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='last_game_key_stretches_defense_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|last_game_key_stretches_defense" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_key_stretches_defense_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game_key_stretches_defense");' src="static/img/Gray_Plus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content' id='last_game_key_stretches_defense_div'>
+                                        
+                                    </div>
+
+                                </div>
+                            </div>
                         </div>
                         <div class='right-content-panel' id='full_schedule_panel'>
                             <div class='col-12 flex-block no-padding'>
@@ -510,12 +643,122 @@
         
         }
         else{
-            id = 'last_game_game_results'; success = false;
+            id = 'last_game_headline_div'; success = false;
             try{
                 // Data
+                stats = misc.last_game_headline_stats.split("|");
+                for(var a = 0;a<stats.length;a++){ stats[a] = {'unit': stats[a].split("~")[0], 'tag': stats[a].split("~")[1] }; }
                 
+                console.log("misc.data.last_game");
+                console.log(misc.data.last_game);
+                
+                
+                console.log("misc.extra_data.db_statistics");
+                console.log(misc.extra_data.db_statistics);
+                
+                data = misc.extra_data.db_team_game_summaries;
+                console.log("misc.extra_data.db_team_game_summaries");
+                console.log(data);
+                game_summaries = misc.data.last_game.summaries.filter(r=> r.team_ID==misc.data.ID && r.filter == null);
+                
+                headline_options = [];
                 // Visualization
+                html = ""
+                elem = $("#" + id); elem.empty();
                 
+                console.log("game_summaries");
+                console.log(game_summaries);
+                
+                
+                html += "<div class='flex-block col-12'>"
+                for(var a = 0;a<stats.length;a++){ stat = stats[a];
+                    unit_summary = game_summaries.filter(r=> r.data_type==stat.unit)[0];
+                    db_stat = misc.extra_data.db_statistics.filter(r=> r.stat == stat.tag)[0];
+                    stat.reverse=db_stat.reverse;
+                    stat.js_fmt=db_stat.js_fmt;
+                    adjustment = unit_summary.game_stat_adjustments.filter(r=> r.stat_ID==db_stat.ID);
+                    adjustment_value = null;
+                    if(adjustment.length > 0 && adjustment != []){
+                        adjustment_value = adjustment[0].adjustment;
+                    }
+                    label = db_stat.description;
+                    if(db_stat.both_units == 1){ label += " (" + title(stat.unit) + ")"; }
+                    html += "<div class='col-3-12 non-dashboard-tile-section' style=''>";
+                    html += "<div class='col-12 no-padding'><span class='font-15 bold'>" + label + "</span></div>";
+                    
+                    html += "<div class='col-12 no-padding' style='padding-top:10px;'><span class='light font-14'>vs " + misc.data.last_game.opponent_display + "</span></div>";
+                    if(adjustment_value != null){
+                        html += "<div class='flex bbottom no-padding'>"
+                        html += "<div class='col-6 no-padding centered'><span class='font-12 light'>Raw</span></div>"
+                        html += "<div class='col-6 no-padding centered'><span class='font-12 light'>Adj</span></div>"
+                        html +="</div>";
+                        
+                        raw_val = (1) ? jsformat(unit_summary[stat.tag], db_stat.js_fmt) : "";
+                        adj_val = (1) ? jsformat(unit_summary[stat.tag] + adjustment_value, db_stat.js_fmt) : "";
+                        html += "<div class='flex no-padding' style='padding-top:15px;'>"
+                        html += "<div class='col-6 no-padding centered'><span class='font-18 bold'>" + raw_val + "</span></div>"
+                        html += "<div class='col-6 no-padding centered'><span class='font-18 bold'>" + adj_val + "</span></div>"
+                        html +="</div>";
+                    }
+                    else{
+                        html += "<div class='flex no-padding'>"
+                        html += "<div class='col-12 no-padding centered'><span class='font-12 light'>&nbsp;</span></div>"
+                        html +="</div>";
+                        
+                        raw_val = (1) ? jsformat(unit_summary[stat.tag], db_stat.js_fmt) : "";
+                        html += "<div class='flex no-padding' style='padding-top:15px;'>"
+                        html += "<div class='col-12 no-padding centered'><span class='font-18 bold'>" + raw_val + "</span></div>"
+                        html +="</div>";
+                    }
+                    
+                   
+                    html += "<div class='col-12 no-padding' style='padding-top:20px;' id='seasontrend" + a + "'></div>";
+                    
+                    
+                    html += "</div>";
+                }
+                html += "</div>";
+                
+                
+                                                
+                                               
+                                    
+                elem.append(html);
+                season_summaries = data.filter(r=> r.team_ID==misc.data.ID && r.filter == null);
+                console.log("Found " + season_summaries.length + " season summaries.");
+                if(season_summaries.length > 2){
+                    for(var a = 0;a<stats.length;a++){ stat = stats[a];
+                        specs = {'margin_left': 30, 'margin_right': 10, 'margin_top': 2, 'margin_bottom': 5, 'chart_size': 'small', 'flip': db_stat.reverse };
+                        unit_summaries = season_summaries.filter(r=> r.data_type==stat.unit);
+                        console.log("unit_summaries")
+                        console.log(unit_summaries)
+                        
+                        data = {'axis_labels': {'y': 'Season Trend (Raw)', 'x': 'Games'}, 'data': []};
+                        tmp = {'stroke-dasharray': '3-3', 'stroke-width': 2.5, 'stroke': "#33F", 'points': []}
+                        for(var b = 0;b<unit_summaries.length;b++){
+                            gm = unit_summaries[b];
+                            tmp.points.push({'x': unit_summaries.length - b, 'y':  gm[stat.tag]});
+                        }
+                        data.data.push(tmp)
+                        
+                        x_ticks = create_game_x_ticks(data.data);
+                        data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
+                        
+                        y_ticks = (stat.js_fmt.indexOf("%") > -1) ? create_pct_y_ticks(data.data, {}) : create_numeric_y_ticks(data.data)
+                        data['y_ticks'] = y_ticks.ticks;
+                        data['max_y'] = y_ticks.max;  data['min_y'] = y_ticks.min;
+                            
+                        if(on_mobile){
+                            specs.width = $('#last_game_headline_container_div').width() * .95;    
+                        }
+                        else{
+                            specs.width = $('#last_game_headline_container_div').width() * .23;   
+                        }
+                        
+                        specs.height = 120;
+                        horizontal_line(data, "seasontrend" + a, specs);
+                    }
+                }
                 // Mark complete
                 success = true;
             }
@@ -527,12 +770,62 @@
             }
                     
             
-            id = "last_game_history_div"; success = false;
+            id = "last_game_adjusted_performance_primary_div"; success = false;
             try{
                 // Data
                 
+                units = [{'div': 'last_game_adjusted_performance_primary_offense', 'tag': 'offense'}, {'div': 'last_game_adjusted_performance_primary_defense', 'tag': 'defense'}];
                 // Visualization
                 
+                for(var a = 0;a<units.length;a++){ unit = units[a];
+                    //console.log("misc.data.last_game.adjusted_performance." + unit.tag);
+                    //console.log(misc.data.last_game.adjusted_performance[unit.tag]);
+                
+                    elem = $("#" + unit.div); elem.empty();
+                    html = "";
+                    
+                    html += "<div class='no-padding'>";
+                    
+                    html += "<div class='flex bbottom no-padding'>";
+                    html += " <div class='col-4 no-padding'><span class='font-12 bold'>Metric</span></div>";
+                    html += " <div class='col-2 no-padding centered'><span class='font-12 bold contents'>Raw</span></div>";
+                    html += " <div class='col-2 no-padding centered'><span class='font-12 bold contents'>Adj.</span></div>";
+                    html += " <div class='col-2 no-padding centered'><span class='font-12 bold contents'>Final</span></div>";
+                    html += " <div class='col-2 no-padding centered'><span class='font-12 bold contents'>Trend</span></div>";
+                    html += "</div>";
+    
+                    for(var b = 0;b<misc.data.last_game.adjusted_performance[unit.tag].length;b++){
+                        stat = misc.data.last_game.adjusted_performance[unit.tag][b];
+                        //console.log(stat);
+                        
+                        if(stat.reverse){
+                            if(stat.offensive){
+                                adj_text_class = (stat.adjustment <= 0 ? "green-text" : "red-text")
+                            }
+                            else{
+                                adj_text_class = (stat.adjustment >= 0 ? "green-text" : "red-text")
+                            }
+                        }
+                        else{
+                            if(stat.offensive){
+                                adj_text_class = (stat.adjustment >= 0 ? "green-text" : "red-text")
+                            }
+                            else{
+                                adj_text_class = (stat.adjustment <= 0 ? "green-text" : "red-text")
+                            }
+                        }
+             
+                        html += "<div class='flex table-row no-padding'>";
+                        html += " <div class='col-4 no-padding'><span class='font-12'>" + stat.label + "</span></div>";
+                        html += " <div class='col-2 no-padding centered'><span class='font-12 contents'>" + jsformat(stat.raw, stat.js_fmt) + "</span></div>";
+                        html += " <div class='col-2 no-padding centered'><span class='font-12 contents " + adj_text_class + "'>" + (stat.adjustment > 0 ? "+" : "") + jsformat(stat.adjustment, stat.js_fmt) + "</span></div>";
+                        html += " <div class='col-2 no-padding centered'><span class='font-12 contents'>" + jsformat(stat.final, stat.js_fmt) + "</span></div>";
+                        html += " <div class='col-2 no-padding centered'><span class='font-12 contents'>" + jsformat(stat.trend, stat.js_fmt) + "</span></div>";
+                        html += "</div>";
+                    }
+                    elem.append(html);
+                    
+                }
                 // Mark complete
                 success = true;
             }
@@ -544,12 +837,117 @@
             }
                 
                 
-            id = "last_game_movement_div"; success = false;
-            
+            id = "last_game_adjusted_performance_specialty_div"; success = false;
             try{
                 // Data
                 
                 // Visualization
+                units = [{'div': 'last_game_adjusted_performance_specialty_goalkeepers', 'tag': 'goalkeepers'}, {'div': 'last_game_adjusted_performance_specialty_faceoffs', 'tag': 'faceoffs'}];
+                // Visualization
+                
+                for(var a = 0;a<units.length;a++){ unit = units[a];
+                    //console.log("misc.data.last_game.adjusted_performance." + unit.tag);
+                    //console.log(misc.data.last_game.adjusted_performance[unit.tag]);
+                
+                    elem = $("#" + unit.div); elem.empty();
+                    html = "";
+                    
+                    html += "<div class='no-padding'>";
+                    
+                    html += "<div class='flex bbottom no-padding'>";
+                    html += " <div class='col-4 no-padding'><span class='font-12 bold'>Metric</span></div>";
+                    html += " <div class='col-2 no-padding centered'><span class='font-12 bold contents'>Raw</span></div>";
+                    html += " <div class='col-2 no-padding centered'><span class='font-12 bold contents'>Adj.</span></div>";
+                    html += " <div class='col-2 no-padding centered'><span class='font-12 bold contents'>Final</span></div>";
+                    html += " <div class='col-2 no-padding centered'><span class='font-12 bold contents'>Trend</span></div>";
+                    html += "</div>";
+    
+                    for(var b = 0;b<misc.data.last_game.adjusted_performance[unit.tag].length;b++){
+                        stat = misc.data.last_game.adjusted_performance[unit.tag][b];
+                        //console.log(stat);
+                        
+                        if(stat.reverse){
+                            if(stat.offensive){
+                                adj_text_class = (stat.adjustment <= 0 ? "green-text" : "red-text")
+                            }
+                            else{
+                                adj_text_class = (stat.adjustment >= 0 ? "green-text" : "red-text")
+                            }
+                        }
+                        else{
+                            if(stat.offensive){
+                                adj_text_class = (stat.adjustment >= 0 ? "green-text" : "red-text")
+                            }
+                            else{
+                                adj_text_class = (stat.adjustment <= 0 ? "green-text" : "red-text")
+                            }
+                        }
+             
+                        html += "<div class='flex table-row no-padding'>";
+                        html += " <div class='col-4 no-padding'><span class='font-12'>" + stat.label + "</span></div>";
+                        html += " <div class='col-2 no-padding centered'><span class='font-12 contents'>" + jsformat(stat.raw, stat.js_fmt) + "</span></div>";
+                        html += " <div class='col-2 no-padding centered'><span class='font-12 contents " + adj_text_class + "'>" + (stat.adjustment > 0 && stat.stat != "possession_margin" ? "+" : "") + jsformat(stat.adjustment, stat.js_fmt) + "</span></div>";
+                        html += " <div class='col-2 no-padding centered'><span class='font-12 contents'>" + jsformat(stat.final, stat.js_fmt) + "</span></div>";
+                        html += " <div class='col-2 no-padding centered'><span class='font-12 contents'>" + jsformat(stat.trend, stat.js_fmt) + "</span></div>";
+                        html += "</div>";
+                    }
+                    elem.append(html);
+                    
+                }
+                // Mark complete
+                success = true;
+            }
+            catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+            
+            if(!success){
+                $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+                report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+            }
+            
+            id = "last_game_positional_breakdown_div"; success = false;
+            try{
+                // Data
+                //console.log("misc.data.last_game.positional_breakdown");
+                //console.log(misc.data.last_game.positional_breakdown);
+                // Visualization
+                
+                units = []
+                units.push({'desc': 'Attack', 'tag': 'A'})
+                units.push({'desc': 'Midfield/FO', 'tag': 'M'})
+                units.push({'desc': 'Defense/GK', 'tag': 'D'})
+                
+                
+                // Visualization
+                elem = $("#" + id); elem.empty();
+                html = "";
+                    
+                html += "<div class='no-padding'>";
+                
+                html += "<div class='flex bbottom no-padding'>";
+                html += " <div class='col-3 no-padding'><span class='font-12 bold'>Metric</span></div>";
+                for(var b = 0;b<units.length;b++){ unit = units[b];
+                    html += " <div class='col-3 no-padding centered'><span class='font-12 bold contents'>" + unit.desc + "</span></div>";
+                }
+                html += "</div>";
+
+                for(var b = 0;b<misc.data.last_game.positional_breakdown.length;b++){
+                    stat = misc.data.last_game.positional_breakdown[b];
+                    //console.log(stat);
+                    
+                    html += "<div class='flex table-row no-padding'>";
+                    html += " <div class='col-3 no-padding'><span class='font-12'>" + stat.label + "</span></div>";
+                    for(var c = 0;c<units.length;c++){ unit = units[c];
+                        val = stat.values.filter(r=> r.tag == unit.tag)[0];
+                        /*value_share = stat.value_share.filter(r=> r.tag == unit.tag)[0];
+                        share_str = (['', 'N/A', 'n/a/', null].indexOf(value_share.value) > -1) ?  "N/A" : (zFormat(100.0*value_share.value, 0) + "%");
+                        html += " <div class='col-3 no-padding centered'><span class='font-12 contents'>" + share_str + " (" +
+                        jsformat(val.value, stat.js_fmt) + ")" + "</span></div>";*/
+                    }
+                    html += "</div>";
+                }
+
+                elem.append(html);
+             
                 
                 // Mark complete
                 success = true;
@@ -559,6 +957,135 @@
             if(!success){
                 $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
                 report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+            }
+            
+            id = "last_game_situation_splits_div"; success = false;
+            try{
+                // Data
+                //console.log("misc.data.last_game.situational_splits");
+                //console.log(misc.data.last_game.situational_splits);
+                // Visualization
+                
+                units = [{'desc': 'Offense', 'tag': 'offense'}, {'desc': 'Defense', 'tag': 'defense'}, {'desc': 'Faceoff Unit', 'tag': 'faceoffs'}, {'desc': 'Goalkeepers', 'tag': 'goalkeepers'}];
+                
+                situations = [{'tag': 'all', 'label': 'All'}, {'tag': 'garbage_time', 'label': 'Garbage'}, {'tag': 'competitive', 'label': 'In-Doubt'}]
+                // Visualization
+                elem = $("#" + id); elem.empty();
+                html = "";
+                    
+                html += "<div class='no-padding'>";
+                
+                html += "<div class='flex bbottom no-padding'>";
+                html += " <div class='col-6 no-padding'><span class='font-12 bold'>Metric</span></div>";
+                for(var b = 0;b<situations.length;b++){ sit = situations[b];
+                    html += " <div class='col-2 no-padding centered'><span class='font-12 bold contents'>" + sit.label + "</span></div>";
+                }
+                html += "</div>";
+                elem.append(html);
+                for(var a = 0;a<units.length;a++){ unit = units[a];
+                    //console.log("misc.data.last_game.situational_splits." + unit.tag);
+                    //console.log(misc.data.last_game.situational_splits[unit.tag]);
+                
+                    if(misc.data.last_game.situational_splits[unit.tag].length > 0){
+                        html = "";
+
+                        html += " <div class='col-12 no-padding bbottom light'><span class='font-13 bold' style='font-style:italic;'>" + unit.desc + "</span></div>";
+            
+                        
+                        html += " <div class='no-padding'>";
+                        for(var b = 0;b<misc.data.last_game.situational_splits[unit.tag].length;b++){
+                            stat = misc.data.last_game.situational_splits[unit.tag][b];
+                            console.log(stat);
+                            
+                            
+                 
+                            html += "<div class='flex table-row no-padding'>";
+                            html += " <div class='col-6 no-padding'><span class='font-12' style='padding-left:15px;'>" + stat.label + "</span></div>";
+                            for(var c = 0;c<situations.length;c++){ sit = situations[c];
+                                val = stat.values.filter(r=> r.tag == sit.tag)[0];
+                                html += " <div class='col-2 no-padding centered'><span class='font-12 contents'>" + jsformat(val.value, stat.js_fmt) + "</span></div>";
+                            }
+                            html += "</div>";
+                        }
+                        html += "</div>";
+                        elem.append(html);
+                    }
+                }
+                
+                
+                // Mark complete
+                success = true;
+            }
+            catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+            
+            if(!success){
+                $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+                report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+            }
+            
+            
+            units = [{'alt_tag': 'mine', 'tag': 'offense'}, {'alt_tag': 'theirs', 'tag': 'defense'}];
+            for(var ab = 0;ab<units.length;ab++){
+                unit = units[ab];
+                id = "last_game_key_stretches_" + unit.tag + "_div"; success = false;
+                try{
+                    // Data
+                    tags = []
+
+                    tags.push({'shown': [], 'excluded': [], 'class': '', 'label': 'G', 'tag': 'goals', 'fmt': '0'})
+                    tags.push({'shown': [], 'excluded': [], 'class': '', 'label': 'Shots', 'tag': 'shots', 'fmt': '0'})
+                    tags.push({'shown': [], 'excluded': [], 'class': '', 'label': 'SOG', 'tag': 'sog', 'fmt': '0'})
+                    tags.push({'shown': [], 'excluded': [], 'class': '', 'label': '# Poss.', 'tag': 'n', 'fmt': '0'})
+                    tags.push({'shown': [], 'excluded': [], 'class': '', 'label': 'GBs', 'tag': 'gbs', 'fmt': '0'})
+                    
+                    tags.push({'shown': [], 'excluded': [], 'class': 'dtop', 'label': '% Poss', 'tag': 'possession_pct', 'fmt': "0%"})
+                    
+                    //console.log("misc.data.last_game.stretches");
+                    //console.log(misc.data.last_game.stretches);
+                    // Visualization
+                    elem = $("#" + id); elem.empty();
+                    html = "";
+                    
+                    
+                    html += "<div class='no-padding'>";
+                    
+                    html += "<div class='flex bbottom'>";
+                    html += " <div class='col-1-2'><span class='font-12 bold'>Start</span></div>";
+                    html += " <div class='col-1-2'><span class='font-12 bold contents'>End</span></div>";
+                    html += " <div class='col-10-8'><ul class='table-ul left' style='background-color:inherit;'>";
+                    for(var a = 0;a<tags.length;a++){ tag = tags[a];
+                    
+                        html += " <li style='' class='" + tag.class + " table-li no-padding centered'><div class='cell-holder no-padding'><span class='font-12 bold contents'>" + tag.label + "</span></div></li>";
+                    }
+                    html += "</ul></div>";
+                    html += "</div>";
+                    elem.append(html);
+                    
+                    for(var b = 0;b<misc.data.last_game.stretches.length;b++){ stretch = misc.data.last_game.stretches[b];
+                        //console.log(stretch);
+                        split = stretch.splits[unit.alt_tag];
+                        html = "";
+                        html += "<div class='flex table-row'>";
+                        html += " <div class='col-1-2'><span class='font-12'>" + stretch.start_clock + "</span></div>";
+                        html += " <div class='col-1-2'><span class='font-12 contents'>" + stretch.end_clock + "</span></div>";
+                        html += " <div class='col-10-8'><ul class='table-ul left' style='background-color:inherit;'>";
+                        for(var a = 0;a<tags.length;a++){ tag = tags[a];
+                        
+                            html += " <li style='' class='" + tag.class + " table-li no-padding centered'><div class='cell-holder no-padding'><span class='font-12 contents'>" + jsformat(split[tag.tag], tag.fmt) + "</span></div></li>";
+                        }
+                        html += "</ul></div>";
+                        html += "</div>";
+                        elem.append(html);
+                    }
+                    // Mark complete
+                    success = true;
+                }
+                catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+                
+                if(!success){
+                    $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+                    report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+                }
             }
         }
     }

@@ -520,6 +520,15 @@ function toggle_settings_bar(id){
     
 }
 
+function title(str) {
+  return str.replace(
+    /\w\S*/g,
+    function(txt) {
+      return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+    }
+  );
+}
+
 function update_settings(id, val){
     
     var bar = $("#settings-bar");

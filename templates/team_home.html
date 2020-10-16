@@ -79,7 +79,7 @@
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game");' src="static/img/Gray_Plus150.png" /></div>
                                     
                                     </div>
-                                    <div class='no-padding col-12 small_graph dashboard-tile-content' id='last_game_div'></div>
+                                    <div onclick='drill_down_body(this.id);' route="team_my_schedule|last_game"  class='no-padding col-12 small_graph dashboard-tile-content' id='last_game_div'></div>
                                 {% endif %}
                                 
                                 
@@ -97,7 +97,7 @@
                                     <div class='col-1 right no-padding dashboard-tile-help-icon' id='next_game_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|next_game_split_summary" src="static/img/Gray_Info150.png" id='next_game_info' /></div>
                                     <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='next_game_img' class='icon-15 toggle' onclick='toggle_tile_visibility("next_game");' src="static/img/Gray_Plus150.png" /></div>
                                 </div>
-                                <div class='no-padding col-12 small_graph dashboard-tile-content' id='next_game_div'></div>
+                                <div onclick='drill_down_body(this.id);' route="team_my_schedule|next_game" class='no-padding col-12 small_graph dashboard-tile-content' id='next_game_div'></div>
                                 
                              </div>
                         </div>
@@ -125,7 +125,7 @@
                                     <div class='col-1 right no-padding dashboard-tile-help-icon' id='upcoming_games_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|upcoming_games" src="static/img/Gray_Info150.png" /></div>
                                     <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='upcoming_games_img' class='icon-15 toggle' onclick='toggle_tile_visibility("upcoming_games");' src="static/img/Gray_Plus150.png" /></div>
                                 </div>
-                                <div class='no-padding col-12 small_graph dashboard-tile-content' id='upcoming_games_div'>
+                                <div onclick='drill_down_body(this.id);' route="team_my_schedule|full_schedule" class='no-padding col-12 small_graph dashboard-tile-content' id='upcoming_games_div'>
                                     <div class='flex no-padding bbottom' style='padding: 0px 5px; margin-bottom:5px;'>
                                         <div class='col-3'><span class='pointer font-14 bold contents'>Date</span></div>
                                         <div class='col-3'><span class='pointer font-14 bold contents'>Opp</span></div>
@@ -135,15 +135,15 @@
                                     </div>
                                     {% for g in misc.data.future_games %}
                                         {% if g.next == 0 %}
-                                            <FORM id='game_form{{g.ID}}' action='/team_game' method=POST><input type=hidden name='game_ID' value='{{g.ID}}' />
-                                                <div onclick="document.getElementById('game_form{{g.ID}}').submit();" class='flex no-padding' style='padding: 0px 5px;'>
-                                                    <div class='col-3'><span class='mouseover-link pointer font-14 contents'>{{g.date_mmmdd}}</span></div>
-                                                    <div class='col-3'><span class='mouseover-link pointer font-14 contents'>{{g.opp_short_code}}</span></div>
+                                            
+                                                <div class='flex no-padding' style='padding: 0px 5px;'>
+                                                    <div class='col-3'><FORM id='game_form{{g.ID}}' action='/team_game' method=POST><input type=hidden name='game_ID' value='{{g.ID}}' /><span onclick="document.getElementById('game_form{{g.ID}}').submit();" class='mouseover-link pointer font-14 contents'>{{g.date_mmmdd}}</span></FORM></div>
+                                                    <div class='col-3'><FORM id='future_form{{g.ID}}' action='/team_detail' method=POST><input type=hidden name='detail_team_ID' value='{{g.opponentID}}'><span class='mouseover-link pointer font-14 contents' onclick='document.getElementById("future_form{{g.ID}}").submit();'>{{g.opp_short_code}}</span></FORM></div>
                                                     <div class='col-2 centered'><span class='large-dot' style='background-color: {{g.off_efficiency_color}};'></span></div>
                                                     <div class='col-2 centered'><span class='large-dot' style='background-color: {{g.def_efficiency_inverted_color}};'></span></div>
                                                     <div class='col-2 centered'><span class='large-dot' style='background-color: {{g.faceoff_win_rate_color}};'></span></div>
                                                 </div>
-                                            </FORM>
+                                            
                                         {% endif %}
                                     {% endfor %}
                                 </div>

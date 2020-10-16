@@ -13,6 +13,10 @@ text.white { fill: white; }
 rect.green{ fill: #2A2; }
 rect.red{ fill: #B22; }
 
+.green-text{ color: #3B3; }
+.red-text{ color: #E33; }
+text.green-text{ fill: #3B3; }
+text.red-text{ fill: #E33; }
 
 .error{ color:red; }
 

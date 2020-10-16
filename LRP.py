@@ -202,11 +202,13 @@ def finish_user_obj(user_obj):
         for k in tmp_keys:
             if k in user_obj:
                 user_obj["%s_decrypted" % k] = decrypt(user_obj[k])
-        if 'notifications' not in user_obj or user_obj['notifications'] is None or user_obj['notifications'] in ["", []]: 
-            user_obj['notifications'] = {}
+        if 'notifications' not in user_obj or user_obj['notifications'] is None or user_obj['notifications'] in ["", {}]: 
+            user_obj['notifications'] = []
         else:
+            
             for n in user_obj['notifications']:
-                n['display_until'] = "" if 'display_until' not in n or n['display_until'] is None else n['display_until'].strftime("%Y-%m-%d")
+                
+                n['display_until'] = "" if ('display_until' not in n or n['display_until'] is None) else n['display_until'].strftime("%Y-%m-%d")
                 n['first_viewed'] = ""
 
         user_obj['notifications'] = json.dumps(user_obj['notifications'])
@@ -258,6 +260,10 @@ def establish_default_settings(misc, user_obj):
     if misc['target_template'] in ["team_my_rankings.html", "team_my_schedule.html", "team_my_stats.html"]:
         misc['default_settings'] = {}
         misc['default_settings']['general_focus_year'] = datetime.now().year
+    
+
+        
+    
     return misc, user_obj
     
 def get_user_obj(creds=None):
@@ -518,9 +524,11 @@ def finalize_mail_send(msg):
         
     if msg['send_as'] == "admin@lacrossereference.com":
         msg['send_name'] = "LRP Admin"
+        msg['send_name'] = msg['send_as']
     elif msg['send_as'] == "zack@lacrossereference.com":
         msg['send_name'] = "Zack from LRP"
-    
+        msg['send_name'] = msg['send_as']
+        
     if 'send_name' not in msg:
         msg['send_name'] = "LRP Admin"
         
@@ -1142,8 +1150,13 @@ def build_product_data_team(self, user_obj, misc):
         misc['laxelo_movement_start_date'] = (datetime(now.year, 2, 1) - datetime(2015, 1, 1)).total_seconds()/3600/24
     
     if misc['target_template'] in ["team_my_rankings.html"] and 'settings' in user_obj and 'laxelo_movement_start_date' in user_obj['settings'] and user_obj['settings']['laxelo_movement_start_date'] is not None:
-        lg(user_obj['settings']['laxelo_movement_start_date']['val'])
         misc['laxelo_movement_start_date'] = (datetime.strptime(user_obj['settings']['laxelo_movement_start_date']['val'], "%Y-%m-%d %H:%M:%S") - datetime(2015, 1, 1)).total_seconds()/3600/24
+        
+     
+    if misc['target_template'] in ["team_my_schedule.html"]:
+        misc['last_game_headline_stats'] = "offense~efficiency|defense~efficiency|offense~faceoff_win_rate|offense~save_pct"
+        if 'settings' in user_obj and 'last_game_headline_stats' in user_obj['settings'] and user_obj['settings']['last_game_headline_stats'] is not None:
+            misc['last_game_headline_stats'] = user_obj['settings']['last_game_headline_stats']
     
     data = None
     lg("Building product data...")
@@ -1155,13 +1168,16 @@ def build_product_data_team(self, user_obj, misc):
         logging.error("%s\n\nContext: %s" % (misc['error'], user_obj['email']))
     else:
         misc['data'] = {}
-        lg("Template: %s" % misc['target_template'])
-        pd(user_obj['active_groups'])
-        active_group =user_obj['active_groups'][ [z['ID'] for z in user_obj['active_groups']].index(user_obj['active_group']) ]
-        misc['active_team_ID'] = active_group['team_ID']
         
-        
-        team_path = os.path.join("TeamData", "teamstats_%04d_%d_LRP.json" % (active_group['team_ID'], misc['year']))
+        if 'detail_team_ID' in misc: # User clicked on a team detail link
+            load_team_ID = misc['detail_team_ID']
+            
+        else: # User wants to see their default team
+            active_group =user_obj['active_groups'][ [z['ID'] for z in user_obj['active_groups']].index(user_obj['active_group']) ]
+            misc['active_team_ID'] = active_group['team_ID']
+            load_team_ID = misc['active_team_ID']
+            
+        team_path = os.path.join("TeamData", "teamstats_%04d_%d_LRP.json" % (load_team_ID, misc['year']))
         
         on_server = os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
             
@@ -1173,20 +1189,22 @@ def build_product_data_team(self, user_obj, misc):
             if misc['target_template'] == "team_my_rankings.html":
                 
                 misc['extra_data']['all_teams_laxelo_history'] = json.loads(storage_read(on_server, storage_path(on_server, os.path.join('TeamData', "AllTeamsELOHistory_%s.json" % (data['league'].replace(" ", ""))))))
-            if misc['target_template'] == "team_my_stats.html":
+                
+            if misc['target_template'] in ['team_my_schedule.html', "team_my_stats.html"]:
                 lg(storage_path(on_server, os.path.join('GeneralData', "dbLaxRef_Team_Game_Summaries_%d_%s.json" % (misc['year'], data['league'].replace(" ", "")))))
                 misc['extra_data']['db_team_game_summaries'] = json.loads(storage_read(on_server, storage_path(on_server, os.path.join('GeneralData', "dbLaxRef_Team_Game_Summaries_%d_%s.json" % (misc['year'], data['league'].replace(" ", ""))))))
             
             misc['extra_data']['db_teams'] = json.loads(storage_read(on_server, storage_path(on_server, os.path.join('GeneralData', "dbLaxRef_Teams_%s.json" % (data['league'].replace(" ", ""))))))
             misc['extra_data']['db_conferences'] = json.loads(storage_read(on_server, storage_path(on_server, os.path.join('GeneralData', "dbLaxRef_Conferences.json"))))
             
-         
+            misc['extra_data']['db_statistics'] = json.loads(storage_read(on_server, storage_path(on_server, os.path.join('GeneralData', "dbLaxRef_Statistics.json"))))
                 
         except Exception, e:
-            logging.error("The %s team JSON for ID %d could not be read from %s\n\n%s" % ("server" if on_server else "local", active_group['team_ID'], storage_path(on_server, team_path), traceback.format_exc()))
+            logging.error("The %s team JSON for ID %d could not be read from %s\n\n%s" % ("server" if on_server else "local", load_team_ID, storage_path(on_server, team_path), traceback.format_exc()))
         
         if data is not None:
-            misc['data']['display_name'] = active_group['group_name']
+            misc['data']['display_name'] = data['display_name']
+            misc['data']['group_display_name'] = active_group['group_name']
             misc['data']['gender'] = "men" if "Men" in data['league'] else "women"
             auto_tags = [{'tag': 'record'}, {'tag': 'adj_efficiency_rank_str'}, {'tag': 'elo_rank_str'}, {'tag': 'league_record'}, {'tag': 'RPI_rank_str'}]
             ignore = []
@@ -1626,6 +1644,7 @@ class AdminHandler(webapp2.RequestHandler):
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
             user_obj = process_non_auth(self)
+            misc['target_template'] = "index.html"
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
             path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             
@@ -2096,13 +2115,13 @@ def create_mail_record(dbrec, cursor=None):
         if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'): 
             f_ = cloudstorage.open(server_path, 'w')
             try:
-                f_.write(dbrec['content'])   
+                f_.write(zc.remove_non_ascii(str(dbrec['content'])))
             except UnicodeDecodeError:
                 try:
-                    f_.write(dbrec['content'].encode('utf-8'))   
+                    f_.write(zc.remove_non_ascii(str(dbrec['content'].encode('utf-8'))))  
                 except UnicodeDecodeError:
                     try:
-                        f_.write(dbrec['content'].encode('latin-1'))   
+                        f_.write(zc.remove_non_ascii(str(dbrec['content'].encode('latin-1'))))   
                     except UnicodeDecodeError:
                         logging.error("Could not upload email message (hash=%09d) using either utf-8 or latin-1" % dbrec['email_ID'])
             f_.close()
@@ -4626,7 +4645,7 @@ class CronHandler(webapp2.RequestHandler):
     
     """
     def get(self, orig_url):
-        lg("Cron: %s" % orig_url)
+        #lg("Cron: %s" % orig_url)
         misc = {'target_template': None, 'time_log': [], }; status = 200
         
         if orig_url == "hello":
@@ -4924,6 +4943,107 @@ class ContactHandler(webapp2.RequestHandler):
             if user_obj['auth']:      
                 user_obj['user_cookie'] = None
                 misc['email'] = decrypt(user_obj['email'])
+                layout = "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"
+            else:
+                user_obj = process_non_auth(self); user_obj['ID'] = None
+                layout = 'layout_no_auth.html'
+        else:
+            user_obj = process_non_auth(self); user_obj['ID'] = None
+            layout = 'layout_no_auth.html'
+            
+           
+        tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+
+class ManualPreregistrationHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+        
+        user_obj = None; queries = []; params = []
+        
+        misc = dict_request(self.request); misc['error'] = None
+        misc['target_template'] = "manual_preregistration.html"
+        misc['handler'] = "manual_preregistration"
+        misc['email'] = misc['email'].lower().strip()
+        misc['email_encrypted'] = encrypt(misc['email'])
+        misc['product_ID'] = int(misc['product_ID'])
+        tup = (misc['email_encrypted'], misc['product_ID'])
+        
+        conn, cursor = mysql_connect()
+        misc['products'] = get_products(cursor)
+        cursor.execute("SELECT * from LRP_Product_Requests where active and status='active'", [])
+        product_requests = zc.dict_query_results(cursor)
+        cursor.close(); conn.close()
+                
+        for pr in product_requests:
+            pr['tup'] = (pr['email'], pr['product_ID'])
+                
+        pd(misc)
+            
+        if misc['product_ID'] == -1:
+            misc['error'] = "Please select a product."
+  
+        elif email_regex.search(misc['email']) is None:
+            misc['error'] = "The email address you entered was invalid."
+        elif tup in [z['tup'] for z in product_requests]:
+            misc['error'] = "The email address you entered already has an active alert on this product."
+        elif misc['product_ID'] not in [z['ID'] for z in misc['products']]:
+            misc['error'] = "The product you specified was not found in the products table."
+            
+
+        
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:      
+                user_obj['user_cookie'] = None
+                layout = "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"
+            else:
+                user_obj = process_non_auth(self); user_obj['ID'] = None
+                layout = 'layout_no_auth.html'
+        else:
+            user_obj = process_non_auth(self); user_obj['ID'] = None
+            layout = 'layout_no_auth.html'                
+                    
+        
+        if misc['error'] is None:
+            product = misc['products'][ [z['ID'] for z in misc['products']].index(misc['product_ID']) ]
+            
+            query = "INSERT INTO LRP_Product_Requests (ID, datestamp, email, product_tag, product_ID, status, active, request_type) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Product_Requests fds), %s, %s, %s, %s, %s, %s, %s)"
+            param = [datetime.now(), misc['email_encrypted'], product['product_tag'], misc['product_ID'], 'active', 1, 'pre-product-notification']
+            queries.append(query); params.append(param)
+            ex_queries(queries, params)
+            
+            misc['msg'] = "%s has been added to the notification list for %s" % (misc['email'], product['product_name'])
+                    
+        tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
+        path = os.path.join("templates", misc['target_template'])
+        self.response.out.write(template.render(path, tv))
+
+    
+        
+        
+    
+    def get(self):
+        
+        misc = {'target_template': "manual_preregistration.html", 'time_log': [], 'handler': 'manual_preregistration', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:      
+                conn, cursor = mysql_connect()
+                misc['products'] = get_products(cursor)
+                cursor.close(); conn.close()
                 layout = "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"
             else:
                 user_obj = process_non_auth(self); user_obj['ID'] = None
@@ -5420,7 +5540,7 @@ class HelpHandler(webapp2.RequestHandler):
                     ex_queries(queries, params)
                     
                     msg = {'email': "admin@lacrossereference", 'subject': misc['final_subject'], 'content': "Email: %s\n\n%s" % (decrypt(user_obj['email']), misc['question'])}
-                    if misc['spam'] == 0:
+                    if misc['spam'] == 0 and not test_address(decrypt(user_obj['email'])):
                         mail_res, dbrec = finalize_mail_send(msg)
                         if mail_res != "": create_mail_record(dbrec)
                         if mail_res == "Success" or client_secrets['local']['--no-mail'] in ["Y", 'y', 'yes'] or test_address(decrypt(user_obj['email'])):
@@ -5474,7 +5594,7 @@ def process_non_auth(self):
     if user_cookie in [None, '']:
         user_cookie = create_cart_cookie()
         self.session['cart_cookie'] = user_cookie
-    user_obj = {'user_cookie': user_cookie, 'auth': 0, 'notifications': json.dumps({})}
+    user_obj = {'user_cookie': user_cookie, 'auth': 0, 'notifications': []}
     
     try:
         conn, cursor = mysql_connect()
@@ -6445,6 +6565,66 @@ class TeamsMyRankingsHandler(webapp2.RequestHandler):
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
             path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         
+class TeamsDetailHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+        misc = {'target_template': 'team_detail.html', 'time_log': [], 'handler': 'team_detail', 'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                pd(dict_request(self.request))
+                misc['detail_team_ID'] = int(self.request.get("detail_team_ID"))
+                misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
+                misc['active_element'] = self.request.get("active_element")
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+            else:
+                misc['target_template'] = "index.html"
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        else: 
+        
+            misc['target_template'] = "index.html";
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        
+
+    def get(self):
+        misc = {'target_template': 'team_detail.html', 'time_log': [], 'handler': 'team_detail', 'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                
+                misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+            else:
+                misc['target_template'] = "index.html"
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        else: 
+        
+            misc['target_template'] = "index.html"
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        
 class TeamsMyStatsHandler(webapp2.RequestHandler):
     def dispatch(self):
         self.session_store = sessions.get_store(request=self.request)
@@ -6458,7 +6638,7 @@ class TeamsMyStatsHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        misc = {'target_template': 'team_my_stats.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': 'team_my_stats.html', 'time_log': [], 'handler': 'team_my_stats', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         
         if session_ID not in [None, 0]:
@@ -6482,7 +6662,7 @@ class TeamsMyStatsHandler(webapp2.RequestHandler):
         
 
     def get(self):
-        misc = {'target_template': 'team_my_stats.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
+        misc = {'target_template': 'team_my_stats.html', 'time_log': [], 'handler': 'team_my_stats', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         
         if session_ID not in [None, 0]:
@@ -6748,6 +6928,7 @@ app = webapp2.WSGIApplication([
     ,('/checkout', CheckoutHandler)
     ,('/email', EmailHandler)
     ,('/create-email', CreateEmailHandler)
+    ,('/manual-preregistration', ManualPreregistrationHandler)
     ,('/contact', ContactHandler)
     ,('/report', ReportHandler)
     ,('/explanations', ExplanationsHandler)
@@ -6761,6 +6942,7 @@ app = webapp2.WSGIApplication([
     ,('/team_my_rankings', TeamsMyRankingsHandler)
     ,('/team_my_schedule', TeamsMyScheduleHandler)
     ,('/team_my_stats', TeamsMyStatsHandler)
+    ,('/team_detail', TeamsDetailHandler)
     
     ,('/(product-summary.+)', ProductSummaryHandler)
     ,('/(faq.*?)', FAQHandler)
