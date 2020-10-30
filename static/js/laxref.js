@@ -185,7 +185,10 @@ function generic_create_table(td, specs={}){
         var row = td.data[c];
         
         var fields_printed = 0; var field = null;
-        html += "<div class='table-row col-12 no-padding flex'>";
+        var table_row_class = "table-row";
+        if('row_style_class' in td){ table_row_class = td.row_style_class; }
+
+        html += "<div class='" + table_row_class + " col-12 no-padding flex'>";
         for(var a = 0;a<td.classes.length;a++){
             var cl = td.classes[a];
             cl.class += " no-padding";

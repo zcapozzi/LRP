@@ -212,6 +212,16 @@ def finish_user_obj(user_obj):
                 n['first_viewed'] = ""
 
         user_obj['notifications'] = json.dumps(user_obj['notifications'])
+        
+        # If we are observing the user, store this view
+        if 'auth' in user_obj and user_obj['auth'] and 'ID' in user_obj and user_obj['ID'] is not None and 'observe' in user_obj and user_obj['observe'] and os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+            
+            query = "INSERT INTO LRP_User_Views (timestamp, user_ID, handler, context) VALUES (%s, %s, %s, %s)"
+            param = [datetime.now(), user_obj['ID'], misc['handler'] if 'handler' in misc else None, misc['context'] if 'context' in misc else None]
+            conn, cursor = mysql_connect()
+            cursor.execute(query, param)
+            conn.commit(); cursor.close(); conn.close()
+            
     except Exception:
         logging.error("finish_user_obj fail: %s" % traceback.format_exc())
     return user_obj
@@ -221,10 +231,62 @@ def finish_misc(misc, user_obj):
     if 'time_log' not in misc:
         misc['time_log'] = []
     misc['time_log'] = json.dumps(misc['time_log'])    
-    
+    def swap_urls(url):
+        if url == "home":
+            return ""
+        return url
     #misc['breadcrumbs'] = "<span class='font-13'><a class='text-link' href='/'>Home</a> > <a href='/admin'>Admin</a></span>"
-    
-    
+    if 'came_from' in misc:
+        lg("Misc.came from: %s" % misc['came_from'])
+        tokens = [{'html': None, 'raw': z, 'include': 1, 'clickable': 1, 'clickable_str': "clickable"} for z in misc['came_from'].split("|") if z.strip() not in [None, '']]
+        for i, z in enumerate(tokens):
+            z['seq'] = i
+       
+        if len(tokens) > 0:       
+            tokens[-1]['clickable'] = 0; tokens[-1]['clickable_str'] = ""
+            n = len(tokens) - 1
+            while n > -1:
+                
+                tokens[n]['min_loc'] = min([z['seq'] for z in tokens if z['raw'] == tokens[n]['raw']])
+                tokens[n]['other'] = 1 if tokens[n]['min_loc'] != tokens[n]['seq'] else 0
+                lg( "{:<60}{:>10}{:>10}".format(tokens[n]['raw'], tokens[n]['min_loc'], tokens[n]['other']))
+                n -= 1
+            lg ("There are %d tokens" % len(tokens))
+            while 1 in [z['other'] for z in tokens]:
+                for i, token in enumerate(tokens):
+                    if token['other']:
+                        tokens = tokens[0: token['min_loc'] + 1]
+                        misc['came_from'] = "|".join([z['raw'] for z in tokens])
+                        break
+            lg ("There are now %d tokens" % len(tokens))
+            for i, token in enumerate(tokens):
+                path_details = token['raw'].split("~")
+                if len(path_details) == 1:
+                    if "_" in path_details[0] or path_details[0] in ['home']:
+                        text = path_details[0].replace("_", " ").title()
+                    else:   
+                        text = path_details[0]
+                    url = swap_urls(path_details[0])
+                    if token['clickable']:
+                        token['html'] = "<span class='%s font-13'><a href='/%s'>%s</a></span>" % (token['clickable_str'], url, text)
+                    else:
+                        token['html'] = "<span class='%s font-13'>%s</span>" % (token['clickable_str'], text)
+                        
+                if len(path_details) == 4:
+                    if "_" in path_details[3] or path_details[3] in ['home']:
+                        text = path_details[3].replace("_", " ").title()
+                    else:
+                        text = path_details[3]
+                    var = path_details[1]
+                    val = path_details[2]
+                    url = swap_urls(path_details[0])
+                    if token['clickable']:
+                        #token['html'] = "<FORM id='breadcrumbform%d' action='/%s' method=POST><input type=hidden name='%s' value='%s'><a class='text-link' onclick=\"document.getElementById('breadcrumbform%d').submit();\"><span class='%s font-13'>%s</span></a></FORM>" % (i, url, var, val, i, token['clickable_str'],  text)
+                        token['html'] = "<FORM id='breadcrumbform%d' action='/%s' method=POST><input type=hidden name='came_from' value='%s'><input type=hidden name='%s' value='%s'><span  onclick=\"document.getElementById('breadcrumbform%d').submit();\" class='%s font-13'>%s</span></FORM>" % (i, url, misc['came_from'], var, val, i, token['clickable_str'],  text)
+                    else:
+                        token['html'] = "<span class='%s font-13'>%s</span>" % (token['clickable_str'], text)
+            if len(tokens) > 1:
+                misc['breadcrumbs'] = "<span class='no-padding' style='margin-top:0px;'> > </span>".join([z['html'] for z in tokens if z['include'] and z['html'] is not None])
     misc['on_server'] = 1 if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/') else 0
     misc['refresh_settings_tags'] = ["general_focus_year"]
     try:
@@ -257,7 +319,7 @@ def finish_misc(misc, user_obj):
 
 def establish_default_settings(misc, user_obj):
     misc['default_settings'] = None
-    if misc['target_template'] in ["team_my_rankings.html", "team_my_schedule.html", "team_my_stats.html"]:
+    if misc['target_template'] in ["team_player_detail.html", "team_detail.html", "team_my_rankings.html", "team_my_schedule.html", "team_my_stats.html"]:
         misc['default_settings'] = {}
         misc['default_settings']['general_focus_year'] = datetime.now().year
     
@@ -635,7 +697,7 @@ db = sqlalchemy.create_engine(
 
 
 
-def mysql_connect():
+def mysql_connect(test_db=False):
 
     f = open('client_secrets.json', 'r')
     client_secrets = json.loads(f.read())
@@ -657,7 +719,8 @@ def mysql_connect():
         conn=db.raw_connection()
         #conn = MySQLdb.connect(unix_socket='/cloudsql/{}:{}'.format(CLOUDSQL_PROJECT, CLOUDSQL_INSTANCE), user=cloud_dbuser, host=cloud_dbhost, passwd=cloud_dbpass, db=cloud_dbname)
     else:
-        if client_secrets['local']['test']:
+        if client_secrets['local']['test'] or test_db:
+            lg("Connect to Test DB")
             cloud_dbpass = client_secrets['test']['DBPASS']
             cloud_dbhost = client_secrets['test']['DBHOST']
             cloud_dbuser = client_secrets['test']['DBUSER']
@@ -693,7 +756,8 @@ class QueryHandler(webapp2.RequestHandler):
     msg = None; error = None; 
     
     def post(self):
-        misc = {'target_template': 'query.html', 'time_log': [], 'handler': 'query', 'error': None, 'msg': None}
+        misc = {'came_from': '', 'target_template': 'query.html', 'time_log': [], 'handler': 'query', 'error': None, 'msg': None, 'run_test_checked': " checked" if self.request.get("run_test") else ""}
+        lg("run_test: %s" % self.request.get("run_test"))
         session_ID = self.session.get('session_ID')
         if True or session_ID not in [None, 0]:
             user_obj = None #get_user_obj({'session_ID': session_ID})
@@ -775,11 +839,19 @@ class QueryHandler(webapp2.RequestHandler):
         cnt = 0
         try:
             for query in queries:
-                #logging.info ("\nQuery: %s\n" % query)
-                cursor.execute(query)
-
+                #lg ("\nQuery: %s\n" % query)
                 if now_query:
                     query = query.replace(", '%s'" % now_dt, ", now")
+                
+                cursor.execute(query)
+                if misc['run_test_checked'] != "" and query.strip().split(" ")[0].upper() in ["UPDATE", "INSERT", "DELETE", "ALTER"]:
+                    lg("Run in the test DB too.")
+                    zconn, zcursor = mysql_connect(test_db=True)
+                    zcursor.execute(query)
+                    zconn.commit()
+                    zcursor.close(); zconn.close()
+                    
+
                 res = cursor.fetchall()
                 misc['data'] = []
                 num_fields = []
@@ -900,7 +972,7 @@ class QueryHandler(webapp2.RequestHandler):
         return misc
         
     def get(self):
-        misc = {'target_template': 'query.html', 'time_log': [], 'handler': 'query', 'error': None, 'msg': None}
+        misc = {'came_from': '', 'target_template': 'query.html', 'time_log': [], 'handler': 'query', 'error': None, 'msg': None, 'run_test_checked': ''}
         session_ID = self.session.get('session_ID')
         if True or session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -923,7 +995,7 @@ class QueryHandler(webapp2.RequestHandler):
                 table = None
                 if self.request.get('table') != "":
                     table = self.request.get('table')
-                    if table in ['LaxRef_Games', 'LaxRef_Game_Streams', 'LaxRef_Active_Live_WP_Games']:
+                    if table in ['LRP_Product_Requests', 'LRP_Product_Views']:
                         queries = ["SELECT * from %s order by ID desc limit 100" % table]
                         reverse_sort = True
                     else:
@@ -948,7 +1020,7 @@ class QueryHandler(webapp2.RequestHandler):
             
 def encrypt_user_info():
     lg("Encrypting existing user information...")
-    misc = {'target_template': None, 'time_log': []}
+    misc = {'came_from': '', 'target_template': None, 'time_log': []}
     conn, cursor = mysql_connect()
     cursor.execute("SELECT * from LRP_Users", [])
     misc['users'] = {'data': zc.dict_query_results(cursor), 'table': 'LRP_Users', 'keys': ["email", "username", "phone", "first_name", "last_name", "stripe_customer_id"]}
@@ -1083,19 +1155,20 @@ def claim_quote(misc, user_obj):
         start_date = datetime.now()
         end_date = misc['quote']['trial_end']
             
+        misc['product_tier'] = None    
         
         # Only create a new subscription if there is no existing active subscription for the same group/user and product where the proposed start date is prior to the current end date
         if group_ID is not None:
             tup = (misc['product_ID'], group_ID)
             if tup not in [(z['product_ID'], z['group_ID']) for z in user_obj['active_subscriptions'] if start_date <= z['end_date']]:
-                queries.append("INSERT INTO LRP_Subscriptions (ID, active, start_date, end_date, group_ID, product_ID, quote_ID, status, trial) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Subscriptions fds), %s, %s, %s, %s, %s, %s, %s, %s)")
-                params.append([1, start_date, end_date, group_ID, misc['product_ID'], misc['quote']['ID'], 'active', 1])
+                queries.append("INSERT INTO LRP_Subscriptions (ID, active, start_date, end_date, group_ID, product_ID, quote_ID, status, trial, product_tier) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Subscriptions fds), %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+                params.append([1, start_date, end_date, group_ID, misc['product_ID'], misc['quote']['ID'], 'active', 1, misc['product_tier']])
             
         else:
             tup = (misc['product_ID'], user_ID)
             if tup not in [(z['product_ID'], z['user_ID']) for z in user_obj['active_subscriptions'] if start_date <= z['end_date']]:
-                queries.append("INSERT INTO LRP_Subscriptions (ID, active, start_date, end_date, user_ID, product_ID, quote_ID, status, trial) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Subscriptions fds), %s, %s, %s, %s, %s, %s, %s, %s)")
-                params.append([1, start_date, end_date, user_obj['ID'], misc['product_ID'], misc['quote']['ID'], 'active', 1])
+                queries.append("INSERT INTO LRP_Subscriptions (ID, active, start_date, end_date, user_ID, product_ID, quote_ID, status, trial, product_tier) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Subscriptions fds), %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+                params.append([1, start_date, end_date, user_obj['ID'], misc['product_ID'], misc['quote']['ID'], 'active', 1, misc['product_tier']])
         
         # In case their user type needs to be upgraded
         if user_obj['user_type'] in [None, 'individual', 'media'] and misc['product_user_type'] == "team":
@@ -1118,8 +1191,16 @@ def claim_quote(misc, user_obj):
             queries.append(query); params.append(param)
     return misc, user_obj, queries, params
   
-def clean_product_data_generic(misc, user_obj):
+def clean_product_team_data_generic(misc, user_obj):
     return misc, user_obj
+    
+def clean_product_player_data_generic(misc, user_obj):
+    return misc, user_obj
+
+def clean_product_game_data_generic(misc, user_obj):
+    return misc, user_obj
+    
+    
 def storage_path(server, fname):
     if server:
         return "/capozziinc.appspot.com/%s" % (fname)
@@ -1139,7 +1220,7 @@ def build_product_data_team(self, user_obj, misc):
     
     if 'year' not in misc or misc['year'] is None:
         misc['year'] = datetime.now().year
-    if misc['target_template'] not in ["team_home.html"] and 'settings' in user_obj and 'general_focus_year' in user_obj['settings'] and user_obj['settings']['general_focus_year'] is not None:
+    if misc['target_template'] not in ["team_home.html"] and user_obj is not None and 'settings' in user_obj and 'general_focus_year' in user_obj['settings'] and user_obj['settings']['general_focus_year'] is not None:
         misc['year'] = int(user_obj['settings']['general_focus_year']['val'])
        
     # Lax-ELO change chart settings
@@ -1159,16 +1240,18 @@ def build_product_data_team(self, user_obj, misc):
             misc['last_game_headline_stats'] = user_obj['settings']['last_game_headline_stats']
     
     data = None
-    lg("Building product data...")
+    lg("Building product data (team)...")
     tmp = {}
     misc['data'] = None; misc['active_team_ID'] = None
+    
+    
     
     if 'active_group' not in user_obj or user_obj['active_group'] in [None, -1]:
         misc['error'] = "We could not find an active subscription for your account. If this in error, please <a href='https://pro.lacrossereference.com/contact'>contact us</a>."
         logging.error("%s\n\nContext: %s" % (misc['error'], user_obj['email']))
     else:
         misc['data'] = {}
-        
+        active_group = None
         if 'detail_team_ID' in misc: # User clicked on a team detail link
             load_team_ID = misc['detail_team_ID']
             
@@ -1177,6 +1260,8 @@ def build_product_data_team(self, user_obj, misc):
             misc['active_team_ID'] = active_group['team_ID']
             load_team_ID = misc['active_team_ID']
             
+       
+        
         team_path = os.path.join("TeamData", "teamstats_%04d_%d_LRP.json" % (load_team_ID, misc['year']))
         
         on_server = os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
@@ -1203,8 +1288,9 @@ def build_product_data_team(self, user_obj, misc):
             logging.error("The %s team JSON for ID %d could not be read from %s\n\n%s" % ("server" if on_server else "local", load_team_ID, storage_path(on_server, team_path), traceback.format_exc()))
         
         if data is not None:
+            
             misc['data']['display_name'] = data['display_name']
-            misc['data']['group_display_name'] = active_group['group_name']
+            misc['data']['group_display_name'] = active_group['group_name'] if active_group is not None else ""
             misc['data']['gender'] = "men" if "Men" in data['league'] else "women"
             auto_tags = [{'tag': 'record'}, {'tag': 'adj_efficiency_rank_str'}, {'tag': 'elo_rank_str'}, {'tag': 'league_record'}, {'tag': 'RPI_rank_str'}]
             ignore = []
@@ -1216,9 +1302,101 @@ def build_product_data_team(self, user_obj, misc):
                 misc['data']['record_league_str'] = misc['data']['record']
             else:
                 misc['data']['record_league_str'] = "%s (%s)" % (misc['data']['record'], misc['data']['league_record'])
+                
+            # For breadcrumb purposes
+            misc['came_from'] += "|%s~%s~%d~%s" % (misc['handler'], 'detail_team_ID', load_team_ID, misc['data']['display_name'])
         else:
             misc['error'] = "There was an error loading data."
-        misc, user_obj = clean_product_data_generic(misc, user_obj)
+        misc, user_obj = clean_product_team_data_generic(misc, user_obj)
+    misc['time_log'][-1]['end'] = ms()
+    return misc, user_obj, tmp
+    
+def build_product_data_player(self, user_obj, misc):
+    misc['time_log'].append({'tag': 'Build Player Data', 'start': ms()})
+    
+    if 'year' not in misc or misc['year'] is None:
+        misc['year'] = datetime.now().year
+    if misc['target_template'] not in ["team_home.html"] and user_obj is not None and 'settings' in user_obj and 'general_focus_year' in user_obj['settings'] and user_obj['settings']['general_focus_year'] is not None:
+        misc['year'] = int(user_obj['settings']['general_focus_year']['val'])
+       
+    now = datetime.now()
+        
+    data = None
+    lg("Building product data (player)...")
+    tmp = {}
+    misc['data'] = None;
+    
+    if 'ID' in misc and misc['ID'] not in [None, '']:
+        misc['ID'] = int(misc['ID'])
+        player_path = os.path.join("PlayerData", "player%07d_LRP.json" % (misc['ID']))
+        
+        
+        on_server = os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
+            
+        misc['extra_data'] = {}
+        misc['data'] = {}
+        try:
+            misc['data'] = json.loads(storage_read(on_server, storage_path(on_server, player_path)))
+          
+                
+        except Exception, e:
+            logging.error("The %s team JSON for Player ID %d could not be read from %s\n\n%s" % ("server" if on_server else "local", misc['ID'], storage_path(on_server, player_path), traceback.format_exc()))
+    
+    if misc['data'] not in [None, {}]:
+        pass
+        
+        
+        # For breadcrumb purposes
+        misc['came_from'] += "|%s~%s~%d~%s" % (misc['handler'], 'ID', misc['ID'], misc['data']['player'])
+    else:
+        misc['error'] = "There was an error loading data."
+    
+    misc, user_obj = clean_product_player_data_generic(misc, user_obj)
+    misc['time_log'][-1]['end'] = ms()
+    return misc, user_obj, tmp
+    
+def build_product_data_game(self, user_obj, misc):
+    misc['time_log'].append({'tag': 'Build Game Data', 'start': ms()})
+    
+    if 'year' not in misc or misc['year'] is None:
+        misc['year'] = datetime.now().year
+    if misc['target_template'] not in ["team_home.html"] and user_obj is not None and 'settings' in user_obj and 'general_focus_year' in user_obj['settings'] and user_obj['settings']['general_focus_year'] is not None:
+        misc['year'] = int(user_obj['settings']['general_focus_year']['val'])
+       
+    now = datetime.now()
+        
+    data = None
+    lg("Building product data (game)...")
+    tmp = {}
+    misc['data'] = None;
+    pd(misc)
+    
+    if 'ID' in misc and misc['ID'] not in [None, '']:
+        misc['ID'] = int(misc['ID'])
+        game_path = os.path.join("GameData", "game%07d_LRP.json" % (misc['ID']))
+        
+        
+        on_server = os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
+            
+        misc['extra_data'] = {}
+        misc['data'] = {}
+        try:
+            misc['data'] = json.loads(storage_read(on_server, storage_path(on_server, game_path)))
+          
+                
+        except Exception, e:
+            logging.error("The %s team JSON for Game ID %d could not be read from %s\n\n%s" % ("server" if on_server else "local", misc['ID'], storage_path(on_server, game_path), traceback.format_exc()))
+    
+    if misc['data'] not in [None, {}]:
+        pass
+        
+        
+        # For breadcrumb purposes
+        misc['came_from'] += "|%s~%s~%d~%s" % (misc['handler'], 'ID', misc['ID'], misc['data']['breadcrumb'])
+    else:
+        misc['error'] = "There was an error loading data."
+    
+    misc, user_obj = clean_product_game_data_generic(misc, user_obj)
     misc['time_log'][-1]['end'] = ms()
     return misc, user_obj, tmp
     
@@ -1235,7 +1413,7 @@ class IndexHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'index', 'error': None, 'msg': None}; queries = []; params = []
+        misc = {'came_from': '', 'target_template': 'index.html', 'time_log': [], 'handler': 'index', 'error': None, 'msg': None}; queries = []; params = []
         if self.request.get("username") != "":
             user_obj = get_user_obj({'username': self.request.get("username"), 'password': self.request.get("password")})
             if user_obj['auth']:
@@ -1310,7 +1488,7 @@ class IndexHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'index', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'index.html', 'time_log': [], 'handler': 'index', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [0, None]:
             misc['time_log'].append({'tag': 'get_user_obj()', 'start': ms()}); user_obj = get_user_obj({'session_ID': session_ID})
@@ -1361,7 +1539,7 @@ class LoginHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        misc = {'target_template': 'login.html', 'time_log': [], 'handler': 'login', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'login.html', 'time_log': [], 'handler': 'login', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -1401,7 +1579,7 @@ class CreateHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'create', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'index.html', 'time_log': [], 'handler': 'create', 'error': None, 'msg': None}; user_obj = None
         misc['create_group_user_display'] = "visible"; misc['create_group_user_tag_display'] = "tag-on"
         misc['create_standalone_user_display'] = "hidden"; misc['create_standalone_user_tag_display'] = "tag-off"
         
@@ -1495,8 +1673,8 @@ class CreateHandler(webapp2.RequestHandler):
                         ab_group = min(47, int(random.random()*48.))
                         
                         if req['standalone_user_type'] == "": req['standalone_user_type'] = None
-                        query = ("INSERT INTO LRP_Users (ID, email, active, logins, user_type, password, username, AB_group, first_name, last_name, phone, date_created, track_GA, is_admin, activated) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Users fds), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
-                        param = [req['standalone_email_encrypted'], 1, 0, req['standalone_user_type'], req['standalone_password_encrypted'], req['standalone_username_encrypted'], ab_group, req['standalone_first_name_encrypted'], req['standalone_last_name_encrypted'], req['standalone_phone_encrypted'], datetime.now(), 1, is_admin, 1]
+                        query = ("INSERT INTO LRP_Users (ID, email, active, logins, user_type, password, username, AB_group, first_name, last_name, phone, date_created, track_GA, is_admin, activated, observe) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Users fds), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+                        param = [req['standalone_email_encrypted'], 1, 0, req['standalone_user_type'], req['standalone_password_encrypted'], req['standalone_username_encrypted'], ab_group, req['standalone_first_name_encrypted'], req['standalone_last_name_encrypted'], req['standalone_phone_encrypted'], datetime.now(), 1, is_admin, 1, 0]
                         
                         queries.append(query)
                         params.append(param)
@@ -1505,17 +1683,18 @@ class CreateHandler(webapp2.RequestHandler):
                         queries.append("INSERT INTO LRP_User_Preferences (ID, user_ID, active) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_User_Preferences fds), (SELECT max(ID) from  LRP_Users fdsa), %s)")
                         params.append([1])
                         
+                        product_tier = None
                         if misc['standalone_subscription'] in ["on", 1, True]:
                                 
                             start_date = datetime.now(); end_date = start_date + timedelta(days=365)
-                            queries.append("INSERT INTO LRP_Subscriptions (ID, user_ID, active, start_date, end_date, group_ID, product_ID, status, trial, price_paid) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Subscriptions fds), (SELECT max(ID) from  LRP_Users fdsa), %s, %s, %s, %s, %s, %s, %s, %s)")
-                            params.append([1, start_date, end_date, misc['group_ID'], product_ID, 'active', 0, 0.])
+                            queries.append("INSERT INTO LRP_Subscriptions (ID, user_ID, active, start_date, end_date, group_ID, product_ID, status, trial, price_paid, product_tier) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Subscriptions fds), (SELECT max(ID) from  LRP_Users fdsa), %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+                            params.append([1, start_date, end_date, misc['group_ID'], product_ID, 'active', 0, 0., product_tier])
                             
                         if misc['standalone_trial'] in ["on", 1, True]:
                                 
                             start_date = datetime.now(); end_date = start_date + timedelta(days=30)
-                            queries.append("INSERT INTO LRP_Subscriptions (ID, user_ID, active, start_date, end_date, group_ID, product_ID, status, trial) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Subscriptions fds), (SELECT max(ID) from  LRP_Users fdsa), %s, %s, %s, %s, %s, %s, %s)")
-                            params.append([1, start_date, end_date, misc['group_ID'], product_ID, 'active', 1])
+                            queries.append("INSERT INTO LRP_Subscriptions (ID, user_ID, active, start_date, end_date, group_ID, product_ID, status, trial, product_tier) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Subscriptions fds), (SELECT max(ID) from  LRP_Users fdsa), %s, %s, %s, %s, %s, %s, %s, %s)")
+                            params.append([1, start_date, end_date, misc['group_ID'], product_ID, 'active', 1, product_tier])
                             
                         
                 ex_queries(queries,params)
@@ -1536,7 +1715,7 @@ class CreateHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'create', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'index.html', 'time_log': [], 'handler': 'create', 'error': None, 'msg': None}; user_obj = None
         misc['create_group_user_display'] = "visible"; misc['create_group_user_tag_display'] = "tag-on"
         misc['create_standalone_user_display'] = "hidden"; misc['create_standalone_user_tag_display'] = "tag-off"
         
@@ -1583,14 +1762,14 @@ class AdminHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'admin', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'index.html', 'time_log': [], 'handler': 'admin', 'error': None, 'msg': None}; user_obj = None
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
         path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
     
     def get(self):
         
         
-        misc = {'target_template': 'admin.html', 'time_log': [], 'handler': 'admin', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'admin.html', 'time_log': [], 'handler': 'admin', 'error': None, 'msg': None}; user_obj = None
         local = not os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
         session_ID = self.session.get('session_ID')
         if local or session_ID not in [None, 0]:
@@ -1662,13 +1841,13 @@ class TermsHandler(webapp2.RequestHandler):
     
     def post(self):
     
-        misc = {'target_template': "index.html"}
+        misc = {'came_from': '', 'target_template': "index.html"}
         default_get(self)
     
     def get(self):
         
        
-        misc = {'target_template': 'terms.html', 'time_log': [], 'handler': 'terms', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'terms.html', 'time_log': [], 'handler': 'terms', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -1737,6 +1916,7 @@ class TermsHandler(webapp2.RequestHandler):
 class GiftLRPHandler(webapp2.RequestHandler):
     def dispatch(self):
         self.session_store = sessions.get_store(request=self.request)
+        self.url_regex = re.compile(r'giftLRP\-?(.*)$',re.IGNORECASE)
         try:
             webapp2.RequestHandler.dispatch(self)
         finally:
@@ -1746,20 +1926,32 @@ class GiftLRPHandler(webapp2.RequestHandler):
     def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
 
     
-    def post(self):
+    def post(self, orig_url):
     
-        misc = {'target_template': "index.html"}
+        misc = {'came_from': '', 'target_template': "index.html"}
         default_get(self)
     
-    def get(self):
+    def get(self, orig_url):
         
        
-        misc = {'target_template': 'giftLRP.html', 'time_log': [], 'handler': 'giftLRP', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': None, 'time_log': [], 'handler': 'giftLRP', 'error': None, 'msg': None}; user_obj = None
+        
+        random.seed(time.time()); misc['AB_group'] = "A" if random.random() < .5 else "B"
+        if self.request.get('v') != "": misc['AB_group'] = self.request.get('v')
+        url_match = self.url_regex.search(orig_url)
+        product_tag = url_match.group(1)
+        
+        
+        lg("product_tag: %s" % product_tag)
+        
+        
+        
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
                 user_obj['user_cookie'] = None
+                misc['AB_group'] = "A" if user_obj['AB_group'] < 24 else "B"
                 layout = "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"
             else:
                 user_obj = process_non_auth(self); user_obj['ID'] = None
@@ -1768,6 +1960,11 @@ class GiftLRPHandler(webapp2.RequestHandler):
             user_obj = process_non_auth(self); user_obj['ID'] = None
             layout = "layout_no_auth.html"
         
+        if product_tag in ['', None]:
+            misc['target_template'] = "giftLRP%s.html" % (misc['AB_group'])
+        else:
+            misc['target_template'] = "giftLRP_%s%s.html" % (product_tag, misc['AB_group'])
+            
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
         path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         
@@ -1785,13 +1982,13 @@ class CookiesPolicyHandler(webapp2.RequestHandler):
     
     def post(self):
     
-        misc = {'target_template': "index.html"}
+        misc = {'came_from': '', 'target_template': "index.html"}
         default_get(self)
     
     def get(self):
         
        
-        misc = {'target_template': 'cookies.html', 'time_log': [], 'handler': 'cookies', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'cookies.html', 'time_log': [], 'handler': 'cookies', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -1829,7 +2026,7 @@ class PrivacyHandler(webapp2.RequestHandler):
     def get(self):
         
        
-        misc = {'target_template': 'privacy.html', 'time_log': [], 'handler': 'privacy', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'privacy.html', 'time_log': [], 'handler': 'privacy', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -1887,7 +2084,7 @@ class ActivateHandler(webapp2.RequestHandler):
     
     def post(self):
     
-        misc = {'target_template': 'activated.html', 'time_log': [], 'handler': 'activate', 'error': None, 'code_error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'activated.html', 'time_log': [], 'handler': 'activate', 'error': None, 'code_error': None, 'msg': None}; user_obj = None
         queries = []; params = []
         
         
@@ -1962,7 +2159,7 @@ class ActivateHandler(webapp2.RequestHandler):
     def get(self):
         
        
-        misc = {'target_template': None, 'time_log': [], 'handler': 'activate', 'error': None, 'code_error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': None, 'time_log': [], 'handler': 'activate', 'error': None, 'code_error': None, 'msg': None}; user_obj = None
         queries = []; params = []
         
         
@@ -2042,7 +2239,7 @@ class LogoutHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'logout', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'index.html', 'time_log': [], 'handler': 'logout', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -2141,7 +2338,7 @@ class RegisterHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': 'register_start.html', 'time_log': [], 'handler': 'register', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': 'register_start.html', 'time_log': [], 'handler': 'register', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
         
         
         stripe.api_key = client_secrets['web']['StripeServerKey']
@@ -2220,8 +2417,8 @@ class RegisterHandler(webapp2.RequestHandler):
             for k in tmp_keys:
                 misc["%s_encrypted" % k] =  encrypt(misc[k])
                 
-            query = "INSERT INTO LRP_Users (ID, active, logins, email, username, password, AB_group, date_created, activation_code, activated, activation_type) VALUES  (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-            param = [next_ID, 1, 0, misc['email_encrypted'], misc['username_encrypted'], misc['password_encrypted'], min(47, int(random.random()*48.)), dt, activation_code, 0, 'final']
+            query = "INSERT INTO LRP_Users (ID, active, logins, email, username, password, AB_group, date_created, activation_code, activated, activation_type, observe) VALUES  (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+            param = [next_ID, 1, 0, misc['email_encrypted'], misc['username_encrypted'], misc['password_encrypted'], min(47, int(random.random()*48.)), dt, activation_code, 0, 'final', 0]
             queries.append(query); params.append(param)
 
             user_obj = {'cart': [], 'date_created': dt, 'user_cookie': self.session.get('cart_cookie'), 'auth': False, 'activated': 0, 'last_log_in': None, 'logins': 0, 'user_type': None, 'ID': next_ID, 'email': misc['email'], 'password': misc['password'], 'phone': misc['phone'], 'username': misc['username'], 'active_groups': [], 'active_group': None}
@@ -2298,7 +2495,7 @@ class RegisterHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        misc = {'target_template': 'register_start.html', 'time_log': [], 'handler': 'register', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'register_start.html', 'time_log': [], 'handler': 'register', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -2328,8 +2525,8 @@ def get_products(cursor, category=None):
     
     for i, p in enumerate(products):
         p['offers'] = [z for z in offers if z['product_ID'] == p['ID'] and z['active']]
-        
-        if p['call_to_action'] == "ADD TO CART" and p['status'] == "pre-register":
+        p['product_tier_tup'] = (p['product_tag'].lower(), p['product_tier'])
+        if p['call_to_action'] in ['ADD TO CART', "BUY IT"] and p['status'] == "pre-register":
             p['call_to_action'] = "GET NOTIFIED"
         
         if p['request_quote']:
@@ -2356,7 +2553,7 @@ class RegisterConfigHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': "register_config.html", 'time_log': [], 'handler': 'registerConfig', 'error': None, 'current_items': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': "register_config.html", 'time_log': [], 'handler': 'registerConfig', 'error': None, 'current_items': None}; user_obj = None; queries = []; params = []
         
         
         session_ID = self.session.get('session_ID')
@@ -2411,7 +2608,7 @@ class RegisterConfigHandler(webapp2.RequestHandler):
             
     def get(self):
         
-        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'registerConfig', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'index.html', 'time_log': [], 'handler': 'registerConfig', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
     
                 
         conn, cursor = mysql_connect()
@@ -2460,7 +2657,7 @@ class CartHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': 'cart.html', 'time_log': [], 'handler': 'cart', 'error': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': 'cart.html', 'time_log': [], 'handler': 'cart', 'error': None}; user_obj = None; queries = []; params = []
         
         
         session_ID = self.session.get('session_ID')
@@ -2533,8 +2730,8 @@ class CartHandler(webapp2.RequestHandler):
                 
                 if misc['cart_ID'] in [z['ID'] for z in user_obj['cart']]:
                     
-                    query = "UPDATE LRP_Cart set discount_tag=%s, price=%s where ID=%s"
-                    param = [misc['discount_tag'].upper(), offer['offer_price'], misc['cart_ID']]
+                    query = "UPDATE LRP_Cart set discount_tag=%s, offer_ID=%s, price=%s where ID=%s"
+                    param = [misc['discount_tag'].upper(), offer['ID'], offer['offer_price'], misc['cart_ID']]
                     queries.append(query); params.append(param)
                     
                     misc['msg'] = "Discount code has been applied."
@@ -2569,7 +2766,7 @@ class CartHandler(webapp2.RequestHandler):
         
     def get(self):
         
-        misc = {'target_template': 'cart.html', 'time_log': [], 'handler': 'cart', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'cart.html', 'time_log': [], 'handler': 'cart', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -2611,7 +2808,7 @@ class SubscriptionHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': 'subscription.html', 'time_log': [], 'handler': 'subscription', 'error': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': 'subscription.html', 'time_log': [], 'handler': 'subscription', 'error': None}; user_obj = None; queries = []; params = []
         
         
         stripe.api_key = client_secrets['web']['StripeServerKey']
@@ -2766,7 +2963,7 @@ class SubscriptionHandler(webapp2.RequestHandler):
                             query = "INSERT INTO LRP_Cart (ID, user_ID, quote_ID, product_ID, status, date_added, price, discount_tag, list_price, active, trial_subscription_ID) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Cart fds), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
                             param = [user_obj['ID'], sub['quote_ID'], sub['product_ID'], 'added', datetime.now(), new_price, None, product['price'], 1, sub['ID']]
                             queries.append(query); params.append(param)
-                            misc['msg'] = "Your new subscription has been added to your cart."
+                            misc['msg'] = "Your new subscription has been added to your cart.  <a href='/cart'>Check out now.</a>"
                             misc['confirmed'] = "no"
                         else:
                             misc['error'] = "This product is already in your cart."
@@ -2800,7 +2997,7 @@ class SubscriptionHandler(webapp2.RequestHandler):
 
     def get(self):
         
-        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'subscription', 'error': None, 'confirmed': 'no', 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'index.html', 'time_log': [], 'handler': 'subscription', 'error': None, 'confirmed': 'no', 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -2835,7 +3032,7 @@ class UploadHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        misc = {'target_template': None, 'time_log': [], 'handler': 'upload', 'error': None, 'msg': 'N/A'}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': None, 'time_log': [], 'handler': 'upload', 'error': None, 'msg': 'N/A'}; user_obj = None; queries = []; params = []
         upload_key = self.request.get("thomas")
         if upload_key != client_secrets['web']['LRPUploadKey']:
             misc['msg'] = "Not Authorized"
@@ -2885,7 +3082,7 @@ class UploadHandler(webapp2.RequestHandler):
         
     def get(self):
         
-        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'upload', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'index.html', 'time_log': [], 'handler': 'upload', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -2921,7 +3118,7 @@ class PasswordHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': 'password.html', 'time_log': [], 'handler': 'password', 'error': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': 'password.html', 'time_log': [], 'handler': 'password', 'error': None}; user_obj = None; queries = []; params = []
         
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
@@ -2987,7 +3184,7 @@ class PasswordHandler(webapp2.RequestHandler):
 
     def get(self):
         
-        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'password', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'index.html', 'time_log': [], 'handler': 'password', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -3023,7 +3220,7 @@ class ExplanationsHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        misc = {'target_template': 'explanations.html', 'time_log': [], 'handler': 'explanations', 'error': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': 'explanations.html', 'time_log': [], 'handler': 'explanations', 'error': None}; user_obj = None; queries = []; params = []
         
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
@@ -3098,7 +3295,7 @@ class ExplanationsHandler(webapp2.RequestHandler):
 
     def get(self):
         
-        misc = {'target_template': 'explanations.html', 'time_log': [], 'handler': 'explanations', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'explanations.html', 'time_log': [], 'handler': 'explanations', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -3224,7 +3421,7 @@ class ReviewQuoteHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        misc = {'target_template': 'review_quote.html', 'time_log': [], 'handler': 'reviewQuote', 'error': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': 'review_quote.html', 'time_log': [], 'handler': 'reviewQuote', 'error': None}; user_obj = None; queries = []; params = []
         
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
@@ -3434,7 +3631,7 @@ class ReviewQuoteHandler(webapp2.RequestHandler):
 
     def get(self):
         
-        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'reviewQuote', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'index.html', 'time_log': [], 'handler': 'reviewQuote', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -3464,7 +3661,7 @@ class CreateRefundHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': "admin_subscriptions.html", 'time_log': [], 'handler': 'createRefund', 'error': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': "admin_subscriptions.html", 'time_log': [], 'handler': 'createRefund', 'error': None}; user_obj = None; queries = []; params = []
         
         stripe.api_key = client_secrets['web']['StripeServerKey']
         misc['clientKey'] = client_secrets['web']['StripeClientKey']
@@ -3612,7 +3809,7 @@ class CreateRefundHandler(webapp2.RequestHandler):
 
     def get(self):
         
-        misc = {'target_template': 'admin_subscriptions.html', 'time_log': [], 'handler': 'createRefund', 'subscription_ID': None, 'confirmed': 'no', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'admin_subscriptions.html', 'time_log': [], 'handler': 'createRefund', 'subscription_ID': None, 'confirmed': 'no', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -3691,7 +3888,7 @@ class ExtendSubscriptionHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': "admin_subscriptions.html", 'time_log': [], 'handler': 'extendSubscription', 'error': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': "admin_subscriptions.html", 'time_log': [], 'handler': 'extendSubscription', 'error': None}; user_obj = None; queries = []; params = []
         
         
         session_ID = self.session.get('session_ID')
@@ -3812,7 +4009,7 @@ class ExtendSubscriptionHandler(webapp2.RequestHandler):
 
     def get(self):
         
-        misc = {'target_template': "admin_subscriptions.html", 'time_log': [], 'handler': 'extendSubscription', 'subscription_ID': None, 'confirmed': 'no', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': "admin_subscriptions.html", 'time_log': [], 'handler': 'extendSubscription', 'subscription_ID': None, 'confirmed': 'no', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -3898,7 +4095,7 @@ class CreateQuoteHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        misc = {'target_template': "create_quote.html", 'time_log': [], 'handler': 'createQuote', 'error': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': "create_quote.html", 'time_log': [], 'handler': 'createQuote', 'error': None}; user_obj = None; queries = []; params = []
         
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
@@ -4031,7 +4228,7 @@ class CreateQuoteHandler(webapp2.RequestHandler):
 
     def get(self):
         
-        misc = {'target_template': "create_quote.html", 'time_log': [], 'handler': 'createQuote', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': "create_quote.html", 'time_log': [], 'handler': 'createQuote', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -4131,7 +4328,7 @@ class ViewQuoteHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': "quote.html", 'time_log': [], 'handler': 'viewQuote', 'error': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': "quote.html", 'time_log': [], 'handler': 'viewQuote', 'error': None}; user_obj = None; queries = []; params = []
         
         misc['action'] = self.request.get("action")
         misc['quote_hash'] = self.request.get("hash")
@@ -4172,9 +4369,9 @@ class ViewQuoteHandler(webapp2.RequestHandler):
                 param = [datetime.now(), misc['quote']['user_email'], misc['quote']['team_ID'], misc['quote']['product_ID'], misc['quote']['group_ID'], 'active', 1, 'trial-request']
                 queries.append(query); params.append(param)
                 
-                misc['resend_msg'] = "Thank you for your request. We will be in touch via email within 48 hours."
+                misc['resend_msg'] = "Thank you for your request. I will be in touch via email as soon as possible (and certainly within 48 hours)."
             else:
-                misc['resend_msg'] = "We have recorded your request and will be in touch within 48 hours."
+                misc['resend_msg'] = "We have recorded your request and will be in touch as soon as possible (and certainly within 48 hours)."
                 
         ex_queries(queries, params)
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
@@ -4182,7 +4379,7 @@ class ViewQuoteHandler(webapp2.RequestHandler):
 
     def get(self):
         
-        misc = {'target_template': "quote.html", 'time_log': [], 'handler': 'viewQuote', 'quote_hash': self.request.get('c'), 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': "quote.html", 'time_log': [], 'handler': 'viewQuote', 'quote_hash': self.request.get('c'), 'error': None, 'msg': None}; user_obj = None
         
         misc['login_tag_display'] = "tag-on"
         misc['login_display'] = "visible"
@@ -4222,7 +4419,7 @@ class SwitchGroupsHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': "switch_groups.html", 'time_log': [], 'handler': 'switchGroups', 'error': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': "switch_groups.html", 'time_log': [], 'handler': 'switchGroups', 'error': None}; user_obj = None; queries = []; params = []
         
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
@@ -4270,7 +4467,7 @@ class SwitchGroupsHandler(webapp2.RequestHandler):
 
     def get(self):
         
-        misc = {'target_template': "switch_groups.html", 'time_log': [], 'handler': 'switchGroups', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': "switch_groups.html", 'time_log': [], 'handler': 'switchGroups', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -4313,7 +4510,7 @@ class PreferencesHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': "preferences.html", 'time_log': [], 'handler': 'preferences', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': "preferences.html", 'time_log': [], 'handler': 'preferences', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -4363,7 +4560,7 @@ class PreferencesHandler(webapp2.RequestHandler):
         
     def get(self):
         
-        misc = {'target_template': "preferences.html", 'time_log': [], 'handler': 'preferences', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': "preferences.html", 'time_log': [], 'handler': 'preferences', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -4404,7 +4601,7 @@ class ProfileHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': "profile.html", 'time_log': [], 'handler': 'profile', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': "profile.html", 'time_log': [], 'handler': 'profile', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -4454,7 +4651,7 @@ class ProfileHandler(webapp2.RequestHandler):
         
     def get(self):
         
-        misc = {'target_template': "profile.html", 'time_log': [], 'handler': 'profile', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': "profile.html", 'time_log': [], 'handler': 'profile', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -4528,7 +4725,7 @@ class ForgotHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': "forgot.html", 'time_log': [], 'handler': 'forgot', 'error': None}; user_obj = process_non_auth(self); queries = []; params = []
+        misc = {'came_from': '', 'target_template': "forgot.html", 'time_log': [], 'handler': 'forgot', 'error': None}; user_obj = process_non_auth(self); queries = []; params = []
         user_obj['ID'] = None
         
         misc['username'] = self.request.get('username').strip().lower()
@@ -4587,7 +4784,7 @@ class ForgotHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        misc = {'target_template': "forgot.html", 'time_log': [], 'handler': 'forgot', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+        misc = {'came_from': '', 'target_template': "forgot.html", 'time_log': [], 'handler': 'forgot', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -4619,7 +4816,7 @@ class CronHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': "index.html"}
+        misc = {'came_from': '', 'target_template': "index.html"}
         default_get(self)
     
         
@@ -4646,7 +4843,7 @@ class CronHandler(webapp2.RequestHandler):
     """
     def get(self, orig_url):
         #lg("Cron: %s" % orig_url)
-        misc = {'target_template': None, 'time_log': [], }; status = 200
+        misc = {'came_from': '', 'target_template': None, 'time_log': [], }; status = 200
         
         if orig_url == "hello":
             
@@ -4759,12 +4956,12 @@ class LoggerHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': "index.html"}
+        misc = {'came_from': '', 'target_template': "index.html"}
         default_get(self)
     
     def get(self, orig_url):
         lg("Logger: %s" % orig_url)
-        misc = {'target_template': None, 'time_log': [], 'global_tags': get_global_tags()}; status = 200
+        misc = {'came_from': '', 'target_template': None, 'time_log': [], 'global_tags': get_global_tags()}; status = 200
         queries = []; params = []
         
         try:
@@ -4850,6 +5047,81 @@ def test_address(add):
     else:
         return 0
         
+class ExploreHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+        
+        user_obj = None; queries = []; params = []
+        
+        misc = dict_request(self.request); misc['error'] = None
+        misc['target_template'] = "explore.html"
+        misc['handler'] = "explore"
+        misc['email'] = misc['email'].lower().strip()
+        
+            
+        if misc['email'] == "":
+            misc['error'] = "Please enter an email address."
+  
+        elif email_regex.search(misc['email']) is None:
+            misc['error'] = "The email address you entered was invalid."
+
+        elif misc['msg_content'] == "":
+            misc['error'] = "The contact form was blank."
+
+        
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:      
+                user_obj['user_cookie'] = None
+                layout = "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"
+            else:
+                user_obj = process_non_auth(self); user_obj['ID'] = None
+                layout = 'layout_no_auth.html'
+        else:
+            user_obj = process_non_auth(self); user_obj['ID'] = None
+            layout = 'layout_no_auth.html'                
+                    
+        
+        if misc['error'] is None:
+            
+            
+            pass
+                    
+        tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
+        path = os.path.join("templates", misc['target_template'])
+        self.response.out.write(template.render(path, tv))
+
+    def get(self):
+        
+        misc = {'came_from': '', 'target_template': "explore.html", 'time_log': [], 'handler': 'explore', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:      
+            
+                layout = "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"
+            else:
+                user_obj = process_non_auth(self); user_obj['ID'] = None
+                layout = 'layout_no_auth.html'
+        else:
+            user_obj = process_non_auth(self); user_obj['ID'] = None
+            layout = 'layout_no_auth.html'
+            
+           
+        tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+
 class ContactHandler(webapp2.RequestHandler):
     def dispatch(self):
         self.session_store = sessions.get_store(request=self.request)
@@ -4914,7 +5186,7 @@ class ContactHandler(webapp2.RequestHandler):
             
             msg = {'email': "admin@lacrossereference.com", 'subject': misc['final_subject'], 'content': "Email: %s\nName: %s\nSubject: %s\n\n\n%s" % (misc['email'], misc['name'], misc['subject'], misc['msg_content'])}
             
-            if misc['spam'] == 0:
+            if misc['spam'] == 0 and "<testmsg>" not in misc['msg_content'] and "{testmsg}" not in misc['msg_content']:
                 mail_res, dbrec = finalize_mail_send(msg)
                 if mail_res != "": create_mail_record(dbrec)
                 if mail_res == "Success" or client_secrets['local']['--no-mail'] in ["Y", 'y', 'yes'] or test_address(misc['email']):
@@ -4936,7 +5208,7 @@ class ContactHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        misc = {'target_template': "contact.html", 'time_log': [], 'handler': 'contact', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+        misc = {'came_from': '', 'target_template': "contact.html", 'time_log': [], 'handler': 'contact', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -4954,6 +5226,7 @@ class ContactHandler(webapp2.RequestHandler):
            
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
         path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+
 
 class ManualPreregistrationHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -5036,7 +5309,7 @@ class ManualPreregistrationHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        misc = {'target_template': "manual_preregistration.html", 'time_log': [], 'handler': 'manual_preregistration', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+        misc = {'came_from': '', 'target_template': "manual_preregistration.html", 'time_log': [], 'handler': 'manual_preregistration', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -5290,7 +5563,7 @@ class EmailHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        misc = {'target_template': "email.html", 'time_log': [], 'handler': 'email', 'confirmed': 'no', 'selected_ID': None, 'action': 'view', 'new_date_str': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+        misc = {'came_from': '', 'target_template': "email.html", 'time_log': [], 'handler': 'email', 'confirmed': 'no', 'selected_ID': None, 'action': 'view', 'new_date_str': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
         local = not os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
         session_ID = self.session.get('session_ID')
         if local or session_ID not in [None, 0]:
@@ -5568,7 +5841,7 @@ class HelpHandler(webapp2.RequestHandler):
         
     
     def get(self):
-        misc = {'target_template': "help.html", 'time_log': [], 'handler': 'help', 'source_handler': self.request.get('c'), 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+        misc = {'came_from': '', 'target_template': "help.html", 'time_log': [], 'handler': 'help', 'source_handler': self.request.get('c'), 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -5612,6 +5885,188 @@ def process_non_auth(self):
         
     return user_obj    
     
+class ProductPricingHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        self.url_regex = re.compile(r'product\-pricing\-?(.+)',re.IGNORECASE)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self, orig_url):
+    
+        url_match = self.url_regex.search(orig_url)
+        product_tag = url_match.group(1)
+        
+        
+        
+        misc = {'came_from': '', 'target_template': None, 'time_log': [], 'handler': 'productPricing', 'error': None, 'product_tag': product_tag,  'team_ID': None}; user_obj = None; queries = []; params = []
+        
+        conn, cursor = mysql_connect()
+        cursor.execute("SELECT * from LRP_Groups where active", [])
+        groups = zc.dict_query_results(cursor)
+        products = get_products(cursor)
+        cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
+        next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
+        cursor.execute("SELECT datestamp, email, team_ID, product_ID from LRP_Product_Requests where active", [])
+        requests = zc.dict_query_results(cursor)
+        cursor.close(); conn.close()
+           
+        
+        for z in requests:
+            z['tup'] = (z['datestamp'].strftime("%Y%m%d"), z['email'], z['team_ID'], z['product_ID'])
+                
+        product_tier = self.request.get('product_tier')
+        if product_tier in [None, '']: 
+            product_tier = 1
+        else:
+            product_tier = int(product_tier)
+        
+        tup = (product_tag.lower(), product_tier)
+        
+        misc['product'] = products[ [z['product_tier_tup'] for z in products].index(tup) ]
+        misc['email'] = self.request.get('email').strip().lower()
+        misc['email_decrypted'] = self.request.get('email').strip().lower()
+        
+        misc['action'] = self.request.get('action').lower().strip()
+        misc['request_type'] = self.request.get('request_type')
+        misc['AB_group'] = self.request.get('AB_group')
+        misc['from_template'] = self.request.get('from_template')
+        
+        misc['group_ID'] = None
+        if product_tag == "team":
+            misc['team_ID'] = int(self.request.get('team_select'))
+            gr = groups[ [z['team_ID'] for z in groups].index(misc['team_ID'])]
+            misc['group_ID'] = gr['ID']
+            
+        if misc['action'] in ["pre-register", "quotable"]:
+            email_match = email_regex.search(misc['email'])
+            if email_match is None:
+                misc['error'] = "You must enter a valid email."
+                
+        misc['product_tiers'] = [ z for z in products if z['product_tag'] == product_tag.lower() ]
+        misc['product_tiers'] = sorted(misc['product_tiers'], key=lambda x:x['product_tier'])
+        
+        if misc['product_tag'] == "team":
+            if misc['team_ID'] in ["-1", -1,  None, '']:
+                misc['error'] = "You must select a team."
+
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:      
+                user_obj['user_cookie'] = None
+                layout = "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"
+            else:
+                user_obj = process_non_auth(self); user_obj['ID'] = None
+                layout = 'layout_no_auth.html'
+        else:
+            user_obj = process_non_auth(self); user_obj['ID'] = None
+            layout = 'layout_no_auth.html'
+        
+        misc['target_template'] = "product_pricing_%s%s.html" % (product_tag, misc['AB_group'])  
+        pd(misc)
+        if misc['error'] is None:
+            if misc['action'] in ["add_to_cart"]:
+
+                tup = (user_obj['ID'], user_obj['user_cookie'], misc['product']['ID'])
+                if tup not in [(z['user_ID'], z['user_cookie'], z['product_ID']) for z in user_obj['cart'] if z['status'] in ["added"]]:
+                    
+                    price = misc['product']['price']
+                    list_price = price
+                    
+                    query = "INSERT INTO LRP_Cart (ID, user_ID, user_cookie, product_ID, status, date_added, price, discount_tag, list_price, active) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Cart fds), %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                    param = [user_obj['ID'], user_obj['user_cookie'], misc['product']['ID'], 'added', datetime.now(), price, None, list_price, 1]
+                    queries.append(query); params.append(param)
+                    misc['msg'] = "Cart has been updated."                    
+                    ex_queries(queries, params)
+                    
+                    
+                    
+                    
+                    user_obj['cart'].append({'ID': next_cart_ID, 'user_ID': user_obj['ID'], 'user_cookie': user_obj['user_cookie'], 'product_ID': misc['product']['ID'], 'date_added': datetime.now(), 'status': 'added', 'active': 1, 'price': price, 'list_price': list_price, 'product': misc['product']}); next_cart_ID += 1
+                    
+                    misc['target_template'] = "cart.html"
+                else:
+                    misc['error'] = "Product has been added already."
+                    
+                
+            
+        conn, cursor = mysql_connect()
+        cursor.execute("SELECT * from LRP_Groups where active=1 order by group_name asc", [])
+        misc['groups'] = zc.dict_query_results(cursor)
+        cursor.close(); conn.close()
+        for g in misc['groups']:
+            g['selected'] = " selected" if misc['team_ID'] == g['team_ID'] else ""
+        
+        
+        tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+
+    
+        
+    def get(self, orig_url):
+        
+        misc = {'came_from': '', 'target_template': None, 'time_log': [], 'handler': 'productPricing', 'user_ID': None, 'email': "", "AB_group": None, 'hash': create_temporary_password()}; user_obj = None
+        random.seed(time.time()); misc['AB_group'] = "A" if random.random() < .5 else "B"
+        if self.request.get('v') != "": misc['AB_group'] = self.request.get('v')
+        url_match = self.url_regex.search(orig_url)
+        product_tag = url_match.group(1)
+        
+        
+        conn, cursor = mysql_connect()
+        products = get_products(cursor)
+        cursor.close(); conn.close()
+        
+        
+        misc['product_tiers'] = [ z for z in products if z['product_tag'] == product_tag.lower() ]
+        misc['product_tiers'] = sorted(misc['product_tiers'], key=lambda x:x['product_tier'])
+        
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                misc['user_ID'] = user_obj['ID']
+                misc['email'] = user_obj['email']
+                misc['email_decrypted'] = decrypt(user_obj['email'])
+                misc['AB_group'] = "A" if user_obj['AB_group'] < 24 else "B"
+                if self.request.get('v') != "": misc['AB_group'] = self.request.get('v')
+                misc['target_template'] = "product_pricing_%s%s.html" % (product_tag, misc['AB_group'])
+                
+                conn, cursor = mysql_connect()
+                cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [12, user_obj['ID'], datetime.now()]); conn.commit()
+                cursor.close(); conn.close()
+                
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+
+            else:
+                misc['target_template'] = "product_pricing_%s%s.html" % (product_tag, misc['AB_group'])
+                user_obj = process_non_auth(self)
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+        else: 
+            misc['target_template'] = "product_pricing_%s%s.html" % (product_tag, misc['AB_group'])
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+        
+        conn, cursor = mysql_connect()
+        cursor.execute("SELECT * from LRP_Groups where active=1 order by group_name asc", [])
+        misc['groups'] = zc.dict_query_results(cursor)
+        
+        if datetime.now().strftime("%Y%m%d") == "20200709" or os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+        
+            cursor.execute("INSERT INTO LRP_Product_Views (datestamp, product_tag, AB_group, user_ID, active) VALUES (%s, %s, %s, %s, %s)", [datetime.now(), product_tag, misc['AB_group'], misc['user_ID'], 1])
+            conn.commit()
+            
+        cursor.close(); conn.close()
+        
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+
 class ProductSummaryHandler(webapp2.RequestHandler):
     def dispatch(self):
         self.session_store = sessions.get_store(request=self.request)
@@ -5632,7 +6087,7 @@ class ProductSummaryHandler(webapp2.RequestHandler):
         
         
         
-        misc = {'target_template': None, 'time_log': [], 'handler': 'productSummary', 'error': None, 'product_tag': product_tag,  'team_ID': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': None, 'time_log': [], 'handler': 'productSummary', 'error': None, 'product_tag': product_tag,  'team_ID': None}; user_obj = None; queries = []; params = []
         
         conn, cursor = mysql_connect()
         cursor.execute("SELECT * from LRP_Groups where active", [])
@@ -5647,6 +6102,7 @@ class ProductSummaryHandler(webapp2.RequestHandler):
         for z in requests:
             z['tup'] = (z['datestamp'].strftime("%Y%m%d"), z['email'], z['team_ID'], z['product_ID'])
                 
+       
         misc['product'] = products[ [z['product_tag'] for z in products].index(product_tag.lower()) ]
         misc['email'] = self.request.get('email').strip().lower()
         misc['email_decrypted'] = self.request.get('email').strip().lower()
@@ -5654,6 +6110,7 @@ class ProductSummaryHandler(webapp2.RequestHandler):
         misc['action'] = self.request.get('action').lower().strip()
         misc['request_type'] = self.request.get('request_type')
         misc['AB_group'] = self.request.get('AB_group')
+        misc['from_template'] = self.request.get('from_template')
         
         misc['group_ID'] = None
         if product_tag == "team":
@@ -5683,7 +6140,8 @@ class ProductSummaryHandler(webapp2.RequestHandler):
         else:
             user_obj = process_non_auth(self); user_obj['ID'] = None
             layout = 'layout_no_auth.html'
-            
+        
+        misc['target_template'] = "product_summary_%s%s.html" % (product_tag, misc['AB_group'])    
         if misc['error'] is None:
             if misc['action'] in ["pre-register", "quotable"]:
                 email_match = email_regex.search(misc['email'])
@@ -5718,6 +6176,7 @@ class ProductSummaryHandler(webapp2.RequestHandler):
                         misc['msg'] = "Your request was received."
                     
                 ex_queries(queries, params)
+                
             elif misc['action'] in ["available"] and misc['product']['call_to_action'] == "ADD TO CART":
 
                 tup = (user_obj['ID'], user_obj['user_cookie'], misc['product']['ID'])
@@ -5736,11 +6195,12 @@ class ProductSummaryHandler(webapp2.RequestHandler):
                     
                     
                     user_obj['cart'].append({'ID': next_cart_ID, 'user_ID': user_obj['ID'], 'user_cookie': user_obj['user_cookie'], 'product_ID': misc['product']['ID'], 'date_added': datetime.now(), 'status': 'added', 'active': 1, 'price': price, 'list_price': list_price, 'product': misc['product']}); next_cart_ID += 1
+                    
+                    
                 else:
                     misc['error'] = "Product has been added already."
-  
-
-        
+                    
+                
             
         conn, cursor = mysql_connect()
         cursor.execute("SELECT * from LRP_Groups where active=1 order by group_name asc", [])
@@ -5749,7 +6209,7 @@ class ProductSummaryHandler(webapp2.RequestHandler):
         for g in misc['groups']:
             g['selected'] = " selected" if misc['team_ID'] == g['team_ID'] else ""
         
-        misc['target_template'] = "product_summary_%s%s.html" % (product_tag, misc['AB_group'])
+        
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
         path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
@@ -5757,7 +6217,7 @@ class ProductSummaryHandler(webapp2.RequestHandler):
         
     def get(self, orig_url):
         
-        misc = {'target_template': None, 'time_log': [], 'handler': 'productSummary', 'user_ID': None, 'email': "", "AB_group": None, 'hash': create_temporary_password()}; user_obj = None
+        misc = {'came_from': '', 'target_template': None, 'time_log': [], 'handler': 'productSummary', 'user_ID': None, 'email': "", "AB_group": None, 'hash': create_temporary_password()}; user_obj = None
         random.seed(time.time()); misc['AB_group'] = "A" if random.random() < .5 else "B"
         if self.request.get('v') != "": misc['AB_group'] = self.request.get('v')
         url_match = self.url_regex.search(orig_url)
@@ -5767,6 +6227,8 @@ class ProductSummaryHandler(webapp2.RequestHandler):
         conn, cursor = mysql_connect()
         products = get_products(cursor)
         cursor.close(); conn.close()
+        
+        
         misc['product'] = products[ [z['product_tag'] for z in products].index(product_tag.lower()) ]
         
         session_ID = self.session.get('session_ID')
@@ -5809,6 +6271,7 @@ class ProductSummaryHandler(webapp2.RequestHandler):
         
         path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
+
 class FAQHandler(webapp2.RequestHandler):
     def dispatch(self):
         self.session_store = sessions.get_store(request=self.request)
@@ -5824,12 +6287,12 @@ class FAQHandler(webapp2.RequestHandler):
     
     def post(self):
     
-        misc = {'target_template': "index.html"}
+        misc = {'came_from': '', 'target_template': "index.html"}
         default_get(self)
     
     def get(self, orig_url):
         
-        misc = {'target_template': 'faq.html', 'time_log': [], 'handler': 'faq', 'user_ID': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'faq.html', 'time_log': [], 'handler': 'faq', 'user_ID': None}; user_obj = None
         
         url_match = self.url_regex.search(orig_url)
         
@@ -5847,7 +6310,7 @@ class FAQHandler(webapp2.RequestHandler):
         misc['faq'] = zc.dict_query_results(cursor)
         cursor.close(); conn.close()
         
-        
+       
         misc['product'] = None if product_tag is None else products[ [z['product_tag'] for z in products].index(product_tag.lower()) ]
         
         misc['faq'] = [z for z in misc['faq'] if z['context'] in [product_tag, None]]
@@ -5895,7 +6358,7 @@ class CheckoutHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': "checkout.html", 'time_log': [], 'handler': 'checkout', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': "checkout.html", 'time_log': [], 'handler': 'checkout', 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
         
         stripe.api_key = client_secrets['web']['StripeServerKey']
         misc['clientKey'] = client_secrets['web']['StripeClientKey']
@@ -5972,7 +6435,7 @@ class CheckoutHandler(webapp2.RequestHandler):
                             if item['product_ID'] in [3]:
                                 is_group = True
                                 
-                            
+                            item['product_tier'] = None if 'product_tier' not in item else item['product_tier']
                             
                             if is_group:
                                 
@@ -6000,8 +6463,8 @@ class CheckoutHandler(webapp2.RequestHandler):
                                     
                                 
                                 # Set up the relevant subscriptions
-                                queries.append("INSERT INTO LRP_Subscriptions (ID, active, start_date, end_date, group_ID, product_ID, quote_ID, status, trial, price_paid, stripe_payment_intent) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Subscriptions fds), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
-                                params.append([1, start_date, end_date, group['ID'], item['product_ID'], item['quote_ID'], 'active', 0, item['price'], encrypt(payment_intent)])
+                                queries.append("INSERT INTO LRP_Subscriptions (ID, active, start_date, end_date, group_ID, product_ID, quote_ID, status, trial, price_paid, stripe_payment_intent, product_tier, offer_ID) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Subscriptions fds), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+                                params.append([1, start_date, end_date, group['ID'], item['product_ID'], item['quote_ID'], 'active', 0, item['price'], encrypt(payment_intent), item['product_tier'], item['offer_ID']])
                                 
                                 tup = (user_obj['ID'], group['ID'])
                                 if tup in [(z['user_ID'], z['group_ID']) for z in group_access if z['status'] == "active"]:
@@ -6016,8 +6479,8 @@ class CheckoutHandler(webapp2.RequestHandler):
                                 queries.append(query); params.append(param)
                                 
                             else:
-                                queries.append("INSERT INTO LRP_Subscriptions (ID, active, start_date, end_date, user_ID, product_ID, quote_ID, status, trial, price_paid, stripe_payment_intent) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Subscriptions fds), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
-                                params.append([1, start_date, end_date, user_obj['ID'], item['product_ID'], item['quote_ID'], 'active', 0, item['price'], encrypt(payment_intent)])
+                                queries.append("INSERT INTO LRP_Subscriptions (ID, active, start_date, end_date, user_ID, product_ID, quote_ID, status, trial, price_paid, stripe_payment_intent, product_tier, offer_ID) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Subscriptions fds), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+                                params.append([1, start_date, end_date, user_obj['ID'], item['product_ID'], item['quote_ID'], 'active', 0, item['price'], encrypt(payment_intent), item['product_tier'], item['offer_ID']])
                         
                                 
                         
@@ -6065,7 +6528,7 @@ class CheckoutHandler(webapp2.RequestHandler):
     
         
     def get(self):
-        misc = {'target_template': "index.html"}
+        misc = {'came_from': '', 'target_template': "index.html"}
         default_get(self)
             
 class ReportHandler(webapp2.RequestHandler):
@@ -6083,7 +6546,7 @@ class ReportHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': "report.html", 'time_log': [], 'handler': 'report', 'error': None, 'msg': None, 'action': self.request.get('action')}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': "report.html", 'time_log': [], 'handler': 'report', 'error': None, 'msg': None, 'action': self.request.get('action')}; user_obj = None; queries = []; params = []
 
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
@@ -6105,7 +6568,7 @@ class ReportHandler(webapp2.RequestHandler):
     
         
     def get(self):
-        misc = {'target_template': "index.html"}
+        misc = {'came_from': '', 'target_template': "index.html"}
         default_get(self)
             
 def url_escape(url):
@@ -6141,7 +6604,7 @@ class EditGroupHandler(webapp2.RequestHandler):
     
     def post(self):
         
-        misc = {'target_template': "edit_group.html", 'time_log': [], 'handler': 'editGroup', 'emails': "", 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': "edit_group.html", 'time_log': [], 'handler': 'editGroup', 'emails': "", 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
         misc['add_members_msg'] = None
         misc['add_members_error'] = None
         misc['edit_members_msg'] = None
@@ -6265,8 +6728,8 @@ class EditGroupHandler(webapp2.RequestHandler):
                                 tmp_keys = ['username', 'email', 'tmp_password']
                                 for k in tmp_keys:
                                     m["%s_encrypted" % k] =  encrypt(m[k])
-                                queries.append("INSERT INTO LRP_Users (ID, email, active, logins, user_type, password, username, AB_group, date_created, track_GA, active_group, is_admin, activation_code, activated, activation_type) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
-                                params.append([next_user_ID, m['email_encrypted'], 1, 0, 'team', m['tmp_password_encrypted'], m['username_encrypted'], m['ab_group'], datetime.now(), 1, misc['group_ID'], 0, m['activation_code'], 0, 'full'])
+                                queries.append("INSERT INTO LRP_Users (ID, email, active, logins, user_type, password, username, AB_group, date_created, track_GA, active_group, is_admin, activation_code, activated, activation_type,  observe) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+                                params.append([next_user_ID, m['email_encrypted'], 1, 0, 'team', m['tmp_password_encrypted'], m['username_encrypted'], m['ab_group'], datetime.now(), 1, misc['group_ID'], 0, m['activation_code'], 0, 'full', 0])
                                 
                                 queries.append("INSERT INTO LRP_Group_Access (ID, user_ID, group_ID, status, active, admin) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Group_Access fds), %s, %s, %s, %s, %s)")
                                 params.append([next_user_ID, misc['group_ID'], 'active', 1, 0])
@@ -6363,7 +6826,7 @@ class EditGroupHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        misc = {'target_template': "index.html"}
+        misc = {'came_from': '', 'target_template': "index.html"}
         
         default_get(self)
 
@@ -6381,7 +6844,7 @@ class ResendHandler(webapp2.RequestHandler):
     
     def post(self):
     
-        misc = {'target_template': "activation_reminder.html", 'time_log': [], 'handler': 'resend', 'emails': "", 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
+        misc = {'came_from': '', 'target_template': "activation_reminder.html", 'time_log': [], 'handler': 'resend', 'emails': "", 'error': None, 'msg': None}; user_obj = None; queries = []; params = []
     
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
@@ -6446,7 +6909,7 @@ class ResendHandler(webapp2.RequestHandler):
 
 def default_get(self):
     
-    misc = {'target_template': "index.html", 'time_log': [], 'handler': 'index', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+    misc = {'came_from': '', 'target_template': "index.html", 'time_log': [], 'handler': 'index', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
     session_ID = self.session.get('session_ID')
     if session_ID not in [None, 0]:
         user_obj = get_user_obj({'session_ID': session_ID})
@@ -6484,7 +6947,7 @@ class TeamsHomeHandler(webapp2.RequestHandler):
         self.response.out.write(template.render(path, tv))
     
     def get(self):
-        misc = {'target_template': 'teams_home.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'teams_home.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         
         if session_ID not in [None, 0]:
@@ -6519,7 +6982,7 @@ class TeamsMyRankingsHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        misc = {'target_template': 'team_my_rankings.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'team_my_rankings.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         
         if session_ID not in [None, 0]:
@@ -6543,7 +7006,7 @@ class TeamsMyRankingsHandler(webapp2.RequestHandler):
         
 
     def get(self):
-        misc = {'target_template': 'team_my_rankings.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'team_my_rankings.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         
         if session_ID not in [None, 0]:
@@ -6578,7 +7041,7 @@ class TeamsDetailHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        misc = {'target_template': 'team_detail.html', 'time_log': [], 'handler': 'team_detail', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': self.request.get("came_from"), 'target_template': 'team_detail.html', 'time_log': [], 'handler': 'team_detail', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         
         if session_ID not in [None, 0]:
@@ -6586,6 +7049,7 @@ class TeamsDetailHandler(webapp2.RequestHandler):
             if user_obj['auth']:
                 pd(dict_request(self.request))
                 misc['detail_team_ID'] = int(self.request.get("detail_team_ID"))
+                
                 misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
                 misc['active_element'] = self.request.get("active_element")
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
@@ -6603,7 +7067,7 @@ class TeamsDetailHandler(webapp2.RequestHandler):
         
 
     def get(self):
-        misc = {'target_template': 'team_detail.html', 'time_log': [], 'handler': 'team_detail', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': "", 'target_template': 'team_detail.html', 'time_log': [], 'handler': 'team_detail', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         
         if session_ID not in [None, 0]:
@@ -6611,6 +7075,124 @@ class TeamsDetailHandler(webapp2.RequestHandler):
             if user_obj['auth']:
                 
                 misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
+                
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+            else:
+                misc['target_template'] = "index.html"
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        else: 
+        
+            misc['target_template'] = "index.html"
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        
+class TeamsPlayerDetailHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+        misc = {'came_from': self.request.get("came_from"), 'ID': self.request.get('ID'), 'target_template': 'team_player_detail.html', 'time_log': [], 'handler': 'team_player_detail', 'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                
+                misc, user_obj, tmp = build_product_data_player(self, user_obj, misc)
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+            else:
+                misc['target_template'] = "index.html"
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        else: 
+        
+            misc['target_template'] = "index.html";
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        
+
+    def get(self):
+        misc = {'came_from': "", 'ID': self.request.get('ID'), 'target_template': 'team_player_detail.html', 'time_log': [], 'handler': 'team_player_detail', 'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        
+        misc, user_obj, tmp = build_product_data_player(self, user_obj, misc)
+        
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+            else:
+                misc['target_template'] = "index.html"
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        else: 
+        
+            misc['target_template'] = "index.html"
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        
+class TeamsGameDetailHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+        misc = {'came_from': self.request.get("came_from"), 'ID': self.request.get('ID'), 'target_template': 'team_game_detail.html', 'time_log': [], 'handler': 'team_game_detail', 'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+
+                misc, user_obj, tmp = build_product_data_game(self, user_obj, misc)
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+            else:
+                misc['target_template'] = "index.html"
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        else: 
+        
+            misc['target_template'] = "index.html";
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        
+
+    def get(self):
+        misc = {'came_from': '', 'ID': self.request.get('ID'), 'target_template': 'team_game_detail.html', 'time_log': [], 'handler': 'team_game_detail', 'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        misc, user_obj, tmp = build_product_data_game(self, user_obj, misc)
+        
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
@@ -6638,7 +7220,7 @@ class TeamsMyStatsHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        misc = {'target_template': 'team_my_stats.html', 'time_log': [], 'handler': 'team_my_stats', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'team_my_stats.html', 'time_log': [], 'handler': 'team_my_stats', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         
         if session_ID not in [None, 0]:
@@ -6662,7 +7244,7 @@ class TeamsMyStatsHandler(webapp2.RequestHandler):
         
 
     def get(self):
-        misc = {'target_template': 'team_my_stats.html', 'time_log': [], 'handler': 'team_my_stats', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'team_my_stats.html', 'time_log': [], 'handler': 'team_my_stats', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         
         if session_ID not in [None, 0]:
@@ -6697,7 +7279,7 @@ class TeamsMyScheduleHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        misc = {'target_template': 'team_my_schedule.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'team_my_schedule.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         
         if session_ID not in [None, 0]:
@@ -6721,7 +7303,7 @@ class TeamsMyScheduleHandler(webapp2.RequestHandler):
         
 
     def get(self):
-        misc = {'target_template': 'team_my_schedule.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'team_my_schedule.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         
         if session_ID not in [None, 0]:
@@ -6784,7 +7366,7 @@ class AccountHandler(webapp2.RequestHandler):
     
             
     def get(self):
-        misc = {'target_template': 'index.html', 'time_log': [], 'handler': 'account', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'index.html', 'time_log': [], 'handler': 'account', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
@@ -6864,7 +7446,7 @@ def send_telegram(msg):
 def handle_404(request, response, exception):
     logging.exception(exception)
     user_obj = get_user_obj()
-    misc = {'target_template': 'error_404.html', 'time_log': [], 'handler': '404', 'error': None, 'msg': None}
+    misc = {'came_from': '', 'target_template': 'error_404.html', 'time_log': [], 'handler': '404', 'error': None, 'msg': None}
     tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_no_auth.html"}
     response.set_status(404)
     path = os.path.join("templates", 'error_404.html'); response.out.write(template.render(path, tv))
@@ -6872,7 +7454,7 @@ def handle_404(request, response, exception):
 def handle_500(request, response, exception):
     logging.exception(exception)
     user_obj = get_user_obj()
-    misc = {'target_template': 'error_general.html', 'time_log': [], 'handler': '500', 'error': None, 'msg': None}
+    misc = {'came_from': '', 'target_template': 'error_general.html', 'time_log': [], 'handler': '500', 'error': None, 'msg': None}
     if not os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
         misc['error'] = traceback.format_exc()
         txt = misc['error'].split("File")[-1]
@@ -6930,6 +7512,7 @@ app = webapp2.WSGIApplication([
     ,('/create-email', CreateEmailHandler)
     ,('/manual-preregistration', ManualPreregistrationHandler)
     ,('/contact', ContactHandler)
+    ,('/explore', ExploreHandler)
     ,('/report', ReportHandler)
     ,('/explanations', ExplanationsHandler)
     ,('/cookies-policy', CookiesPolicyHandler)
@@ -6943,10 +7526,13 @@ app = webapp2.WSGIApplication([
     ,('/team_my_schedule', TeamsMyScheduleHandler)
     ,('/team_my_stats', TeamsMyStatsHandler)
     ,('/team_detail', TeamsDetailHandler)
+    ,('/team_player_detail', TeamsPlayerDetailHandler)
+    ,('/team_game_detail', TeamsGameDetailHandler)
     
     ,('/(product-summary.+)', ProductSummaryHandler)
+    ,('/(product-pricing.+)', ProductPricingHandler)
     ,('/(faq.*?)', FAQHandler)
-    ,('/(giftLRP)', GiftLRPHandler)
+    ,('/(giftLRP.*?)$', GiftLRPHandler)
     
 ], config=config)
 

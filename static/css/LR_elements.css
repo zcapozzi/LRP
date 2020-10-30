@@ -39,11 +39,15 @@
 
 }
 
+div.hidden-row{ display:none; }
+div.hidden-row.visible{ display:flex; }
+
 .credentials-box .text-input{
     border-width: 0 0 2px;
     width:100%;
     margin-top:30px;
     padding-left:5px;
+    padding-top:5px;
 }
 .text-input {} 
 .credentials-box button{
@@ -112,12 +116,19 @@ span.tag-on.blue{ border-bottom: solid 2px blue!important; }
 .panel_tag{}
 
 .text-container{
-    padding:10px; padding-top:20px;
+    padding:10px;
     line-height: 24px;
 }
 
+ul.product-bullets{ padding: 0px 5px 0px 25px; margin:0 }
+ul.product-bullets li{ padding-bottom: 7px; }
+
 .text-container.medium{
-    height: 140px;
+    min-height: 140px;
+}
+
+.text-container.large{
+    min-height: 190px;
 }
 
 .settings-bar.not-shown{
@@ -213,6 +224,15 @@ div.overlay{
     max-height:500px;
 }
 
+div.overlay.fullscreen{
+    
+    height: calc(90vh);
+    max-height: calc(100vh);
+    width: 984px;
+    margin: 10px;
+    
+}
+
 div.overlay.shown{
     display:block;
 }
@@ -294,6 +314,7 @@ div.non-dashboard-section-header {
 .settings { }
 .explanation { }
 .toggle { }
+.row-toggle { margin-top:2px; }
 
 .non-dashboard-label{
     line-height:26px;
@@ -410,7 +431,17 @@ rect.spark-bar-background{
 
 .breadcrumbs{
     padding: 0;
+    display: inline-flex;
 }
+
+.breadcrumbs span{ text-decoration: none; padding: 0px 10px 1px 0px; margin-top:2px; }
+.breadcrumbs span.clickable{ 
+    cursor:pointer; 
+    text-decoration: underline; 
+    text-decoration-color: blue;
+    color: blue; 
+}
+
 
 @media only screen and (max-width: 800px) {
     
@@ -439,7 +470,10 @@ rect.spark-bar-background{
         display:block; 
     }
     .non-dashboard-tile-section{
-        padding: 0px 0px 20px 0px; margin-right:0; border: none;
+        padding: 10px 0px 20px 0px; margin-right:0; border: none; border-top: solid 1px #AAA;
+    }
+    .non-dashboard-tile-section:first-child{
+        padding-top:0px; border-top: none;
     }
     
     .dashboard-tile-help-icon{
@@ -458,7 +492,7 @@ rect.spark-bar-background{
 
 }
 
-.mouseover-link{ }
+.mouseover-link{ cursor:pointer; }
 
 .mouseover-link:hover {
     text-decoration: underline;
@@ -549,14 +583,16 @@ div.tier-details{ height:200px; line-height:25px; padding:8px; }
 div.tier-header{ border-bottom: solid 1px #aaa; background-color: #189ad3; color:white; border-top-left-radius: 4px; border-top-right-radius: 4px; }
 
 a.action-button{ padding:10px; border-radius: 21.5px; font-weight:500; color: #282c3f; border: 1px solid #dbdbdb; text-decoration:none;  font: 400 13.3333px Arial; }
-.action-button.blue{ color:white; background-color: #88F; font-weight:700; }
+.action-button.blue{ color:white; background-color: #189ad3; font-weight:700; }
 span.action-button{ min-width:100px; padding:10px; }
 button.action-button{ min-width:100px; padding:10px; border-radius: 21.5px; font-weight:500; color: #282c3f; border: 1px solid #dbdbdb; background-color:white;  }
 div.action-button{ padding-top:30px; }
 
 a.action-button.small{ padding:7px; border-radius: 15.5px; }
-span.action-button.small{ padding:7px; }
-button.action-button.small{ min-width:50px; padding:7px; border-radius: 15.5px;  }
+span.action-button.small{  padding:7px; }
+button.action-button.small{ min-width:125px; padding:7px; border-radius: 15.5px;  }
+button.action-button.medium{ min-width:250px; padding:7px; border-radius: 15.5px;  }
+button.action-button.large{ width:100%; padding:7px; border-radius: 15.5px;  }
 div.action-button.small{ padding-top:30px; }
 
 
@@ -742,13 +778,25 @@ select.stat-select{
         line-height: 22px;
     }
     .text-container.medium{
-        height: 110px;
+        min-height: 60px;
+    }
+    .text-container.large{
+        min-height: 60px;
     }
     
     div.overlay{
         width: 80%;
         margin: 10%;
         height:80%;
+        
+    }
+    
+    div.overlay.fullscreen{
+    
+        
+        width: 90%;
+        margin: 5%;
+        height:90%;
         
     }
     

@@ -933,7 +933,7 @@ function custom_last_game_tile(misc, id, arg_specs, arg_initial_specs = null){
     
     for(var a=0;a<tags.length;a++){
         var tag = tags[a];
-        tag.height = 50 * a + 30;
+        tag.height = 50 * a + 20;
         tag.game = misc.data.last_game[tag.league_var];
         tag.my_avg = misc.data[tag.var];
         tag.league_avg = misc.data["league_" + tag.league_var];
@@ -1078,7 +1078,7 @@ function custom_last_game_tile(misc, id, arg_specs, arg_initial_specs = null){
 function graph_create_legend(svg, x, y, width, height, initial_specs, data){
     legend = data.legend;
     start_loc_x = -initial_specs.margin_left + 5;
-    start_loc_y = height + initial_specs.margin_bottom + (initial_specs.chart_size == "small" ? 0 : -3 );
+    start_loc_y = height + initial_specs.margin_bottom + (initial_specs.chart_size == "small" ? -3 : -5 );
     
     for(var a = 0;a<legend.items.length;a++){
         var item = legend.items[a];
@@ -1393,14 +1393,35 @@ function custom_conditional_RPI_tile(misc, id, arg_specs, arg_initial_specs = nu
         cur_x = x(cur_projected_RPI_str);
         win_x = x(gm.avg_RPI_with_win);
         loss_x = x(gm.avg_RPI_with_loss);
-        
+        console.log(gm);
         
         svg.append("text")
             .attr("x", 10).attr("y", gm.height + 27)
             .attr("text-anchor", function (d) { return "start";  }  )
-            .attr("class", "lightish chart-axis-label " + initial_specs.chart_size)
-            .text(gm.opp_short_code); 
-            
+            .attr("class", "mouseover-link pointer lightish chart-axis-label " + initial_specs.chart_size)
+            .attr("onclick", "submit_team_form_from_conditional_rpi(" + gm.opponentID + ");")
+            .text(gm.opp_short_code);
+
+       
+
+        svg.append("foreignObject")
+            .attr("width", 0)
+            .attr("height", 0)
+            .attr("class", "input")
+            .append("xhtml:form")
+            .attr("id", 'conditional_rpi_game_form' + gm.opponentID)
+            .attr("action", "/team_detail")
+            .attr("method", "POST")
+            //.html(function(d) {return "<strong>Name:</strong>"}) 
+            .append("input")
+            .attr("value", gm.opponentID)
+            .attr("name", 'detail_team_ID')
+            .attr("type", "hidden")
+            .append("input")
+            .attr("value", misc.came_from)
+            .attr("name", 'came_from')
+            .attr("type", "hidden");
+                    
         // Print the full range rect
         svg.append("rect")
             .attr("x", x(gm.avg_RPI_with_win))
@@ -1531,7 +1552,7 @@ function custom_next_game_tile(misc, id, arg_specs, arg_initial_specs = null){
             
             html = "";
             html += "<div class='flex opp-game-row' style='padding:4px;'>";
-            html += "<div class='col-3 no-padding'><span class='font-14'>" + game.opp_short_code + "</span></div>"
+            html += "<div class='col-3 no-padding'><FORM id='future_form" + game.ID + "' action='/team_detail' method=POST><input type=hidden name='detail_team_ID' value='" + game.opponentID + "'><input type=hidden name='came_from' value='home' /><span class='mouseover-link pointer font-14 contents' onclick=\"document.getElementById('future_form" + game.ID + "').submit();\">" + game.opp_short_code + "</span></FORM></div>"
             for(var b = 0;b<tags.length;b++){
                 var tag = tags[b];
                 html += "<div class='col-3 no-padding centered'><span class='large-dot' style='background-color: " + game['color_' + tag.var] + ";'>" + "</span></div>";

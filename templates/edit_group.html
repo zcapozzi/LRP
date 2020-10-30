@@ -27,7 +27,7 @@
                             <div class='col-8-6'><span class='font-15'>{{u.username_decrypted}}</span></div>
                             <div class='col-2-3 centered'>
                                 {% if u.user_ID !=  user_obj.ID %}
-                                    <span class='font-15'><input name='admin' value='{{u.user_ID}}' type=checkbox {{u.admin_checked}} /></span>
+                                    <span class='font-15'><input name='admin' id='admin' value='{{u.user_ID}}' type=checkbox {{u.admin_checked}} /></span>
                                 {% else %}
                                     <span class='font-15'><input disabled value='{{u.user_ID}}' type=checkbox {{u.admin_checked}} /></span>
                                 {% endif %}
@@ -35,7 +35,7 @@
                             </div>
                             <div class='col-2-3 centered'>
                                 {% if u.user_ID !=  user_obj.ID %}
-                                    <span class='font-15'><input name='remove' value='{{u.user_ID}}' type=checkbox /></span>
+                                    <span class='font-15'><input name='remove' id='remove' value='{{u.user_ID}}' type=checkbox /></span>
                                 {% else %}
                                     <span class='font-15'><input disabled value='{{u.user_ID}}' type=checkbox /></span>
                                 {% endif %}
@@ -79,7 +79,7 @@
                     {% if misc.edit_members_msg %}
                         <div class='col-12'><span style='color:blue;' class='font-15'>{{misc.edit_members_msg|safe}}</span></div>
                     {% endif %}
-                    <div class='col-12 centered action-button'><button type=submit name='action' id='manage_members_button' value='manage_members' class='action-button font-15'>SUBMIT</button></div>
+                    <div class='col-12 centered action-button'><button type=submit name='action' id='manage_members_button' value='manage_members' class='action-button blue font-15'>SUBMIT</button></div>
                 </div>
             </div>
             <div class='col-2 dtop'></div>
@@ -97,7 +97,7 @@
                         <div class='col-12'><span style='color:blue;' class='font-15'>{{misc.add_members_msg|safe}}</span></div>
                     {% endif %}
                     
-                    <div class='col-12 centered action-button'><button type=submit name='action' id='add_members_button' value='add_members' class='action-button font-15'>ADD</button></div>
+                    <div class='col-12 centered action-button'><button type=submit name='action' id='add_members_button' value='add_members' class='action-button blue font-15'>ADD</button></div>
                 </div>
             </div>
             

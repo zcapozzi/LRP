@@ -35,7 +35,7 @@
                             
                                 <div class='col-12 centered' style='padding-top:20px;'>
                                         
-                                    <button type=submit class='action-button' name='action' value='requote'><span class='pointer font-15'>REQUEST</span></button>
+                                    <button type=submit class='action-button blue medium' name='action' value='requote'><span class='pointer font-15'>REQUEST</span></button>
                            
                                 </div>
                             {% else %}
@@ -136,7 +136,7 @@
                                         {% if misc.login_account_error %}
                                             <div class='col-12 error'><span class='error' >{{misc.login_account_error}}</span></div>
                                         {% endif %}
-                                        <div class='col-12'><button type=submit id='submit_me_login' name='action' value='login' />Submit</button></div>
+                                        <div class='col-12'><button type=submit id='submit_me_login' name='action' class='action-button blue medium' value='login' />Submit</button></div>
                                         <div class='col-12 centered' style='padding-top:15px;'>
                                             
                                             <a class='font-14' href='/forgot'><span class='font-14'>Forgot Password</span></a>
@@ -163,7 +163,7 @@
                                         {% if misc.create_account_msg %}
                                             <div class='col-12 error'><span  class='msg' style='color:blue;' >{{misc.create_account_msg}}</span></div>
                                         {% endif %}
-                                        <div class='col-12'><button type=submit id='submit_me_register' name='action' value='create_account'  />Create Account</button></div>
+                                        <div class='col-12'><button type=submit id='submit_me_register' class='action-button blue medium' name='action' value='create_account'  />Create Account</button></div>
                                     </div>
                                     </FORM>
                                 </div>
@@ -222,7 +222,7 @@
                         {% if misc.quote.valid %}
                             <div class='col-12 centered' style='padding-top:20px;'>
                                     
-                                <a id='checkout_link' class='action-button' href='/cart'><span class='pointer font-15'>CHECKOUT</span></a>
+                                <a id='checkout_link' class='action-button blue' href='/cart'><span class='pointer font-15'>CHECKOUT</span></a>
                        
                             </div>
                         {% endif %}

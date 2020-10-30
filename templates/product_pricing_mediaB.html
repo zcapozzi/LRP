@@ -1,0 +1,88 @@
+
+{% extends layout %}
+
+
+{% block body %}
+
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
+
+    
+
+    <div class='col-12'>
+
+    
+    <div class='col-12 flex'>
+        
+            <div class='col-1'></div>
+            <div class='col-10 centered' style='padding-top:60px; padding-bottom:40px;'>
+                <div class='col-12'>
+                    <span class='font-36 bold' style='color:#008;'>$$$.</span>
+                </div>
+
+            </div>
+            <div class='col-1'></div>
+      
+ 
+        
+    </div>
+
+    {% if misc.error %}
+        <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
+    {% endif %}
+
+    <div class='col-12 flex-block'>
+        <div class='col-6-12'>
+            <div class='tier card'>
+                <FORM action='/product-pricing-media' method=POST>
+                    <input type=hidden name='user_ID' value={{misc.user_ID}} />
+                    <input type=hidden name='AB_group' value={{misc.AB_group}} />
+                    <input type=hidden name='hash' value={{misc.hash}} />
+                    <input type=hidden name='product_tier' value=1 />
+                    <div class='col-12 tier-header centered' style=''><span class='font-18 bold'><span class='dtop'>Basic</span><span class='mob'>Basic</span></span></div>
+                    <div class='centered text-container medium'><span class='font-15 contents'>
+                        The public site has always been about introducing a broad array of statistics to a general audience. The goal of PRO is to get into the nuts and bolts for users that want that extra layer of content.
+                    </span></div>
+                    <div class='col-12 centered' style='padding-top: 20px; padding-bottom:10px;'>
+                                
+                        <button id='action_button_1' type=submit class='action-button small blue' name='action' value='add_to_cart'><span class='pointer font-15'>ADD TO CART</span></button>
+               
+                    </div>
+                </FORM>
+            </div>
+            
+        </div>
+        <div class='col-6-12 flex'>
+            <div class='tier card'>
+                <FORM action='/product-pricing-media' method=POST>
+                    <input type=hidden name='user_ID' value={{misc.user_ID}} />
+                    <input type=hidden name='AB_group' value={{misc.AB_group}} />
+                    <input type=hidden name='hash' value={{misc.hash}} />
+                    <input type=hidden name='product_tier' value=2 />
+                    <div class='col-12 tier-header centered' style=''><span class='font-18 bold'><span class='dtop'>Plus</span><span class='mob'>Plus</span></span></div>
+                    <div class='centered text-container medium'><span class='font-15 contents'>
+                        The public site has always been about introducing a broad array of statistics to a general audience. The goal of PRO is to get into the nuts and bolts for users that want that extra layer of content.
+                    </span></div>
+                    <div class='col-12 centered' style='padding-top: 20px; padding-bottom:10px;'>
+                                
+                        <button id='action_button_2' type=submit class='action-button small blue' name='action' value='add_to_cart'><span class='pointer font-15'>ADD TO CART</span></button>
+               
+                    </div>
+                </FORM>
+            </div>
+        </div>
+
+    </div>
+
+<script>
+    var on_mobile = null;
+    var console_log = []; var success = null;
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
+    
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+</script>
+{% endblock %}

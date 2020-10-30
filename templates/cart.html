@@ -50,7 +50,7 @@
                     
                 
                         <div class='col-12 flex'>
-                            <div class='col-6-8'><span class='font-18 bold'>{{p.product.product_name}}</span></div>
+                            <div class='col-6-8'><span class='font-18 bold'>{{p.product.product_name}} - {{p.product.product_tier_description}}</span></div>
                             <div class='col-6-4 right'>
                                 {% if p.list_price_str != p.price_str %}
                                     <span class='font-18 inline light' style='text-decoration: line-through;'>{{p.list_price_str}}</span>
@@ -58,9 +58,9 @@
                                 <span class='font-18 bold inline'>{{p.price_str}}</span>
                             </div>
                         </div>
-                        <div class='col-12 flex'>
+                        <!--div class='col-12 flex'>
                             <div class='col-12'><span class='light font-15' style='display:block; padding: 0px 10px;'>{{p.product.product_desc}}</span></div>
-                        </div>
+                        </div-->
                         
                         <div class='col-12 flex-block'>
                             <div class='col-8-12 flex'>

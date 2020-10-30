@@ -8,6 +8,8 @@ div.viewbox{ width:1024px; min-height:700px; padding:0; margin:auto; }
 
 .no-padding{ padding:0px; }
 
+.text-paragraph{ line-height: 24px; }
+
 .font-11{ font-size:11px; }
 .font-12{ font-size:12px; }
 .font-14{ font-size:14px; }

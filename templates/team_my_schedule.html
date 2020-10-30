@@ -60,15 +60,15 @@
             <div id='' class='non-dashboard-landing'>
                 <div class='col-12 mob centered no-padding'>
                     <select style='width:80%; margin: 0% 10%;' id='top_menu_select' onChange='choose_left_menu_item(this.value);'>
-                        <option id='next_game_option' value='next_game'>Next Game</option>
                         <option id='last_game_option' value='last_game'>Last Game</option>
+                        <option id='next_game_option' value='next_game'>Next Game</option>
                         <option id='full_schedule_option' value='full_schedule'>Full Schedule</option>
                     </select>
                 </div>
                 <div class='flex col-12 no-padding'>
                     <div class='left-menu col-2-12 dtop'>
-                        <div id='next_game_menu_item' onclick='choose_left_menu_item(this.id);' class='active left-menu-item'><span class='mouseover-link pointer font-15'>Next Game</span></div>
                         <div id='last_game_menu_item' onclick='choose_left_menu_item(this.id);' class='left-menu-item'><span class='mouseover-link pointer font-15'>Last Game</span></div>
+                        <div id='next_game_menu_item' onclick='choose_left_menu_item(this.id);' class='left-menu-item'><span class='mouseover-link pointer font-15'>Next Game</span></div>
                         <div id='full_schedule_menu_item' onclick='choose_left_menu_item(this.id);' class='left-menu-item'><span class='mouseover-link pointer font-15'>Full Schedule</span></div>
                     </div>
                     <div class='right-content col-10-12' id='right-content-panel'>
@@ -78,7 +78,7 @@
                                     <div class='non-dashboard-section-header'>
                                         <div class='col-11-10 no-padding non-dashboard-label'>Film Guide</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='film_guide_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|film_guide" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='film_guide_helpicon' class='icon-15 explanation' value="team_my_schedule.html|film_guide" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='film_guide_img' class='icon-15 toggle' onclick='toggle_tile_visibility("film_guide");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
@@ -105,7 +105,7 @@
                                     <div class='non-dashboard-section-header'>
                                         <div class='col-11-10 no-padding non-dashboard-label'>Match-Up Advantages: Shot Clock Management</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='matchup_advantages_shooting_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|matchup_advantages_shooting" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' style='margin-top:2px;'><img id='matchup_advantages_shooting_helpicon' class='icon-15 explanation' value="team_my_schedule.html|matchup_advantages_shooting" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='matchup_advantages_shooting_img' class='icon-15 toggle' onclick='toggle_tile_visibility("matchup_advantages_shooting");' src="static/img/Gray_Minus150.png" /></div>
                                                 
                                                     
@@ -131,7 +131,7 @@
                                     <div class='non-dashboard-section-header'>
                                         <div class='col-11-10 no-padding non-dashboard-label'>Match-Up Advantages: Pacing</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='matchup_advantages_pacing_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|matchup_advantages_pacing" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' style='margin-top:2px;'><img id='matchup_advantages_pacing_helpicon' class='icon-15 explanation' value="team_my_schedule.html|matchup_advantages_pacing" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='matchup_advantages_pacing_img' class='icon-15 toggle' onclick='toggle_tile_visibility("matchup_advantages_pacing");' src="static/img/Gray_Minus150.png" /></div>
                                                 
                                                     
@@ -157,7 +157,7 @@
                                     <div class='non-dashboard-section-header'>
                                         <div class='col-11-10 no-padding non-dashboard-label'>Match-Up History</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='matchup_history_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|matchup_history" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' style='margin-top:2px;'><img id='matchup_history_helpicon' class='icon-15 explanation' value="team_my_schedule.html|matchup_history" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='matchup_history_img' class='icon-15 toggle' onclick='toggle_tile_visibility("matchup_history");' src="static/img/Gray_Minus150.png" /></div>
                                                 
                                                     
@@ -178,9 +178,15 @@
                                 <div class='non-dashboard-section card col-12' id='last_game_headline_container_div'>
                                 
                                     <div class='non-dashboard-section-header'>
-                                        <div class='col-11-10 no-padding non-dashboard-label'>{{misc.data.last_game.headline_result_str}} </div>
+                                        <div class='col-11-10 no-padding non-dashboard-label' style='display:inline-flex;'>{{misc.data.last_game.headline_result_str}}
+                                            <FORM id='last_game_detail_form' action='/team_game_detail' method=POST>
+                                                <input type=hidden name='ID' value='{{misc.data.last_game.ID}}' />
+                                                <input type=hidden name='came_from' value='team_my_schedule' />
+                                                <img style='padding-left:15px;' onclick="document.getElementById('last_game_detail_form').submit();" src="static/img/popout25.png" />
+                                            </FORM>
+                                        </div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='last_game_headline_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|last_game_headline" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='last_game_headline_helpicon' class='icon-15 explanation' value="team_my_schedule.html|last_game_headline" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_headline_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game_headline");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
@@ -197,7 +203,7 @@
                                     <div class='non-dashboard-section-header'>
                                         <div class='col-11-10 no-padding non-dashboard-label'>Opponent Adjusted Performance (Primary Units)</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='last_game_adjusted_performance_primary_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|last_game_adjusted_performance_primary" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='last_game_adjusted_performance_primary_helpicon' class='icon-15 explanation' value="team_my_schedule.html|last_game_adjusted_performance_primary" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_adjusted_performance_primary_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game_adjusted_performance_primary");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
@@ -223,7 +229,7 @@
                                     <div class='non-dashboard-section-header'>
                                         <div class='col-11-10 no-padding non-dashboard-label'>Opponent Adjusted Performance (FO/GK)</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='last_game_adjusted_performance_specialty_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|last_game_adjusted_performance_specialty" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='last_game_adjusted_performance_specialty_helpicon' class='icon-15 explanation' value="team_my_schedule.html|last_game_adjusted_performance_specialty" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_adjusted_performance_specialty_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game_adjusted_performance_specialty");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
@@ -249,7 +255,7 @@
                                     <div class='non-dashboard-section-header'>
                                         <div class='col-11-10 no-padding non-dashboard-label'>Positional Breakdown</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='last_game_positional_breakdown_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|last_game_positional_breakdown" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='last_game_positional_breakdown_helpicon' class='icon-15 explanation' value="team_my_schedule.html|last_game_positional_breakdown" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_positional_breakdown_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game_positional_breakdown");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
@@ -264,7 +270,7 @@
                                     <div class='non-dashboard-section-header'>
                                         <div class='col-11-10 no-padding non-dashboard-label'>Situational Splits</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='last_game_situation_splits_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|last_game_situation_splits" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='last_game_situation_splits_helpicon' class='icon-15 explanation' value="team_my_schedule.html|last_game_situation_splits" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_situation_splits_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game_situation_splits");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
@@ -281,7 +287,7 @@
                                     <div class='non-dashboard-section-header'>
                                         <div class='col-11-10 no-padding non-dashboard-label'>Game Stretches: Offensive Perspective</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='last_game_key_stretches_offense_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|last_game_key_stretches_offense" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='last_game_key_stretches_offense_helpicon' class='icon-15 explanation' value="team_my_schedule.html|last_game_key_stretches_offense" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_key_stretches_offense_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game_key_stretches_offense");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
@@ -298,7 +304,7 @@
                                     <div class='non-dashboard-section-header'>
                                         <div class='col-11-10 no-padding non-dashboard-label'>Game Stretches: Defensive Perspective</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='last_game_key_stretches_defense_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_schedule.html|last_game_key_stretches_defense" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='last_game_key_stretches_defense_helpicon' class='icon-15 explanation' value="team_my_schedule.html|last_game_key_stretches_defense" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_key_stretches_defense_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game_key_stretches_defense");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
@@ -388,16 +394,26 @@
                     printed = 0; show_last_year = false;
                     for(var a = 0;a<misc.data.next_game.film_guide[tag].key_stretches.length;a++){
                         bkt = misc.data.next_game.film_guide[tag].key_stretches[a];
+                        console.log(bkt)
                         if(bkt.last_year){ show_last_year = true; }
                         html += "<div class='flex table-row no-padding'>";
-                        html += " <div class='col-4 no-padding'><span class='font-12'>" + bkt.opp_short_code + " (" + bkt.short_date_str + (bkt.last_year ? "*" : "") + ")</span></div>";
+                        html += " <div class='col-4 no-padding inline-flex' style='padding:0;'>";
+                        html += "<FORM id='future_opp_form" + bkt.ID + "' action='/team_detail' style='padding: 0px 5px;' method=POST><input type=hidden name='detail_team_ID' value='" + bkt.opponentID + "'><input type=hidden name='came_from' value='team_my_schedule' /><span class='mouseover-link pointer font-12 contents' onclick=\"document.getElementById('future_opp_form" + bkt.ID + "').submit();\">" + bkt.opp_short_code + "</span></FORM>";
+                        
+                        html += "<FORM id='future_game_form" + bkt.ID + "' action='/team_game_detail' method=POST><input type=hidden name='ID' value='" + bkt.ID + "'><input type=hidden name='came_from' value='team_my_schedule' /><span class='mouseover-link pointer font-12 contents' style='padding-left:5px;' onclick=\"document.getElementById('future_game_form" + bkt.ID + "').submit();\">(" + bkt.short_date_str + (bkt.last_year ? "*" : "") + ")</span></FORM>";
+                        /*<FORM id='game_form{{g.ID}}' action='/team_game_detail' method=POST><input type=hidden name='game_ID' value='{{g.ID}}' /><input type=hidden name='came_from' value='home' /><span onclick="document.getElementById('game_form{{g.ID}}').submit();" class='mouseover-link pointer font-14 contents'>{{g.date_mmmdd}}</span></FORM>
+                        */
+                        //html += <span class='font-12'>" + bkt.opp_short_code + " (" + bkt.short_date_str + (bkt.last_year ? "*" : "") + ")</span></div>";
+                        html += "</div>";
+                        
                         html += " <div class='col-2 no-padding'><span class='font-12 contents'>" + bkt.start_timestamp + "</span></div>";
                         html += " <div class='col-2 no-padding'><span class='font-12 contents'>" + bkt.end_timestamp + "</span></div>";
                         html += " <div class='col-2 no-padding centered'><span class='font-12 contents'>" + zFormat(bkt.goals, 0) + "</span></div>";
                         html += " <div class='col-2 no-padding centered'><span class='font-12 contents'>" + zFormat(bkt.possessions, 0) + "</span></div>";
                         html += "</div>";
+                        printed += 1;
                     }
-                    elem.append(html); printed += 1;
+                    
                     while(printed < max_rows){
                         html += "<div class='flex no-padding'>";
                         html += " <div class='col-12 no-padding'><span class='font-12'>&nbsp;</span></div>";
@@ -409,6 +425,7 @@
                         html += " <div class='col-12 right'><span class='font-12'>* Last Season</span></div>";
                         html += "</div>";
                     }
+                    elem.append(html); 
                 }
                 
                 // Mark complete
@@ -594,7 +611,7 @@
             
             html += "<div class='flex bbottom'>";
             html += " <div class='col-2'><span class='font-12 bold'>Date</span></div>";
-            html += " <div class='col-1'><span class='font-12 bold contents'>Result</span></div>";
+            html += " <div class='col-1 centered'><span class='font-12 bold contents'>Result</span></div>";
             html += " <div class='col-9'><ul class='table-ul left' style='background-color:inherit;'>";
             for(var a = 0;a<tags.length;a++){ tag = tags[a];
             
@@ -605,10 +622,18 @@
             
             for(var a = 0;a<misc.data.matchup_history.length;a++){
                 gm = misc.data.matchup_history[a];
+                last_game_style = gm.result_str.indexOf("L") == 0 ? "red-text" : "green-text";
                
                 html += "<div class='flex table-row'>";
-                html += " <div class='col-2'><span class='font-12'>" + gm.game_date_str + "</span></div>";
-                html += " <div class='col-1'><span class='font-12 contents'>" + gm.result_str + "</span></div>";
+                html += " <div class='col-2'>";
+                
+                html += "<FORM id='future_game_form" + gm.ID + "' action='/team_game_detail' method=POST><input type=hidden name='ID' value='" + gm.ID + "'><input type=hidden name='came_from' value='team_my_schedule' /><span class='mouseover-link pointer font-12 contents' style='padding-left:5px;' onclick=\"document.getElementById('future_game_form" + gm.ID + "').submit();\">" + gm.game_date_str + "</span></FORM>";
+                html += "</div>";
+                
+                //html += " <div class='col-2'><span class='font-12'>" + gm.game_date_str + "</span></div>";
+                
+                
+                html += " <div class='col-1 centered'><span class='font-12 " + last_game_style + " contents'>" + gm.result_str + "</span></div>";
                 html += " <div class='col-9'><ul class='table-ul left' style='background-color:inherit;'>";
                 for(var b = 0;b<tags.length;b++){ tag = tags[b];
                     if([null, ''].indexOf(gm[tag.tag]) > -1){ txt = ""; }

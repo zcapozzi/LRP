@@ -5,9 +5,9 @@
 {% block body %}
 
     <div class='col-12 centered' id='banner'></div>
-    {% if misc.breadcrumbs %}
-        <div class='col-12 centered'>
-            {{misc.breadcrumbs}}
+    {% if misc.breadcrumbs and user_obj.auth %}
+        <div class='col-12 breadcrumbs'>
+            {{misc.breadcrumbs|safe}}
         </div>
     {% endif %}
     {% if misc.error %}

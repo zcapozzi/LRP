@@ -57,14 +57,14 @@
                             <span class='font-15 contents'>Use the form to enter your specifics. I will reach out within 24 hours to coordinate a trial account.</span>    
                         {% endif %}
                         {% if misc.product.status == "available" %}
-                            <div class='centered'><span class='font-24 bold centered contents'>{{misc.product.price_str}}</span></div>
+                            <div class='centered'><span class='font-15 contents'>{{misc.product.buy_nudge}}</span></div>
                         {% endif %}
                         {% if misc.product.status == "pre-register" %}
-                            <span class='font-15 contents'>This product is not quite ready yet, but enter your email to get notified when it's ready.</span>
+                            <span class='font-15 contents'>This product is not quite ready yet, but enter your email to get notified when it is.</span>
                         {% endif %}
                     </div>
 
-                    {% if misc.product.call_to_action != "ADD TO CART" %}
+                    {% if misc.product.status != "available" %}
                         <div class='col-12'>
                             <div class='col-12'><span class='font-13 light'>Email</div>
                             <div class='col-12'>
@@ -80,9 +80,11 @@
                         <div class='col-12 centered'><span style='color:blue;' class='font-15'>{{misc.msg|safe}}</span></div>
                     {% else %}
                         <div class='col-12 centered' style='padding-top:20px;'>
-                            
-                            <button id='action_button' type=submit class='action-button' name='action' value='{{misc.product.status}}'><span class='pointer font-15'>{{misc.product.call_to_action}}</span></button>
-                   
+                            {%if misc.product.call_to_action != "BUY IT" %}
+                                <button id='action_button' type=submit class='action-button small blue' name='action' value='{{misc.product.status}}'><span class='pointer font-15'>{{misc.product.call_to_action}}</span></button>
+                            {% else %}
+                                <button type=button id='buy_button' class='action-button small blue' onclick="window.location='/product-pricing-basic'"><span class='pointer font-15'>{{misc.product.call_to_action}}</span></button>
+                            {% endif %}
                         </div>
                     {% endif %}
                     </FORM>

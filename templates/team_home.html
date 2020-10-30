@@ -38,83 +38,43 @@
                 </div>
                 
                 <div id='my_team_schedule' class='home-page-section-details normal flex-block'>
-                    {% if misc.data.last_game %}
+                 
                         <div class='col-4-12'>
                             <div onclick='drill_down_header(this.id);' route="team_my_schedule|last_game"  class='margin card white dashboard-tile' id='last_game_container_div'>
                                 
                     
-                                {% if misc.data.completed_games_cnt == 1 %}
-                                    <div class='col-12 flex dashboard-tile-header'>
-                                        <div class='col-11 no-padding dashboard-label'>Last: {{misc.data.last_game.opponent_display}} ({{misc.data.last_game.score_str}})</div>
-                                        
-                                        <div class='col-1 right no-padding' style='margin-top:2px;'></div>
+                                
+                                
+                                <div class='col-12 flex'>
+                                    <div class='col-11-10 no-padding dashboard-label' id='last_game_header'></div>
                                     
-                                    </div>
-                                    <div class='no-padding dashboard-tile-content'>
-                                        <div class='col-12'><span class='font-15 light contents'>Offense</span></div>
-                                        <div class='col-12 flex'>
-                                            <div class='col-3'>
-                                                <div class='spark-bar' style='margin-top:4px; width:40%; background-color:#DDF;'></div>
-                                            </div>
-                                        </div>
-                                                
-                                    </div>
-                                {% endif %}
-                                {% if 1 < misc.data.completed_games_cnt and misc.data.completed_games_cnt < 3 %}
-                                    <div class='col-12 flex'>
-                                        <div class='col-11 no-padding dashboard-label'>Last: {{misc.data.last_game.opponent_display}} ({{misc.data.last_game.score_str}})</div>
-                                        
-                                        <div class='col-1 right no-padding' style='margin-top:2px;'></div>
-                                    
-                                    </div>
+                                    <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='last_game_helpicon' class='icon-15 explanation' value="team_home.html|last_game_whiskers" src="static/img/Gray_Info150.png" /></div>
+                                    <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game");' src="static/img/Gray_Plus150.png" /></div>
                                 
-                                {% endif %}
-                                
-                                {% if 3 < misc.data.completed_games_cnt %}
-                                
-                                    <div class='col-12 flex'>
-                                        <div class='col-11-10 no-padding dashboard-label'>Last: {{misc.data.last_game.opponent_display}} ({{misc.data.last_game.score_str}})</div>
-                                        
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='last_game_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|last_game_whiskers" src="static/img/Gray_Info150.png" /></div>
-                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game");' src="static/img/Gray_Plus150.png" /></div>
-                                    
-                                    </div>
-                                    <div onclick='drill_down_body(this.id);' route="team_my_schedule|last_game"  class='no-padding col-12 small_graph dashboard-tile-content' id='last_game_div'></div>
-                                {% endif %}
-                                
+                                </div>
+                                <div onclick='drill_down_body(this.id);' route="team_my_schedule|last_game"  class='no-padding col-12 small_graph dashboard-tile-content' id='last_game_div'></div>
+                     
+                            
                                 
                              </div>
                              
                         </div>
-                    {% endif %}
+      
                     
-                    {% if misc.data.next_game %}
-                        <div class='col-4-12'>
-                            <div onclick='drill_down_header(this.id);' route="team_my_schedule|next_game" id='next_game_container_div' class='margin card white dashboard-tile'>
-                                <div class='col-12 flex'>
-                                    <div class='col-11-10 no-padding dashboard-label'>Next: {{misc.data.next_game.opponent_display}}</div>
-                                    
-                                    <div class='col-1 right no-padding dashboard-tile-help-icon' id='next_game_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|next_game_split_summary" src="static/img/Gray_Info150.png" id='next_game_info' /></div>
-                                    <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='next_game_img' class='icon-15 toggle' onclick='toggle_tile_visibility("next_game");' src="static/img/Gray_Plus150.png" /></div>
-                                </div>
-                                <div onclick='drill_down_body(this.id);' route="team_my_schedule|next_game" class='no-padding col-12 small_graph dashboard-tile-content' id='next_game_div'></div>
+                    
+                    <div class='col-4-12'>
+                        <div onclick='drill_down_header(this.id);' route="team_my_schedule|next_game" id='next_game_container_div' class='margin card white dashboard-tile'>
+                            <div class='col-12 flex'>
+                                <div class='col-11-10 no-padding dashboard-label' id='next_game_header'></div>
                                 
-                             </div>
-                        </div>
-                    {% else %}    
-                        <div class='col-4-12'>
-                            <div class='margin card white dashboard-tile'>
-                                <div class='col-12 flex'>
-                                    <div class='col-11-10 no-padding dashboard-label'>Next</div>
-                                    
-                                    
-                                    <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='next_game_no_game_img' class='icon-15 toggle' onclick='toggle_tile_visibility("next_game_no_game");' src="static/img/Gray_Plus150.png" /></div>
-                                </div>
-                                <div class='no-padding col-12 small_graph dashboard-tile-content centered'  id='next_game_no_game_div'><div class='' style='padding-top:50px;'><span class='font-30'>None scheduled</span></div></div>
-                                
-                             </div>
-                        </div>
-                    {% endif %}
+                                <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='next_game_helpicon' class='icon-15 explanation' value="team_home.html|next_game_split_summary" src="static/img/Gray_Info150.png" /></div>
+                                <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='next_game_img' class='icon-15 toggle' onclick='toggle_tile_visibility("next_game");' src="static/img/Gray_Plus150.png" /></div>
+                            </div>
+                            <div class='no-padding col-12 small_graph dashboard-tile-content' id='next_game_div'></div>
+                            
+                         </div>
+                    </div>
+                
                     
                     {% if misc.data.future_games %}
                         <div class='col-4-12'>
@@ -122,10 +82,10 @@
                                 <div class='col-12 flex'>
                                     <div class='col-11-10 no-padding dashboard-label'>Upcoming Schedule</div>
                                     
-                                    <div class='col-1 right no-padding dashboard-tile-help-icon' id='upcoming_games_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|upcoming_games" src="static/img/Gray_Info150.png" /></div>
+                                    <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='upcoming_games_helpicon' class='icon-15 explanation' value="team_home.html|upcoming_games" src="static/img/Gray_Info150.png" /></div>
                                     <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='upcoming_games_img' class='icon-15 toggle' onclick='toggle_tile_visibility("upcoming_games");' src="static/img/Gray_Plus150.png" /></div>
                                 </div>
-                                <div onclick='drill_down_body(this.id);' route="team_my_schedule|full_schedule" class='no-padding col-12 small_graph dashboard-tile-content' id='upcoming_games_div'>
+                                <div class='no-padding col-12 small_graph dashboard-tile-content' id='upcoming_games_div'>
                                     <div class='flex no-padding bbottom' style='padding: 0px 5px; margin-bottom:5px;'>
                                         <div class='col-3'><span class='pointer font-14 bold contents'>Date</span></div>
                                         <div class='col-3'><span class='pointer font-14 bold contents'>Opp</span></div>
@@ -137,8 +97,8 @@
                                         {% if g.next == 0 %}
                                             
                                                 <div class='flex no-padding' style='padding: 0px 5px;'>
-                                                    <div class='col-3'><FORM id='game_form{{g.ID}}' action='/team_game' method=POST><input type=hidden name='game_ID' value='{{g.ID}}' /><span onclick="document.getElementById('game_form{{g.ID}}').submit();" class='mouseover-link pointer font-14 contents'>{{g.date_mmmdd}}</span></FORM></div>
-                                                    <div class='col-3'><FORM id='future_form{{g.ID}}' action='/team_detail' method=POST><input type=hidden name='detail_team_ID' value='{{g.opponentID}}'><span class='mouseover-link pointer font-14 contents' onclick='document.getElementById("future_form{{g.ID}}").submit();'>{{g.opp_short_code}}</span></FORM></div>
+                                                    <div class='col-3'><FORM id='game_form{{g.ID}}' action='/team_game_detail' method=POST><input type=hidden name='ID' value='{{g.ID}}' /><input type=hidden name='came_from' value='home' /><span onclick="document.getElementById('game_form{{g.ID}}').submit();" class='mouseover-link pointer font-14 contents'>{{g.date_mmmdd}}</span></FORM></div>
+                                                    <div class='col-3'><FORM id='future_form{{g.ID}}' action='/team_detail' method=POST><input type=hidden name='detail_team_ID' value='{{g.opponentID}}'><input type=hidden name='came_from' value='home' /><span class='mouseover-link pointer font-14 contents' onclick='document.getElementById("future_form{{g.ID}}").submit();'>{{g.opp_short_code}}</span></FORM></div>
                                                     <div class='col-2 centered'><span class='large-dot' style='background-color: {{g.off_efficiency_color}};'></span></div>
                                                     <div class='col-2 centered'><span class='large-dot' style='background-color: {{g.def_efficiency_inverted_color}};'></span></div>
                                                     <div class='col-2 centered'><span class='large-dot' style='background-color: {{g.faceoff_win_rate_color}};'></span></div>
@@ -149,19 +109,7 @@
                                 </div>
                              </div>
                         </div>
-                    {% else %}    
-                        <div class='col-4-12'>
-                            <div class='margin card white dashboard-tile'>
-                                <div class='col-12 flex'>
-                                    <div class='col-11-10 no-padding dashboard-label'>Upcoming Schedule</div>
-                                    
-                                    
-                                    <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='future_games_no_game_img' class='icon-15 toggle' onclick='toggle_tile_visibility("future_games_no_game");' src="static/img/Gray_Plus150.png" /></div>
-                                </div>
-                                <div class='no-padding col-12 small_graph dashboard-tile-content centered'  id='future_games_no_game_div'><div class='' style='padding-top:50px;'><span class='font-30'>None scheduled</span></div></div>
-                                
-                             </div>
-                        </div>
+                    
                     {% endif %}
                     
                     
@@ -178,7 +126,7 @@
                     </div>
                     
                 </div>
-                <div id='my_team_summary' class='home-page-section-summary flex-block'>
+                <!--div id='my_team_summary' class='home-page-section-summary flex-block'>
                     <div class='col-6-12 no-padding'><div class='flex'>
                         <div class='col-6 home-page-section-summary-detail'>
                             <span class='font-15 light'>Record: </span><span class='font-15 light'>{{misc.data.record_league_str}}</span>
@@ -196,7 +144,7 @@
                         </div>
                     </div></div>
                     
-                </div>
+                </div-->
                 <div id='my_team_details' class='home-page-section-details small flex-block'>
                     {% if misc.data.my_team_summary %}
                     <div class='col-4-12'>
@@ -204,7 +152,7 @@
                             <div class='col-12 flex'>
                                 <div class='col-11-10 no-padding dashboard-label'>Offensive Efficiency</div>
                                 
-                                <div class='col-1 right no-padding dashboard-tile-help-icon' id='my_team_details_offense_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|offensive_efficiency_line_chart" src="static/img/Gray_Info150.png" /></div>
+                                <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='my_team_details_offense_helpicon' class='icon-15 explanation' value="team_home.html|offensive_efficiency_line_chart" src="static/img/Gray_Info150.png" /></div>
                                 <div class='col-1 mob right no-padding' style='margin-top:2px;'><img class='icon-15' id='my_team_details_offense_img' onclick='toggle_tile_visibility("my_team_details_offense");' src="static/img/Gray_Plus150.png" /></div>
                             
                             </div>
@@ -216,7 +164,7 @@
                             <div class='col-12 flex'>
                                 <div class='col-11-10 no-padding dashboard-label'>Defensive Efficiency</div>
                                 
-                                <div class='col-1 right no-padding dashboard-tile-help-icon' id='my_team_details_defense_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|defensive_efficiency_line_chart" src="static/img/Gray_Info150.png" /></div>
+                                <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='my_team_details_defense_helpicon' class='icon-15 explanation' value="team_home.html|defensive_efficiency_line_chart" src="static/img/Gray_Info150.png" /></div>
                                 <div class='col-1 mob right no-padding' style='margin-top:2px;'><img class='icon-15' id='my_team_details_defense_img' onclick='toggle_tile_visibility("my_team_details_defense");' src="static/img/Gray_Plus150.png" /></div>
                             
                             </div>
@@ -228,7 +176,7 @@
                             <div class='col-12 flex'>
                                 <div class='col-11-10 no-padding dashboard-label'>Faceoff Win Rate</div>
                                 
-                                <div class='col-1 right no-padding dashboard-tile-help-icon' id='my_team_details_fogo_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|faceoff_win_rate_line_chart" src="static/img/Gray_Info150.png" /></div>
+                                <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='my_team_details_fogo_helpicon' class='icon-15 explanation' value="team_home.html|faceoff_win_rate_line_chart" src="static/img/Gray_Info150.png" /></div>
                                 <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='my_team_details_fogo_img' class='icon-15 toggle' onclick='toggle_tile_visibility("my_team_details_fogo");' src="static/img/Gray_Plus150.png" /></div>
                             
                             </div>
@@ -258,7 +206,7 @@
                             <div class='col-12 flex'>
                                 <div class='col-11-10 no-padding dashboard-label'>Projected RPI</div>
                                 
-                                <div class='col-1 right no-padding dashboard-tile-help-icon' id='projected_rpi_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|projected_rpi" src="static/img/Gray_Info150.png" /></div>
+                                <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='projected_rpi_helpicon' class='icon-15 explanation' value="team_home.html|projected_rpi" src="static/img/Gray_Info150.png" /></div>
                                 <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='projected_rpi_img' class='icon-15 toggle' onclick='toggle_tile_visibility("projected_rpi");' src="static/img/Gray_Plus150.png" /></div>
                             
                                 
@@ -272,7 +220,7 @@
                             <div class='col-12 flex'>
                                 <div class='col-11-10 no-padding dashboard-label'>Lax-ELO Lifetime Rating</div>
                                 
-                                <div class='col-1 right no-padding dashboard-tile-help-icon' id='laxelo_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|laxelo" src="static/img/Gray_Info150.png" /></div>
+                                <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='laxelo_helpicon' class='icon-15 explanation' value="team_home.html|laxelo" src="static/img/Gray_Info150.png" /></div>
                                 <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='laxelo_img' class='icon-15 toggle' onclick='toggle_tile_visibility("laxelo");' src="static/img/Gray_Plus150.png" /></div>
                             
                                 
@@ -287,7 +235,7 @@
                             <div class='col-12 flex'>
                                 <div class='col-11-10 no-padding dashboard-label'>Post-Season Probabilities</div>
                                 
-                                <div class='col-1 right no-padding dashboard-tile-help-icon' id='postseason_odds_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_home.html|postseason" src="static/img/Gray_Info150.png" /></div>
+                                <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='postseason_odds_helpicon' class='icon-15 explanation' value="team_home.html|postseason" src="static/img/Gray_Info150.png" /></div>
                                 <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='postseason_odds_img' class='icon-15 toggle' onclick='toggle_tile_visibility("postseason_odds");' src="static/img/Gray_Plus150.png" /></div>
                             
                                 
@@ -400,11 +348,99 @@
     }
     
     function my_schedule_summary(){
-        if(misc.data.completed_games_cnt > 3){
+        if(misc.data.last_game != null){
+            elem = $("#last_game_header"); elem.empty();
+            html = "Last: " + misc.data.last_game.opponent_display + " (" + misc.data.last_game.score_str + ")";
+            elem.append(html);
+            if(misc.data.completed_games_cnt > 3){
+                
+                custom_specs = {'chart_size': 'small', 'margin_top': 0, 'margin_right': 0, 'margin_bottom': 0, 'margin_left': 0};
+                custom_specs.width = $('#last_game_container_div').width();
+                custom_last_game_tile(misc, 'last_game_div', custom_specs);
+                
+                document.getElementById('last_game_helpicon').setAttribute( "value", "team_home.html|last_game_whiskers");
+            }
+            else{
+                elem = $("#last_game_div"); elem.empty();
+                stats = "offense~efficiency|defense~efficiency|offense~faceoff_win_rate".split("|");
+                for(var a = 0;a<stats.length;a++){ 
+                    stats[a] = {'unit': stats[a].split("~")[0], 'tag': stats[a].split("~")[1] }; 
+                }
+                stats = []
+                stats.push({'label': 'Off. Efficiency', 'tag': 'efficiency', 'unit': 'offense'});
+                stats.push({'label': 'Def. Efficiency', 'tag': 'efficiency', 'unit': 'defense'});
+                stats.push({'label': 'Faceoff %', 'tag': 'faceoff_win_rate', 'unit': 'offense'});
+                
+                data = misc.extra_data.db_team_game_summaries;
+   
+                game_summaries = misc.data.last_game.summaries.filter(r=> r.team_ID==misc.data.ID && r.filter == null);
+                
+                headline_options = [];
+                // Visualization
+                html = ""
+
+                
+                
+                html += "<div class='col-12'>"
+                    html += "<div class='flex bbottom no-padding'>"
+                    html += "<div class='col-6 no-padding'><span class='font-12 light'></span></div>"
+                    html += "<div class='col-3 no-padding centered'><span class='font-12 light'>Raw</span></div>"
+                    html += "<div class='col-3 no-padding centered'><span class='font-12 light'>Adj</span></div>"
+                    html +="</div>";
+                for(var a = 0;a<stats.length;a++){ stat = stats[a];
+                    unit_summary = game_summaries.filter(r=> r.data_type==stat.unit)[0];
+                    db_stat = misc.extra_data.db_statistics.filter(r=> r.stat == stat.tag)[0];
+                    stat.reverse=db_stat.reverse;
+                    stat.js_fmt=db_stat.js_fmt;
+                    adjustment = unit_summary.game_stat_adjustments.filter(r=> r.stat_ID==db_stat.ID);
+                    adjustment_value = null;
+                    if(adjustment.length > 0 && adjustment != []){
+                        adjustment_value = adjustment[0].adjustment;
+                    }
+                  
+                    
+
+                    if(adjustment_value != null){
+                  
+                        
+                        raw_val = (1) ? jsformat(unit_summary[stat.tag], db_stat.js_fmt) : "";
+                        adj_val = (1) ? jsformat(unit_summary[stat.tag] + adjustment_value, db_stat.js_fmt) : "";
+                        html += "<div class='flex no-padding' style='padding-top:15px;'>"
+                        html += "<div class='col-6 no-padding '><span class='font-15'>" + stat.label + "</span></div>"
+                        html += "<div class='col-3 no-padding centered'><span class='font-15'>" + raw_val + "</span></div>"
+                        html += "<div class='col-3 no-padding centered'><span class='font-15'>" + adj_val + "</span></div>"
+                        html +="</div>";
+                    }
+                    else{
+                        html += "<div class='flex no-padding' style='padding-top:15px;'>"
+                        html += "<div class='col-6 no-padding'><span class='font-15 bold'>" + stat.label + "</span></div>"
+                        html += "<div class='col-3 no-padding centered'><span class='font-15 bold'>" + raw_val + "</span></div>"
+                        html += "<div class='col-3 no-padding centered'><span class='font-15 bold'></span></div>"
+                        html +="</div>";
+                    }
+                    
+           
+                }
+                html += "</div>";
+                
+                
+                                                
+                                               
+                                    
+                elem.append(html);
+                document.getElementById('last_game_helpicon').setAttribute( "value", "team_home.html|last_game_basic");
+            }
+        }
+        else{
+            elem = $("#last_game_div"); elem.empty();
+            html = "<div class='centered' style='padding-top:50px;'><span class='font-30'>No last game found</span></div>";
+            elem.append(html);
             
-            custom_specs = {'chart_size': 'small', 'margin_top': 0, 'margin_right': 0, 'margin_bottom': 0, 'margin_left': 0};
-            custom_specs.width = $('#last_game_container_div').width();
-            custom_last_game_tile(misc, 'last_game_div', custom_specs);
+            elem = $("#last_game_header"); elem.empty();
+            html = "Last Game";
+            elem.append(html);
+            
+            document.getElementById('last_game_helpicon').style.display = "none";
         }
         
         // Display the opponent tile, with the format dependent on the number of games played this year
@@ -417,7 +453,7 @@
                 });
                 
                 
-                document.getElementById('next_game_helpicon').setAttribute( "onclick", "show_explanation('team_home.html|next_game_season_summary')");
+                document.getElementById('next_game_helpicon').setAttribute( "value", "team_home.html|next_game_season_summary");
                 custom_specs = {'version': 'season'};
                 custom_next_game_tile(misc, 'next_game_div', custom_specs);
                 $(".opp-game-row").css("padding", "5px");
@@ -430,10 +466,38 @@
                 });
                 
                 
-                document.getElementById('next_game_helpicon').setAttribute( "onclick", "show_explanation('team_home.html|next_game_split_summary')");
+                document.getElementById('next_game_helpicon').setAttribute( "value", "team_home.html|next_game_split_summary");
                 custom_specs = {'version': 'aggregate'};
                 custom_next_game_tile(misc, 'next_game_div', custom_specs);
             }
+            elem = $("#next_game_header"); elem.empty();
+            html = "Next Game: " + misc.data.next_game.opponent_display;
+            elem.append(html);
+        
+        }
+        else{
+            elem = $("#next_game_div"); elem.empty();
+            html = "<div class='centered' style='padding-top:50px;'><span class='font-30'>None scheduled</span></div>";
+            elem.append(html);
+            
+            elem = $("#next_game_header"); elem.empty();
+            html = "Next Game";
+            elem.append(html);
+            
+            
+            document.getElementById('next_game_helpicon').style.display = "none";
+        }
+        
+        if(misc.data.future_games != null){
+        
+        }
+        else{
+            elem = $("#upcoming_games_div"); elem.empty();
+            html = "<div class='centered' style='padding-top:50px;'><span class='font-30'>No games scheduled</span></div>";
+            elem.append(html);
+           
+            
+            document.getElementById('upcoming_games_helpicon').style.display = "none";
         }
     }
     
@@ -450,7 +514,9 @@
             custom_specs = {'vertical_lines': [{'x': misc.data.ss_date_timestamp, 'label': 'Selection Sun.', 'align': 'end'}], 'flip': 1, 'shading_vars_rect_width': 3, 'shading_vars': ['RPI_good', 'RPI_bad'], 'chart_size': 'small', 'margin_left': 30};
             data = {'axis_labels': {'y': 'Projected Final RPI, by date of simulation run', 'x': 'Date'}, 'data': []};
             tmp = {'stroke-dasharray': '3-3', 'stroke': "#666", 'points': []}
-            tmp.points = misc.data.sim_results;
+            tmp.points = misc.data.sim_results.sort(function(first, second) {
+             return second.x - first.x;
+            });
             data.data.push(tmp)
             
             x_ticks = create_game_x_ticks(data.data);
@@ -548,8 +614,6 @@
     finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
     
     
-    //console.log("misc.data.bracketology_simulation")
-    //console.log(misc.data.bracketology_simulation);
     //console.log("misc.data.next_game")
     //console.log(misc.data.next_game);
     //console.log("misc.data.future_games")

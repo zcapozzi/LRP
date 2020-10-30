@@ -443,7 +443,7 @@ function show_explanation(tags){
         exp = 'Oops...|There should be something here, but there isn\'t. Apologies.'
         for(var a = 0;a<explanations.length;a++){
             var explanation = explanations[a];
-            //console.log(explanation.html_page , tags[0] , explanation.tag , tags[1]);
+            console.log(explanation.html_page , tags[0] , explanation.tag , tags[1]);
             if(explanation.html_page == tags[0] && explanation.tag == tags[1]){
                 exp = explanation.header_text + "|" + explanation.explanation_html_BR;
                 logger_str = [tags[0], tags[1], misc.nhca].join("|");
@@ -774,6 +774,78 @@ function toggle_tile_visibility(id){
         }
     }
     redraw(id);
+}
+
+function toggle_row_visibility(func,  id){
+    var img_elem = $("#" + id + "_imgicon");
+  
+    var div_elem = $("#" + id + "_hiddendiv");
+
+    var class_list = document.getElementById(id + "_hiddendiv").className.split(/\s+/);
+    
+    var opening = false;
+    if(class_list.indexOf("visible") == -1){
+        div_elem.addClass("visible");
+        img_elem.attr("src", "static/img/Gray_Minus_Skinny150.png");
+        opening = true;
+    }
+    else{
+        div_elem.removeClass("visible");
+        img_elem.attr("src", "static/img/Gray_Plus_Skinny150.png");
+    }
+    /*
+    if(opening){
+        var window_height = $(window).height();
+        var current_loc = $(document).scrollTop();
+        var h = div_elem.height();
+        var loc = div_elem.position().top;
+        if(h + loc > window_height + current_loc){
+            var offset = 0;
+            while(h + loc > window_height + current_loc + offset){
+                offset += 1;
+            }
+            
+            
+            $("html, body").animate({ scrollTop: (current_loc + offset + 30)}, "slow");
+        }
+    }
+    redraw(func);*/
+}
+
+function toggle_row_visibility(func,  id){
+    var img_elem = $("#" + id + "_imgicon");
+  
+    var div_elem = $("#" + id + "_hiddendiv");
+
+    var class_list = document.getElementById(id + "_hiddendiv").className.split(/\s+/);
+    
+    var opening = false;
+    if(class_list.indexOf("visible") == -1){
+        div_elem.addClass("visible");
+        img_elem.attr("src", "static/img/Gray_Minus_Skinny150.png");
+        opening = true;
+    }
+    else{
+        div_elem.removeClass("visible");
+        img_elem.attr("src", "static/img/Gray_Plus_Skinny150.png");
+    }
+    /*
+    if(opening){
+        var window_height = $(window).height();
+        var current_loc = $(document).scrollTop();
+        var h = div_elem.height();
+        var loc = div_elem.position().top;
+        if(h + loc > window_height + current_loc){
+            var offset = 0;
+            while(h + loc > window_height + current_loc + offset){
+                offset += 1;
+            }
+            
+            
+            $("html, body").animate({ scrollTop: (current_loc + offset + 30)}, "slow");
+        }
+    }
+    redraw(func);*/
 }
 
 function set_panel(val){

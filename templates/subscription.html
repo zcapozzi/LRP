@@ -42,7 +42,7 @@
                                     <div class='col-12 error centered'><span class='msg' style='color:blue;' >{{misc.msg|safe}}</span></div>
                                 {% endif %}
                                 
-                                <div class='' style='padding-bottom:40px;'><button id='reenable_button' style='width:60%; max-width:200px;' class='action-button' name='action' value='set_renewing'>RE-ENABLE AUTORENEW</button></div>
+                                <div class='' style='padding-bottom:40px;'><button id='reenable_button' style='width:60%; max-width:200px;' class='action-button blue' name='action' value='set_renewing'>RE-ENABLE AUTORENEW</button></div>
                             </FORM>
                         
                         {% else %}
@@ -69,7 +69,7 @@
                                 <div class='col-12 error centered'><span class='msg' style='color:blue;' >{{misc.msg|safe}}</span></div>
                             {% endif %}
                             
-                            <div class='' style='padding-bottom:40px;'><button id='convert_button' style='width:60%; max-width:200px;' class='action-button' name='action' value='convert'>CONVERT</button></div>
+                            <div class='' style='padding-bottom:40px;'><button id='convert_button' style='width:60%; max-width:200px;' class='action-button blue' name='action' value='convert'>CONVERT</button></div>
                         </FORM>
                     {% else %}
                         {% if user_obj.active_subscription.status == "active" %}
@@ -89,7 +89,7 @@
                                     <div class='col-12 error centered'><span class='msg' style='color:blue;' >{{misc.msg|safe}}</span></div>
                                 {% endif %}
                                 
-                                <div class='' style='padding-bottom:40px;'><button id='disable_button' style='width:60%; max-width:200px;' class='action-button' name='action' value='disable_autorenew'>DISABLE AUTORENEW</button></div>
+                                <div class='' style='padding-bottom:40px;'><button id='disable_button' style='width:60%; max-width:200px;' class='action-button blue' name='action' value='disable_autorenew'>DISABLE AUTORENEW</button></div>
                             </FORM>
                         {% else %}
                             {% if misc.error and misc.action == "disable_autorenew" %}
@@ -115,7 +115,7 @@
                             {% if misc.msg and misc.action == "request_refund" %}
                                 <div class='col-12 error centered'><span class='msg' style='color:blue;' >{{misc.msg|safe}}</span></div>
                             {% endif %}
-                            <div class='' style='padding-bottom:40px;'><button id='refund_button' style='width:60%; max-width:200px;' class='action-button' name='action' value='request_refund'>REQUEST REFUND</button></div>
+                            <div class='' style='padding-bottom:40px;'><button id='refund_button' style='width:60%; max-width:200px;' class='action-button blue' name='action' value='request_refund'>REQUEST REFUND</button></div>
                         </FORM>
                     {% endif %}
                     

@@ -1,0 +1,109 @@
+
+{% extends layout %}
+
+
+{% block body %}
+
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
+
+    
+
+    <div class='col-12'>
+
+    
+    <div class='col-12 flex'>
+        
+            <div class='col-1'></div>
+            <div class='col-10 centered' style='padding-top:60px; padding-bottom:40px;'>
+                <div class='col-12'>
+                    <span class='font-36 bold' style='color:#008;'>A better way to be a lacrosse fan.</span>
+                </div>
+
+            </div>
+            <div class='col-1'></div>
+      
+ 
+        
+    </div>
+
+    {% if misc.error %}
+        <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
+    {% endif %}
+
+    <div class='col-12 flex-block' id='tiers'>
+        
+    </div>
+    
+    <div class='col-12 ' style='margin: 0px 10px; padding-bottom:40px;'>
+        <span class='font-15 contents text-paragraph'>Every one of the LacrosseReference PRO tiers comes with my 100% no-questions-asked money back guarantee. If you aren't satisfied with the product, just request a refund at any point prior to the end of your subscription. Got questions? Try the <a href='/faq'>FAQ page</a> or just <a href='/contact'>contact me</a>.</span>
+    </div>
+
+<script>
+    var on_mobile = null;
+    var console_log = []; var success = null;
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
+    
+    var product_tiers = {{misc.product_tiers|to_json2}};
+    function display(product_tiers){
+        console.log(product_tiers);
+        var elem = $("#tiers"); elem.empty()
+        for(var a = 0;a<product_tiers.length;a++){
+            tier = product_tiers[a];
+            tier.tokens = tier.product_bullets.split("|");
+            html = "";
+            class_str = "col-" + (12/product_tiers.length) + "-12";
+            html += "<div class='" + class_str + " flex'> <div class='tier col-12 card'><FORM action='/product-pricing-basic' method=POST>";
+            
+            html += "<input type=hidden name='user_ID' value='{{misc.ncha}}' />";
+            html += "<input type=hidden name='AB_group' value='{{misc.AB_group}}' />";
+            html += "<input type=hidden name='hash' value='{{misc.hash}}' />";
+            html += "<input type=hidden name='product_tier' value='" + tier.product_tier + "' />";
+            
+            // Header
+            html += "<div class='col-12 tier-header centered' style=''><span class='font-18 bold'>" + tier.product_tier_description + "</span></div>"
+            
+            // Tag Line
+            html += "<div class='centered' style='padding-top:10px;'><span class='font-15'>" + tier.product_desc + "</span></div>"
+            
+            // Price
+            html += "<div class='centered' style='padding-top:10px;'>";
+            html += "<span class='font-36 contents' style='color:#008;'>" + tier.price_str+ "</span>";
+            html += "</div>";
+            
+            // Description
+            html += "<div class='text-container large'><ul class='product-bullets'>";
+            for(var b = 0;b<tier.tokens.length;b++){
+                token = tier.tokens[b];
+                html += "<li><span class='font-14 contents'>" + token + "</span></li>";
+            }
+            html += "</ul></div>";
+                    
+            // Button
+            html += "<div class='col-12 centered' style='padding-top: 20px; padding-bottom:10px;'>";
+            html += "<button id='action_button_" + tier.product_tier + "' type=submit class='action-button small blue' name='action' value='add_to_cart'><span class='pointer font-15'>ADD TO CART</span></button>";
+            html += "</div>";
+            
+            html += "</FORM></div></div>";
+            
+            elem.append(html);
+        }
+
+           
+                /*
+                    
+                    
+                    
+                    
+*/
+
+    }
+    display(product_tiers);
+    
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+</script>
+{% endblock %}

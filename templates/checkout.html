@@ -56,7 +56,7 @@
                       <span class='contents font-12'>By clicking submit, you are agreeing to abide by our <a href='/terms'>Terms of Service</a> and you are agreeing to enroll your subscription in auto-renewal, which can be changed at any time <a href='/subscription'>here</a>.</span>
                   </div>
                   <div class='col-12 centered' style='padding-top:20px;'>
-                      <button class='centered action-button' style='color:white; background-color: #189ad3; font-weight:700;' name='action' value='pay' id="card-button">SUBMIT</button>
+                      <button class='centered action-button blue medium' style='color:white; background-color: #189ad3; font-weight:700;' name='action' value='pay' id="card-button">SUBMIT</button>
                       
                   </div>
                   <div class='col-12 inline-flex'>
@@ -71,12 +71,12 @@
                 <div class='col-12'>
                     <span class='font-15' style='font-style;italic;'>To checkout, you need to log in or create a new account.</span>
                 </div>
-                <div class="col-12 centered">
+                <div class="col-12 centered" style='padding-top:15px;'>
                     <span id="login_view_tag" class="pointer {{misc.login_tag_display}} panel_tag font-15" onclick="set_panel(&quot;login&quot;);">
-                        <span class="">Log In</span>
+                        <span class="light">Log In</span>
                     </span>
-                    <span id="create_account_view_tag" class="pointer {{misc.create_account_tag_display}} panel_tag font-15" onclick="set_panel(&quot;create_account&quot;);">
-                        <span class="">Create Account</span>
+                    <span id="create_account_view_tag" name="create_account_view_tag" class="pointer {{misc.create_account_tag_display}} panel_tag font-15" onclick="set_panel(&quot;create_account&quot;);">
+                        <span class="light">Create Account</span>
                     </span>
                 </div>
                 <div class='col-12'>
@@ -86,12 +86,12 @@
                         <input type=hidden name='from' value='checkout' />
                         <div class='col-12 centered'>
                             
-                            <div class='col-12'><input type=text name='username' placeholder="Username" /></div>
-                            <div class='col-12'><input type=password name='password' placeholder="Password" /></div>
+                            <div class='col-12'><input type=text id='login_username' name='username' placeholder="Username" /></div>
+                            <div class='col-12'><input type=password id='login_password' name='password' placeholder="Password" /></div>
                             {% if misc.login_error %}
                                 <div class='col-12 error'><span class='error' >{{misc.login_error}}</span></div>
                             {% endif %}
-                            <div class='col-12'><button type=submit id='submit_me_login' name='action' value='login' />Submit</button></div>
+                            <div class='col-12'><button class='action-button blue' type=submit id='submit_me_login' name='action' value='login' />Submit</button></div>
                             <div class='col-12 centered' style='padding-top:15px;'>
                                 
                                 <a class='font-14' href='/forgot'><span class='font-14'>Forgot Password</span></a>
@@ -106,10 +106,10 @@
                         <input type=hidden name='from' value='checkout' />
                         <div class='col-12 centered'>
                             
-                            <div class='col-12'><input type=text name='username' value='{{misc.username}}' placeholder="Username" /></div>
-                            <div class='col-12'><input type=password name='password' value='{{misc.password}}'placeholder="Password" /></div>
-                            <div class='col-12'><input type=text name='email' value='{{misc.email}}'  placeholder="Email" /></div>
-                            <div class='col-12'><input type=text name='phone' value='{{misc.phone}}'  placeholder="Phone (optional)" /></div>
+                            <div class='col-12'><input type=text id='create_username'  name='username' value='{{misc.username}}' placeholder="Username" /></div>
+                            <div class='col-12'><input type=password id='create_password' name='password' value='{{misc.password}}'placeholder="Password" /></div>
+                            <div class='col-12'><input type=text id='create_email' name='email' value='{{misc.email}}'  placeholder="Email" /></div>
+                            <div class='col-12'><input type=text id='create_phone' name='phone' value='{{misc.phone}}'  placeholder="Phone (optional)" /></div>
                             <div class='col-12'><span class='font-12'>By creating your account, you agree to the <a target='_blank' href='/terms'>Terms and Conditions</a></span></div>
                             {% if misc.create_account_error %}
                                 <div class='col-12 error'><span class='error' >{{misc.create_account_error}}</span></div>
@@ -117,7 +117,7 @@
                             {% if misc.create_account_msg %}
                                 <div class='col-12 error'><span  class='msg' style='color:blue;' >{{misc.create_account_msg}}</span></div>
                             {% endif %}
-                            <div class='col-12'><button type=submit id='submit_me_create' name='action' value='create_account'  />Create Account</button></div>
+                            <div class='col-12'><button class='action-button blue' type=submit id='submit_me_create' name='action' value='create_account'  />Create Account</button></div>
                         </div>
                         </FORM>
                     </div>

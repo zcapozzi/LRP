@@ -70,6 +70,7 @@
                             {% endif %}
                         </option>
                         <option id='goalkeepers_option' value='goalkeepers'>Goalkeepers</option>
+                        <option id='roster_option' value='roster'>Roster Detail</option>
                     </select>
                 </div>
                 <div class='flex col-12 no-padding'>
@@ -84,6 +85,7 @@
                             {% endif %}
                         </span></div>
                         <div id='goalkeepers_menu_item' onclick='choose_left_menu_item(this.id);' class='left-menu-item'><span class='mouseover-link pointer font-15'>Goalkeepers</span></div>
+                        <div id='roster_menu_item' onclick='choose_left_menu_item(this.id);' class='left-menu-item'><span class='mouseover-link pointer font-15'>Roster Detail</span></div>
                     </div>
                     <div class='right-content col-10-12' id='right-content-panel'>
                         <div class='right-content-panel' id='offense_panel'>
@@ -93,7 +95,7 @@
                                         <div onclick='drill_down_header(this.id, 1);' id='offensive_ranks_label' route="|offensive_ranks" class='col-11-9 no-padding non-dashboard-label'>Offensive Ranks</div>
                                                     
                                         <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible mob' id='offensive_ranks_filtericon' style='margin-top:2px;'><img onclick='toggle_settings_bar("offensive-ranks-settings-bar");' class='icon-15 settings'  src="static/img/gray_Filter150.png" /></div>
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='offensive_ranks_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|offensive_ranks" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' style='margin-top:2px;'><img id='offensive_ranks_helpicon' class='icon-15 explanation' value="team_my_stats.html|offensive_ranks" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='offensive_ranks_img' class='icon-15 toggle' onclick='toggle_tile_visibility("offensive_ranks");' src="static/img/Gray_Minus150.png" /></div>
                                                 
                                                     
@@ -185,8 +187,8 @@
                                     <div class='non-dashboard-section-header'>
                                         <div onclick='drill_down_header(this.id, 1);' id='offensive_profile_label' route="|offensive_profile" class='col-11-10 no-padding non-dashboard-label'>Time-based Profile</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='offensive_profile_helpicon' style='margin-top:2px;'></div>
-                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='offensive_profile_img' class='icon-15 toggle' onclick='toggle_tile_visibility("offensive_profile");' src="static/img/Gray_Plus150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='offensive_profile_helpicon' class='icon-15 toggle' onclick='toggle_tile_visibility("offensive_profile");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
                                         
@@ -223,7 +225,7 @@
                                         <div onclick='drill_down_header(this.id, 1);' id='offensive_movement_label' route="|offensive_movement" class='col-11-9 no-padding non-dashboard-label'>Performance Trends</div>
                                                     
                                         <div class='col-1 right no-padding dashboard-tile-help-icon mob' id='offensive_movement_filtericon' style='margin-top:2px;'><img onclick='toggle_settings_bar("offensive-movement-settings-bar");' class='icon-15 settings'  src="static/img/gray_Filter150.png" /></div>
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='offensive_movement_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|offensive_movement" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='offensive_movement_helpicon' class='icon-15 explanation' value="team_my_stats.html|offensive_movement" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='offensive_movement_img' class='icon-15 toggle' onclick='toggle_tile_visibility("offensive_movement");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
@@ -304,7 +306,7 @@
                                         <div onclick='drill_down_header(this.id, 1);' id='defensive_ranks_label' route="|defensive_ranks" class='col-11-9 no-padding non-dashboard-label'>Defensive Ranks</div>
                                                     
                                         <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible mob' id='defensive_ranks_filtericon' style='margin-top:2px;'><img onclick='toggle_settings_bar("defensive-ranks-settings-bar");' class='icon-15 settings'  src="static/img/gray_Filter150.png" /></div>
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='defensive_ranks_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|defensive_ranks" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' style='margin-top:2px;'><img id='defensive_ranks_helpicon' class='icon-15 explanation' value="team_my_stats.html|defensive_ranks" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='defensive_ranks_img' class='icon-15 toggle' onclick='toggle_tile_visibility("defensive_ranks");' src="static/img/Gray_Minus150.png" /></div>
                                                 
                                                     
@@ -396,8 +398,8 @@
                                     <div class='non-dashboard-section-header'>
                                         <div onclick='drill_down_header(this.id, 1);' id='defensive_profile_label' route="|defensive_profile" class='col-11-10 no-padding non-dashboard-label'>Time-based Profile</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='defensive_profile_helpicon' style='margin-top:2px;'></div>
-                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='defensive_profile_img' class='icon-15 toggle' onclick='toggle_tile_visibility("defensive_profile");' src="static/img/Gray_Plus150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='defensive_profile_helpicon' class='icon-15 toggle' onclick='toggle_tile_visibility("defensive_profile");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
                                         
@@ -434,7 +436,7 @@
                                         <div onclick='drill_down_header(this.id, 1);' id='defensive_movement_label' route="|defensive_movement" class='col-11-9 no-padding non-dashboard-label'>Performance Trends</div>
                                                     
                                         <div class='col-1 right no-padding dashboard-tile-help-icon mob' id='defensive_movement_filtericon' style='margin-top:2px;'><img onclick='toggle_settings_bar("defensive-movement-settings-bar");' class='icon-15 settings'  src="static/img/gray_Filter150.png" /></div>
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='defensive_movement_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|defensive_movement" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='defensive_movement_helpicon' class='icon-15 explanation' value="team_my_stats.html|defensive_movement" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='defensive_movement_img' class='icon-15 toggle' onclick='toggle_tile_visibility("defensive_movement");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
@@ -522,7 +524,7 @@
                                         </div>
                                         
                                         <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible mob' id='faceoffs_ranks_filtericon' style='margin-top:2px;'><img onclick='toggle_settings_bar("faceoffs-ranks-settings-bar");' class='icon-15 settings'  src="static/img/gray_Filter150.png" /></div>
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='faceoffs_ranks_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|faceoffs_ranks" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' style='margin-top:2px;'><img id='faceoffs_ranks_helpicon' class='icon-15 explanation' value="team_my_stats.html|faceoffs_ranks" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='faceoffs_ranks_img' class='icon-15 toggle' onclick='toggle_tile_visibility("faceoffs_ranks");' src="static/img/Gray_Minus150.png" /></div>
                                                 
                                                     
@@ -610,7 +612,7 @@
                                     <div class='non-dashboard-section-header'>
                                         <div class='col-11-10 no-padding non-dashboard-label'>Player Ratings</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='faceoff_elo_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|faceoff_elo" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='faceoff_elo_helpicon' class='icon-15 explanation' value="team_my_stats.html|faceoff_elo" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='faceoff_elo_img' class='icon-15 toggle' onclick='toggle_tile_visibility("faceoff_elo");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
@@ -626,7 +628,7 @@
                                     <div class='non-dashboard-section-header'>
                                         <div class='col-11-10 no-padding non-dashboard-label'>W/L Splits</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='faceoff_splits_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|faceoff_splits" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='faceoff_splits_helpicon' class='icon-15 explanation' value="team_my_stats.html|faceoff_splits" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='faceoff_splits_img' class='icon-15 toggle' onclick='toggle_tile_visibility("faceoff_splits");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
@@ -649,7 +651,7 @@
                                         <div onclick='drill_down_header(this.id, 1);' id='goalkeepers_ranks_label' route="|goalkeepers_ranks" class='col-11-9 no-padding non-dashboard-label'>Goalkeepers Ranks</div>
                                         
                                         <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible mob' id='goalkeepers_ranks_filtericon' style='margin-top:2px;'><img onclick='toggle_settings_bar("goalkeepers-ranks-settings-bar");' class='icon-15 settings'  src="static/img/gray_Filter150.png" /></div>
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='goalkeepers_ranks_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|goalkeepers_ranks" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' style='margin-top:2px;'><img id='goalkeepers_ranks_helpicon' class='icon-15 explanation' value="team_my_stats.html|goalkeepers_ranks" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='goalkeepers_ranks_img' class='icon-15 toggle' onclick='toggle_tile_visibility("goalkeepers_ranks");' src="static/img/Gray_Minus150.png" /></div>
                                                 
                                                     
@@ -736,7 +738,7 @@
                                     <div class='non-dashboard-section-header'>
                                         <div class='col-11-10 no-padding non-dashboard-label'>by Shot Clock Remaining</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='goalkeepers_adjusted_shotclock_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|goalkeepers_adjusted_shotclock" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='goalkeepers_adjusted_shotclock_helpicon' class='icon-15 explanation' value="team_my_stats.html|goalkeepers_adjusted_shotclock" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='goalkeepers_adjusted_shotclock_img' class='icon-15 toggle' onclick='toggle_tile_visibility("goalkeepers_adjusted_shotclock");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
@@ -751,7 +753,7 @@
                                     <div class='non-dashboard-section-header'>
                                         <div class='col-11-10 no-padding non-dashboard-label'>by Man-down/Even</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='goalkeepers_adjusted_mandown_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|goalkeepers_adjusted_mandown" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='goalkeepers_adjusted_mandown_helpicon' class='icon-15 explanation' value="team_my_stats.html|goalkeepers_adjusted_mandown" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='goalkeepers_adjusted_mandown_img' class='icon-15 toggle' onclick='toggle_tile_visibility("goalkeepers_adjusted_mandown");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
@@ -768,7 +770,7 @@
                                     <div class='non-dashboard-section-header'>
                                         <div class='col-11-10 no-padding non-dashboard-label'>by Game Status</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='goalkeepers_adjusted_leading_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|goalkeepers_adjusted_leading" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='goalkeepers_adjusted_leading_helpicon' class='icon-15 explanation' value="team_my_stats.html|goalkeepers_adjusted_leading" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='goalkeepers_adjusted_leading_img' class='icon-15 toggle' onclick='toggle_tile_visibility("goalkeepers_adjusted_leading");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
@@ -783,7 +785,7 @@
                                     <div class='non-dashboard-section-header'>
                                         <div class='col-11-10 no-padding non-dashboard-label'>by Possession Type</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='goalkeepers_adjusted_possessiontype_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_stats.html|goalkeepers_adjusted_possessiontype" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='goalkeepers_adjusted_possessiontype_helpicon' class='icon-15 explanation' value="team_my_stats.html|goalkeepers_adjusted_possessiontype" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='goalkeepers_adjusted_possessiontype_img' class='icon-15 toggle' onclick='toggle_tile_visibility("goalkeepers_adjusted_possessiontype");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
@@ -799,7 +801,28 @@
                         </div>
                         
                     </div>
-                </div>
+                        <div class='right-content-panel' id='roster_panel'>
+                            <div class='col-12 no-padding'>
+                                <div class='non-dashboard-section card col-12' id='roster_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div onclick='drill_down_header(this.id, 1);' id='roster_label' route="|roster" class='col-11-9 no-padding non-dashboard-label'>Roster Detail</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible mob' id='roster_filtericon' style='margin-top:2px;'></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' style='margin-top:2px;'><img id='roster_helpicon' class='icon-15 explanation' value="team_my_stats.html|roster" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='roster_img' class='icon-15 toggle' onclick='toggle_tile_visibility("roster");' src="static/img/Gray_Minus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content bigger visible' id='roster_div'>
+                                        
+                                    </div>
+
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </div>
             </div>
             
         </div>
@@ -923,6 +946,7 @@
         if(id_tokens[0] == "defense"){ display_primary_unit("defense", "defensive_ranks"); } 
         if(id_tokens[0] == "faceoffs"){ display_faceoffs("faceoffs", "faceoffs_ranks"); }    
         if(id_tokens[0] == "goalkeepers"){ display_goalkeepers("goalkeepers", "goalkeepers_ranks"); }    
+        if(id_tokens[0] == "roster"){ display_roster("roster", "roster"); }    
         
     }
     
@@ -1599,7 +1623,8 @@
                 html += "<div class='flex col-12 no-padding'>"
                 
                 html += "<div class='col-6 no-padding'>";
-                html += "<span class='font-15'>" + fogo.player + "</span>";
+                html += "<FORM id='player" + fogo.player_ID + "form' action='/team_player_detail' method=POST><input type=hidden name='ID' value='" + fogo.player_ID+ "'><input type=hidden name='came_from' value='team_my_stats'><span onclick=\"document.getElementById(\'player" + fogo.player_ID + "form\').submit();\" class='no-padding'>" + fogo.player+ "</span></FORM>";
+                //html += "<span class='font-15'>" + fogo.player + "</span>";
                 html += "</div>";
                 
                 html += "<div class='col-2 no-padding centered'>";
@@ -1933,6 +1958,32 @@
         }
     }
     
+    function display_roster(panel){
+        if([null, 'roster', '', '', '', ''].indexOf(panel) == -1){ return; }
+
+        id = 'roster'; success = false;
+ 
+        
+
+        try{
+            /* data */
+            console.log("misc.data.roster");
+            console.log(misc.data.roster);
+       
+                
+            /* visualization */
+            
+            /* mark complete */
+            success = true;
+        }
+        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+        if(!success){
+            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+        }
+         
+    }
+    
     function redraw(panel=null){
         on_mobile = $("#main_logo").css('display') == "none";
         
@@ -1948,6 +1999,8 @@
             display_faceoffs(panel);
             console_log.push({'msg': 'display_goalkeepers...'});
             display_goalkeepers(panel);
+            console_log.push({'msg': 'display_roster...'});
+            display_roster(panel);
             
             
             
@@ -2004,7 +2057,7 @@
     
     // Select the appropriate panel to display
     if('active_element' in misc){ choose_left_menu_item(misc.active_element); }
-    else{ choose_left_menu_item("goalkeepers"); }
+    else{ choose_left_menu_item("roster"); }
     
     console_log.push({'msg': 'Start finish load...'});
     finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
