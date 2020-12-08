@@ -5,11 +5,12 @@
 {% block body %}
 
         <div class='col-12 dtop flex menu-header-bar'>
-            <div class='col-12'>
-                <a href='/' class='menu-link'><span class='menu-link' style='padding-left:10px;'><span class='font-15'>Home</span></span></a>
-                <a href='/team_my_schedule' class='menu-link'><span class='menu-link' style='padding-left:10px;'><span class='font-15'>My Schedule</span></span></a>
-                <a href='/team_my_stats' class='menu-link'><span class='menu-link' style=''><span class='font-15'>My Stats</span></span></a>
-                <a href='/team_my_rankings' class='menu-link active'><span class='menu-link' style=''><span class='active-link font-15'>My Rankings</span></span></a>
+            <div class='col-12 inline-flex'>
+                <div class='no-padding'> <a href='/' class='menu-link'><span class='menu-link font-15'>Home</span></span></a></div>
+                <div class='no-padding'> <a href='/team_my_schedule' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Schedule</span></a></div>
+                <div class='no-padding'> <a href='/team_my_stats' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Stats</span></a></div>
+                <div class='no-padding'> <a href='/team_my_rankings' class='menu-link active'><span class='menu-link active-link font-15'><span class='no-padding dtop'>My </span>Rankings</span></a></div>
+                <div class='no-padding' id='explore_menu_item'><div class='no-padding'><a class='menu-link'><span class='menu-link font-15 pointer'>Explore</span></a></div></div>
             </div>
         </div>
 
@@ -34,9 +35,9 @@
                 </div>
                 <div class='no-padding col-3 right'>
                     <div class='no-padding col-12 right'>
-                        <div class='gear-settings'>
+                        <!--div class='gear-settings'>
                             <img onclick='toggle_settings_bar();' id='settings-icon' class='icon-15 settings' src='/static/img/blue_gear15.png' />
-                        </div>
+                        </div-->
                     </div>
                 </div>
                 
@@ -45,8 +46,9 @@
                 <div class='' style='padding-right:10px;'>
                     <span class='font-13' style='padding-right:10px;'>Year</span>
                     <select class='settings-bar' id='general_focus_year' onchange='update_settings(this.id, this.value);'>
-                        <option value=2020>2020</option>
-                        <option value=2019>2019</option>
+                        {% for y in misc.year_select_options %}
+                            <option value={{y.year}}>{{y.year}}</option>
+                        {% endfor %}
                     </select>
                 </div>
             </div>
@@ -238,7 +240,7 @@
                                     </div>
 
                                 </div>
-                                <div class='non-dashboard-section card col-6-12' id='bubble_watch_container_div'>
+                                <!--div class='non-dashboard-section card col-6-12' id='bubble_watch_container_div'>
                                     <div class='non-dashboard-section-header'>
                                         <div onclick='drill_down_header(this.id, 1);' id='bubble_watch_label' route="|bubble_watch" class='col-11-10 no-padding non-dashboard-label'>Bubble Watch</div>
                                                     
@@ -252,7 +254,7 @@
                                         
                                     </div>
 
-                                </div>
+                                </div-->
                             </div>
                             
                         </div>
@@ -263,7 +265,7 @@
         </div>
     
 
-<script src="static/js/d3.v4.min.js"></script><script src="static/js/laxrefpro_graphing.js?dt=200"></script>
+<script src="static/js/d3.v4.min.js"></script><script src="static/js/laxrefpro_graphing.js?dt=203"></script>
 <script>
     var on_mobile = null;
     var console_log = []; var success = null;
@@ -320,7 +322,7 @@
                 row.t.change_years.push(change_yr);
             }
             //console.log(row.t.display_name, row.start_y);
-            if(row.t.team_ID == misc.active_team_ID){
+            if(row.t.team_ID == misc.data.ID){
                 row.stroke = "#77F"; row['stroke-dasharray'] = null; row['stroke-width'] = 2; 
                 conf_ID = row.t.conf_ID;
                 conf.n = 1.0;
@@ -335,7 +337,7 @@
         
         for(var a = 0;a<rows.length;a++){
             var row = rows[a];
-            if(row.t.team_ID != misc.active_team_ID && row.t.conf_ID == conf_ID){
+            if(row.t.team_ID != misc.data.ID && row.t.conf_ID == conf_ID){
                 row.stroke = "#DDD"; row['stroke-width'] = 1; row['stroke-dasharray'] = null; row.add = 1;
                 //history.push(row)
                 conf.n += 1.0;
@@ -446,6 +448,7 @@
         
         id = 'conditional_rpi_div'; success = false;
         try{
+            //console.log("misc.data.future_games");  console.log(misc.data.future_games);
             if(typeof misc.data.future_games != "undefined" && misc.data.future_games != null && misc.data.future_games.length > 0){
                 custom_specs = {'chart_size': 'small', 'margin_top': 0, 'margin_right': 0, 'margin_bottom': 0, 'margin_left': 0};
                 custom_specs.width = $('#conditional_rpi_container_div').width() - 20;
@@ -466,10 +469,12 @@
         
         id = 'deconstructed_rpi_div'; success = false;
         try{
+            //console.log("misc.data.RPI_factors"); console.log(misc.data.RPI_factors);
             if(typeof misc.data.RPI_factors != "undefined" && misc.data.RPI_factors.length > 0){
                 generic_create_table(JSON.parse(misc.data.RPI_factors), {'id': id, 'target_elem': id});
             }
             else{
+                $("#" + id).empty();
                 $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Could not calculate deconstructed RPI."));
             }
             success = true;
@@ -493,25 +498,18 @@
         id = 'laxelo_game_results'; success = false;
         try{
             // Print the history
-            console.log(misc.data);
             
-                console.log("misc.data.bubble_watch_games")
-                console.log(misc.data.bubble_watch_games);
-                
-                console.log("misc.data.elo_results")
-                console.log(misc.data.elo_results);
+            //console.log("misc.data.elo_results")
+            //console.log(misc.data.elo_results);
             if(misc.data.completed_games_cnt_this_year == 0){ // Print Last Year
                 
-                console.log("misc.data.elo_results")
-                console.log(misc.data.elo_results);
                 games = misc.data.elo_results.filter( gm => gm.last_year == 1);
                 document.getElementById('laxelo_game_results_helpicon').setAttribute( "onclick", "show_explanation('team_my_rankings.html|laxelo_game_results_last_year')");
             
             }
             else{ // Print this year
                 
-                console.log("misc.data.elo_results")
-                console.log(misc.data.elo_results);
+                
                 games = misc.data.elo_results.filter( gm => gm.this_year == 1);
                 document.getElementById('laxelo_game_results_helpicon').setAttribute( "onclick", "show_explanation('team_my_rankings.html|laxelo_game_results_this_year')");
             }
@@ -816,7 +814,7 @@
             rivals = misc.data.selection_rivals.bubble_rivals.slice(0, 8);
         
             var js_data = {'no_row_count': 1}
-            js_data.classes = [{'class': 'col-4'}, {'outer_class': 'col-8', 'classes': [{'class': 'col-3 centered'}, {'class': 'col-3 centered'}, {'class': 'col-3 centered'}]}];
+            js_data.classes = [{'class': 'col-3'}, {'outer_class': 'col-10', 'classes': [{'class': 'centered'}, {'class': 'centered'}, {'class': 'centered'}]}];
             js_data.fmt = [{'fmt': ""}, {'fmt': "0%"}, {'fmt': "0%"}, {'fmt': "0%"}];
             js_data.fields = [{'sort_by': 'display_name', 'tag': 'display_name_form', 'display': 'Team'}
             , {'sort_by': 'in_pct_val', 'tag': 'in_pct_val', 'display': 'In when In'}
@@ -827,7 +825,7 @@
             for( var ab = 0;ab<rivals.length;ab++){
                 rival = rivals[ab];
 
-                rival.display_name_form = "<FORM id='selection_rival_form" + rival.team_ID + "' action='/team_detail' style='padding: 0px 5px;' method=POST><input type=hidden name='detail_team_ID' value='" + rival.team_ID + "'><input type=hidden name='came_from' value='team_my_rankings' /><span class='mouseover-link pointer font-12 contents' onclick=\"document.getElementById('selection_rival_form" + rival.team_ID + "').submit();\">" + rival.display_name + "</span></FORM>";
+                rival.display_name_form = "<FORM id='selection_rival_form" + rival.team_ID + "' action='/team_detail' style='padding: 0px 5px;' method=POST><input type=hidden name='detail_team_ID' value='" + rival.team_ID + "'><input type=hidden name='came_from' value='team_my_rankings' /><span class='mouseover-link pointer font-12 contents' onclick=\"document.getElementById('selection_rival_form" + rival.team_ID + "').submit();\">" + rival.short_code + "</span></FORM>";
             }
             
             js_data.data = rivals;
@@ -907,28 +905,7 @@
 
         id = 'bubble_watch_div'; success = false;
         try{
-            if(typeof misc.data.bubble_watch_games != "undefined" && misc.data.bubble_watch_games.length > 0){
-                specs = {'margin_left': 30, 'chart_size': 'small', 'flip': 0};
-                
-                data = {'axis_labels': {'y': '% of Simulations', 'x': 'Final RPI Rank'}, 'data': []};
-                tmp = {'stroke-dasharray': '3-3', 'stroke': "#666", 'points': []}
-                tmp.points = misc.data.RPI_ranks_histogram;
-                data.data.push(tmp)
-                
-                x_ticks = create_game_x_ticks(data.data);
-                data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
-                y_ticks = create_pct_y_ticks(data.data,{})
-                data['y_ticks'] = y_ticks.ticks;
-                data['max_y'] = y_ticks.max;  data['min_y'] = 0;
-                specs.width = $('#bubble_watch_container_div').width() - 20;
-                
-                vertical_bars(data, id, specs);
-                
-            }
-            else{
-                $("#" + id).empty();
-                $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "No relevant (to you) bubble watch games have been identified."));
-            }
+            
             success = true;
         }
         catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
@@ -954,6 +931,8 @@
             display_laxelo(panel);
             console_log.push({'msg': 'post season...'});
             display_post_season_odds(panel);
+            
+            if('observe' in misc && misc.observe){ report_user_view(misc.handler + "|" + panel + "|" + misc.nhca); }
             
         }
         

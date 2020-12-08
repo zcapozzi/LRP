@@ -17,19 +17,19 @@
             LacrosseReference - PRO
         {% endif %}
     </title>
-    <link rel="stylesheet" href="static/css/oswald.css?dt=200" />
-    <link rel="stylesheet" href="static/css/LR_aesthetics.css?dt=200" />
-    <link rel="stylesheet" href="static/css/LR_elements.css?dt=200" />
-    <link rel="stylesheet" href="static/css/LR_spacing.css?dt=200" />
-    <link rel="stylesheet" href="static/css/LR_structural.css?dt=200" />
+    <link rel="stylesheet" href="static/css/oswald.css?dt=203" />
+    <link rel="stylesheet" href="static/css/LR_aesthetics.css?dt=203" />
+    <link rel="stylesheet" href="static/css/LR_elements.css?dt=203" />
+    <link rel="stylesheet" href="static/css/LR_spacing.css?dt=203" />
+    <link rel="stylesheet" href="static/css/LR_structural.css?dt=203" />
     <link rel="shortcut icon" href="static/img/favicon.ico">
     
-    <script src="static/js/laxref.js?dt=200"></script>
-    <script src="static/js/laxrefpro.js?dt=200"></script>
+    <script src="static/js/laxref.js?dt=203"></script>
+    <script src="static/js/laxrefpro.js?dt=203"></script>
     <script src="static/js/jquery.min.js"></script>
 
   </head>
-  <body onclick='menu_toggle(true)'>
+  <body onclick='menu_toggle(true); explore_toggle(true);'>
   
   <div class='viewbox'>
         <div class='col-12 flex site-header-bar no-padding' style='border-bottom:solid 1px black;'>
@@ -55,7 +55,7 @@
         {% block body %}{% endblock %}
         
   </div>
-  <div class='col-12 centered'><span class='font-14'>{{misc.copyright|safe}}</span></div>
+  <div class='col-12 centered' style='border-top: solid 1px #888;'><span class='font-14'>{{misc.copyright|safe}}</span></div>
   
   </body>
 </html>

@@ -1,0 +1,106 @@
+
+{% extends "layout_admin.html" %}
+
+
+{% block body %}
+
+        <div class='col-12 centered' id='banner'></div>
+        {% if misc.breadcrumbs %}
+            <div class='col-12 centered'>
+                {{misc.breadcrumbs}}
+            </div>
+        {% endif %}
+
+        <div class='col-12 page-title'>
+            <span class='font-24 pointer bold'>LaxRef PRO: Groups</span>
+        </div>
+        {% if misc.error %}
+            <div class='col-12 error centered'><span class='error' >{{misc.error}}</span></div>
+        {% endif %}
+        {% if misc.msg %}
+            <div class='col-12 centered'><span class='msg' style='color:blue;' >{{misc.msg}}</span></div>
+        {% endif %}
+        <div class='col-12 block'>
+            <div class='col-12'>
+                <div class='col-12'>
+                    
+                    <div class='panel col-12'>
+                        <div class='col-12 flex bbottom'>
+                            <div class='col-3'><span class='bold font-12'>Name</span></div>
+                            <div class='col-3'><span class='bold font-12'>Type</span></div>
+                            <div class='col-2'><span class='bold font-12'>Max Users</span></div>
+                            <div class='col-2'><span class='bold font-12'>Status</span></div>
+                            <div class='col-2'><span class='bold font-12'></span></div>
+                        </div>
+                        {% for g in misc.groups %}
+                            <div class='table-row no-padding'>
+                                <FORM action='/admin?c=admin_group' method=POST><input type=hidden name='ID' value='{{g.ID}}' />
+                                <div class='col-12 flex pointer no-padding' id='mainrow{{g.ID}}' onclick='toggle({{g.ID}})'>
+                                    
+                                        <div class='col-3'><span class='font-12'>{{g.group_name}}</span></div>
+                                        <div class='col-3'><span class='font-12'>{{g.group_type}}</span></div>
+                                        <div class='col-2'><span class='font-12'>{{g.max_users}}</span></div>
+                                        <div class='col-2'><span class='font-12'>{{g.status}}</span></div>
+                                        <div class='col-2 right'><button class='action-button blue'>EDIT</button></div>
+                                </div>
+                                </FORM>
+                            </div>
+                        {% endfor %}
+                        
+                      
+                    </div>
+                </div>
+                
+
+            </div>
+            
+
+<script>
+
+    var on_mobile = null;
+    var console_log = []; var success = null;
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
+    
+    users = JSON.parse({{misc.users_json|to_json2}});
+    function toggle(i){
+        var classes = document.getElementById('row' + i).className.split(/\s+/);
+        $(".toggle-row").removeClass("visible").addClass("hidden");
+            
+        if(classes.indexOf("visible") == -1){
+            $("#row" + i).addClass("visible");
+        }
+    }
+    function filter(val){
+        console.log(val);
+        val = val.toLowerCase().trim();
+        console.log(users[0]);
+        console.log(users.length);
+        for(var a = 0;a<users.length;a++){
+            var user = users[a];
+            
+            if(user.email_decrypted == null){ user.email_decrypted = ""; }
+            if(user.username_decrypted == null){ user.username_decrypted = ""; }
+            if(user.first_name_decrypted == null){ user.first_name_decrypted = ""; }
+            if(user.last_name_decrypted == null){ user.last_name_decrypted = ""; }
+            
+            user.display = false;
+            if(user.email_decrypted.toLowerCase().indexOf(val) > -1 || user.last_name_decrypted.toLowerCase().indexOf(val) > -1 || user.first_name_decrypted.toLowerCase().indexOf(val) > -1 || user.username_decrypted.toLowerCase().indexOf(val) > -1){
+                user.display = true;
+                console.log(user.email_decrypted, user.first_name_decrypted, user.last_name_decrypted, user.username_decrypted)
+            }
+            
+            var row1 = document.getElementById('mainrow' + user.ID);
+            var row2 = document.getElementById('row' + user.ID);
+            if(user.display){
+                row1.style.display = "flex";
+            }
+            else{
+                row1.style.display = "none";
+            }
+            row2.style.display = "none";
+        }
+    }
+
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+</script>
+{% endblock %}

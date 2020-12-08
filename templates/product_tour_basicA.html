@@ -1,0 +1,167 @@
+
+{% extends layout %}
+
+
+{% block body %}
+
+    <div class='col-12 centered' id='banner'></div>
+    {% if misc.breadcrumbs %}
+        <div class='col-12 centered'>
+            {{misc.breadcrumbs}}
+        </div>
+    {% endif %}
+
+    <div class=''>  
+        <div class='col-12 centered'><span class='centered font-48 navy bold'>LRP {{misc.product.product_name}}</span></div>
+    </div>
+    
+    <div class='tour-section'>    
+        <div class='col-12 mob centered'>
+            <div class='tour-text-header col-12' style='background-color: #008;'><span class='contents ' style='color:white;'>Advanced Stats</span></div>
+        </div>
+        <div class='col-12 flex-block'>
+            <div class='col-8-12'>
+                <div class='tour-graphic'><img class='tour-graphic' src='/static/img/tour_team_rankings.png' /></div>
+            </div>
+            <div class='col-4-12'>
+                <div class='tour-text block'>
+                    <div class='tour-text-header col-12 dtop'><span class='navy contents '>Advanced Stats</span></div>
+                    <div class='tour-text-subheader col-12'><span class='contents '>Fans who know the game want stats that tell the full story</span></div>
+                    <div class='tour-text-body col-12'><ul class='lh-36'>
+                        <li><span class=''>Fully Opponent-Adjusted</span></li>
+                        <li><span class=''>Separate out garbage-time</span></li>
+                        <li><span class=''>Compare Conference or League</span></li>
+                     </ul></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class='tour-section'>  
+        <div class='col-12 mob centered'>
+            <div class='tour-text-header col-12' style='background-color: #008;'><span class='contents ' style='color:white;'>Post-Season Projections</span></div>
+        </div>
+        <div class='col-12 flex-block'>
+            <div class='col-4-12'>
+                <div class='tour-text block'>
+                    <div class='tour-text-header col-12 dtop'><span class='navy contents '>Post-season Projections</span></div>
+                    <div class='tour-text-subheader col-12'><span class='contents '>Always know where your team stands</span></div>
+                    <div class='tour-text-body col-12'><ul class='lh-36'>
+                        <li><span class=''>NCAA Selection/Seed Probabilities</span></li>
+                        <li><span class=''>Conference Seeding Projections</span></li>
+                        <li><span class=''>Final RPI Simulations</span></li>
+                     </ul></div>
+                </div>
+            </div>
+            <div class='col-8-12'>
+                <div class='tour-graphic right'><img class='tour-graphic' src='/static/img/tour_postseason_odds.png' /></div>
+            </div>
+        </div>
+    </div>
+    <div class='tour-section'>    
+        <div class='col-12 mob centered'>
+            <div class='tour-text-header col-12' style='background-color: #008;'><span class='contents ' style='color:white;'>Favorite Players</span></div>
+        </div>
+        <div class='col-12 flex-block'>
+            <div class='col-8-12'>
+                <div class='tour-graphic'><img class='tour-graphic' src='/static/img/tour_favorite_player.png' /></div>
+            </div>
+            <div class='col-4-12'>
+                <div class='tour-text block'>
+                    <div class='tour-text-header col-12 dtop'><span class='navy contents '>Favorite Players</span></div>
+                    <div class='tour-text-subheader col-12'><span class='contents '>Follow your favorite players with customized metrics</span></div>
+                    <div class='tour-text-body col-12'><ul class='lh-36'>
+                        <li><span class=''>Career and Season Rankings</span></li>
+                        <li><span class=''>Game and Career Trends</span></li>
+                        <li><span class=''>Historical Percentile Rankings</span></li>
+                     </ul></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class='tour-section' style='padding-bottom:0px;'>    
+        <div class='no-padding flex'>
+            <div class='col-1 dtop'></div>
+            <div class='col-10-12'>
+                <div class='tour-text-header centered col-12'><span class='font-36 navy contents '>Expand Your Fandom</span></div>
+                <div class='tour-text-subheader centered col-12'><span class='contents lh-36'>LacrosseReference PRO is designed for fans who want a new way to engage with college lacrosse. In addition to what's laid out above, LRP Fan also includes:</span></div>
+                <div class='tour-text-body col-12'><ul class='lh-36'>
+                    <li><span class=''>Lightning Reports sent straight to your inbox at halftime and after the final whistle (Guru Tier)</span></li>
+                    <li><span class=''>Monthly AMA with Zack Capozzi, Founder of LacrosseReference (Guru Tier)</span></li>
+                    <li><span class=''>The latest and greatest in the lacrosse analytics you've come to love from LacrosseReference</span></li>
+                    <li><span class=''>100% no-questions-asked money-back guarantee. Cancel anytime before your subscription ends if you aren't seeing the value</span></li>
+                 </ul></div>
+             </div>
+             <div class='col-1 dtop'></div>
+        </div>
+    </div>
+    
+    <div class='col-12'>       
+        {% if misc.product.status != "available" %}
+            <div class='col-12 flex' style='border: solid 2px #AAA; border-radius:10px;'>
+        
+        {% else %}
+            <div class='col-12 flex' style=''>
+        {% endif %}
+            
+                <div class='col-1'></div>
+                <div class='col-10'>
+                    <FORM action='/product-tour-basic' method=POST>
+                    <input type=hidden name='user_ID' value={{misc.user_ID}} />
+                    <input type=hidden name='AB_group' value={{misc.AB_group}} />
+                    <input type=hidden name='hash' value={{misc.hash}} />
+                    <input type=hidden name='request_type' value='pre-product-notification' />
+                    <input type=hidden name='tracking_tag' value='{{misc.tracking_tag}}' />
+                    
+                    
+                    <div class='col-12' style='padding-top:20px'>
+                        {% if misc.product.status == "quotable" %}
+                            <span class='font-15 contents'>Use the form to enter your specifics. I will reach out within 24 hours to coordinate a trial account.</span>    
+                        {% endif %}
+                        {% if misc.product.status == "pre-register" %}
+                            <span class='font-15 contents'>This product is not quite ready yet, but enter your email to get notified when it is.</span>
+                        {% endif %}
+                    </div>
+
+                    {% if misc.product.status != "available" %}
+                        <div class='col-12'>
+                            <div class='col-12'><span class='font-13 light'>Email</span></div>
+                            <div class='col-12'>
+                                <input type=text value='{{misc.email_decrypted}}'  placeholder="Enter Email" name='email' id='email'class='font-15 col-12' />
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if misc.error %}
+                        <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
+                    {% endif %}
+                    {% if misc.msg %}
+                        <div class='col-12 centered'><span style='color:blue;' class='font-15'>{{misc.msg|safe}}</span></div>
+                    {% else %}
+                        <div class='col-12 centered' style='padding-top:20px;'>
+                            {%if misc.product.call_to_action != "BUY IT" %}
+                                <button id='action_button' type=submit class='action-button blue' name='action' value='{{misc.product.status}}'><span class='pointer'>{{misc.product.call_to_action}}</span></button>
+                            {% else %}
+                                <button type=button id='buy_button' class='action-button large blue' onclick="window.location='/product-pricing-basic?t={{misc.tracking_tag}}'"><span class='pointer'>{{misc.product.call_to_action}}</span></button>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    </FORM>
+                </div>
+                <div class='col-1'></div>
+            
+        
+        </div>
+        
+    </div>
+    
+
+    
+<script>
+    var on_mobile = null;
+    var console_log = []; var success = null;
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
+    
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+</script>
+{% endblock %}

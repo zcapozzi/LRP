@@ -14,6 +14,11 @@
         <div class='col-12 page-title'>
             <span class='font-24 pointer bold'>LaxRef PRO: Admin</span>
         </div>
+        {% if misc.last_deploy %}
+            <div class='col-12'>
+                <span class='font-12 light'>Last Deploy: {{misc.last_deploy}}</span>
+            </div>
+        {% endif %}
         {% if misc.error %}
             <div class='col-12 error centered'><span class='error' >{{misc.error}}</span></div>
         {% endif %}
@@ -85,7 +90,7 @@
                         
                       
                     </div>
-                    <div class='col-12 centered action-button'><button type=submit name='action' value='create_standalone_user' class='action-button font-15'>SEE MORE</button></div>
+                    <div class='col-12 centered action-button'><a href='/admin?c=admin_groups' class='action-button font-15 blue'>SEE MORE</a></div>
                 </div>
                 
 

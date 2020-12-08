@@ -5,11 +5,12 @@
 {% block body %}
 
         <div class='col-12 dtop flex menu-header-bar'>
-            <div class='col-12'>
-                <a href='/' class='menu-link'><span class='menu-link' style='padding-left:10px;'><span class='font-15'>Home</span></span></a>
-                <a href='/team_my_schedule' class='menu-link active'><span class='menu-link' style='padding-left:10px;'><span class='active-link font-15'>My Schedule</span></span></a>
-                <a href='/team_my_stats' class='menu-link'><span class='menu-link' style=''><span class='font-15'>My Stats</span></span></a>
-                <a href='/team_my_rankings' class='menu-link'><span class='menu-link' style=''><span class='font-15'>My Rankings</span></span></a>
+            <div class='col-12 inline-flex'>
+                <div class='no-padding'> <a href='/' class='menu-link'><span class='menu-link font-15'>Home</span></span></a></div>
+                <div class='no-padding'> <a href='/team_my_schedule' class='menu-link active'><span class='menu-link active-link font-15'><span class='no-padding dtop'>My </span>Schedule</span></a></div>
+                <div class='no-padding'> <a href='/team_my_stats' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Stats</span></a></div>
+                <div class='no-padding'> <a href='/team_my_rankings' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Rankings</span></a></div>
+                <div class='no-padding' id='explore_menu_item'><div class='no-padding'><a class='menu-link'><span class='menu-link font-15 pointer'>Explore</span></a></div></div>
             </div>
         </div>
 
@@ -34,9 +35,9 @@
                 </div>
                 <div class='no-padding col-3 right'>
                     <div class='no-padding col-12 right'>
-                        <div class='gear-settings'>
-                            <img onclick='toggle_settings_bar();' id='settings-icon' class='icon-15 settings' src='/static/img/blue_gear15.png' />
-                        </div>
+                        <!--div class='gear-settings'>
+                            <img onclick='toggle_settings_bar("settings-bar");' id='settings-icon' class='icon-15 settings' src='/static/img/blue_gear15.png' />
+                        </div-->
                     </div>
                 </div>
                 
@@ -45,8 +46,9 @@
                 <div class='' style='padding-right:10px;'>
                     <span class='font-13' style='padding-right:10px;'>Year</span>
                     <select class='settings-bar' id='general_focus_year' onchange='update_settings(this.id, this.value);'>
-                        <option value=2020>2020</option>
-                        <option value=2019>2019</option>
+                        {% for y in misc.year_select_options %}
+                            <option value={{y.year}}>{{y.year}}</option>
+                        {% endfor %}
                     </select>
                 </div>
             </div>
@@ -79,23 +81,46 @@
                                         <div class='col-11-10 no-padding non-dashboard-label'>Film Guide</div>
                                                     
                                         <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='film_guide_helpicon' class='icon-15 explanation' value="team_my_schedule.html|film_guide" src="static/img/Gray_Info150.png" /></div>
-                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='film_guide_img' class='icon-15 toggle' onclick='toggle_tile_visibility("film_guide");' src="static/img/Gray_Plus150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='film_guide_img' class='icon-15 toggle' onclick='toggle_tile_visibility("film_guide");' src="static/img/Gray_Minus150.png" /></div>
                                                 
                                                     
                                         
                                     </div>
-                                    <div class='non-dashboard-tile-content' id='film_guide_div'>
+                                    <div class='non-dashboard-tile-content visible' id='film_guide_div'>
                                         <div class='flex-block col-12'>
                                             <div class='col-6-12 non-dashboard-tile-section' style=''>
-                                                <div class='col-12 no-padding'><span class='font-18'>Their Defense: film to learn from</span></div>
+                                                <div class='col-12 no-padding'><span class='font-18'>{{misc.data.next_game.opp_short_code}} Defense: film to learn from</span></div>
                                                 <div class='col-12 no-padding' id='film_guide_defense'></div>
                                             </div>
                                             <div class='col-6-12 non-dashboard-tile-section' style=''>
-                                                <div class='col-12 no-padding'><span class='font-18'>Their Offense: film to learn from</span> </div>
+                                                <div class='col-12 no-padding'><span class='font-18'>{{misc.data.next_game.opp_short_code}} Offense: film to learn from</span> </div>
                                                 <div class='col-12 no-padding' id='film_guide_offense'></div>
                                             </div>
                                         </div>
                                     
+                                    </div>
+
+                                </div>
+                            </div>
+                            <div class='col-12 block no-padding hidden' id='fogo_splits_top_div'>
+                                <div class='non-dashboard-section card col-12 ' id='fogo_splits_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div class='col-11-10 no-padding non-dashboard-label'>FOGO Splits</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' style='margin-top:2px;'><img id='fogo_splits_helpicon' class='icon-15 explanation' value="team_my_schedule.html|fogo_splits" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='fogo_splits_img' class='icon-15 toggle' onclick='toggle_tile_visibility("fogo_splits");' src="static/img/Gray_Plus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content bigger' id='fogo_splits_div'>
+                                        <div class='col-12'>
+                                            <div class='col-12' style='' id='fogo_splits_players'></div>
+                                            <div class='col-12 flex' style=''>
+                                                <div class='col-8-12 no-padding' id='fogo_splits_graph'></div>
+                                                <div class='col-4 dtop no-padding' id='fogo_splits_data'></div>
+                                            </div>
+                                        </div>
                                     </div>
 
                                 </div>
@@ -187,12 +212,12 @@
                                         </div>
                                                     
                                         <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='last_game_headline_helpicon' class='icon-15 explanation' value="team_my_schedule.html|last_game_headline" src="static/img/Gray_Info150.png" /></div>
-                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_headline_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game_headline");' src="static/img/Gray_Plus150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_headline_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game_headline");' src="static/img/Gray_Minus150.png" /></div>
                                                 
                                                     
                                         
                                     </div>
-                                    <div class='non-dashboard-tile-content' id='last_game_headline_div'></div>
+                                    <div class='non-dashboard-tile-content visible' id='last_game_headline_div'></div>
 
                                 </div>
                             
@@ -318,9 +343,22 @@
                             </div>
                         </div>
                         <div class='right-content-panel' id='full_schedule_panel'>
-                            <div class='col-12 flex-block no-padding'>
-                            
+                            <div class='col-12 block no-padding'>
+                                <div class='non-dashboard-section card col-12' id='full_schedule_list_container_div'>
+                                    <div class='non-dashboard-section-header'>
+                                        <div class='col-11-10 no-padding non-dashboard-label'>Full Schedule</div>
+                                                    
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='full_schedule_list_helpicon' class='icon-15 explanation' value="team_my_schedule.html|full_schedule_list" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='full_schedule_list_img' class='icon-15 toggle' onclick='toggle_tile_visibility("full_schedule_list");' src="static/img/Gray_Minus150.png" /></div>
+                                                
+                                                    
+                                        
+                                    </div>
+                                    <div class='non-dashboard-tile-content visible' id='full_schedule_list_div' style='padding-bottom:1px;'></div>
+
+                                </div>
                             </div>
+                            
                             <div class='col-12 flex-block no-padding'>
                             
                             </div>
@@ -333,7 +371,7 @@
         </div>
     
 
-<script src="static/js/d3.v4.min.js"></script><script src="static/js/laxrefpro_graphing.js?dt=200"></script>
+<script src="static/js/d3.v4.min.js"></script><script src="static/js/laxrefpro_graphing.js?dt=203"></script>
 <script>
     var on_mobile = null;
     var console_log = []; var success = null;
@@ -361,11 +399,24 @@
         $("#last_game_panel").append("<div class='col-12 centered no-padding'><span class='error font-18'>There is no \"last game\" to display yet.</span></div>");
     }
     
+    function toggle_fogo_filter(tag_type, val){
+        console.log(tag_type, val);
+        $("." + tag_type + "_tag").removeClass("tag-on").addClass("tag-off"); 
+        $("#" + val + "_view_tag").removeClass("tag-off").addClass("tag-on"); 
+        fogo_specs[tag_type] = val;
+        display_next_game("next_game");
+    }
+
+    function switch_fogo_focus(player_ID){
+        fogo_specs.fogo_player_ID = parseInt(player_ID);
+        display_next_game("next_game");
+    }
+
+    fogo_specs = {'career': null, 'quarter': 'quarter_index', 'fogo_player_ID': null}
     function display_next_game(panel){ 
         if([null, 'next_game', 'matchup_advantages_shooting', 'film_guide', 'opp_profile_offense'].indexOf(panel) == -1){ return; }
-    
         
-        
+        //console.log("misc.data.next_game"); console.log(misc.data.next_game)
         if(misc.data.next_game != null){
         
             cell_width = $("#matchup_advantages_shooting_container_div").width()/4/2;
@@ -375,8 +426,7 @@
             try{
                 // Data
                 max_rows = Math.max(misc.data.next_game.film_guide.offense.key_stretches.length, misc.data.next_game.film_guide.defense.key_stretches.length);
-                //console.log("misc.data.next_game.film_guide");
-                //console.log(misc.data.next_game.film_guide);
+                //console.log("misc.data.next_game.film_guide"); console.log(misc.data.next_game.film_guide);
                 // Visualization
                 for (tag in {'offense': 1, 'defense': 1}){
                     elem = $("#film_guide_" + tag); elem.empty();
@@ -393,14 +443,14 @@
                     html += "</div>";
                     printed = 0; show_last_year = false;
                     for(var a = 0;a<misc.data.next_game.film_guide[tag].key_stretches.length;a++){
-                        bkt = misc.data.next_game.film_guide[tag].key_stretches[a];
-                        console.log(bkt)
+                        bkt = misc.data.next_game.film_guide[tag].key_stretches[a];bkt.seq = a;
+                   
                         if(bkt.last_year){ show_last_year = true; }
                         html += "<div class='flex table-row no-padding'>";
                         html += " <div class='col-4 no-padding inline-flex' style='padding:0;'>";
-                        html += "<FORM id='future_opp_form" + bkt.ID + "' action='/team_detail' style='padding: 0px 5px;' method=POST><input type=hidden name='detail_team_ID' value='" + bkt.opponentID + "'><input type=hidden name='came_from' value='team_my_schedule' /><span class='mouseover-link pointer font-12 contents' onclick=\"document.getElementById('future_opp_form" + bkt.ID + "').submit();\">" + bkt.opp_short_code + "</span></FORM>";
+                        html += "<FORM id='future_opp_form" + tag + bkt.seq + "' action='/team_detail' style='padding: 0px 5px;' method=POST><input type=hidden name='detail_team_ID' value='" + bkt.opponentID + "'><input type=hidden name='came_from' value='team_my_schedule' /><span class='mouseover-link pointer font-12 contents' onclick=\"document.getElementById('future_opp_form" + tag + bkt.seq + "').submit();\">" + bkt.opp_short_code + "</span></FORM>";
                         
-                        html += "<FORM id='future_game_form" + bkt.ID + "' action='/team_game_detail' method=POST><input type=hidden name='ID' value='" + bkt.ID + "'><input type=hidden name='came_from' value='team_my_schedule' /><span class='mouseover-link pointer font-12 contents' style='padding-left:5px;' onclick=\"document.getElementById('future_game_form" + bkt.ID + "').submit();\">(" + bkt.short_date_str + (bkt.last_year ? "*" : "") + ")</span></FORM>";
+                        html += "<FORM id='future_game_form" + tag + bkt.seq + "' action='/team_game_detail' method=POST><input type=hidden name='ID' value='" + bkt.game_ID + "'><input type=hidden name='came_from' value='team_my_schedule' /><span class='mouseover-link pointer font-12 contents' style='padding-left:5px;' onclick=\"document.getElementById('future_game_form" + tag + bkt.seq + "').submit();\">(" + bkt.short_date_str + (bkt.last_year ? "*" : "") + ")</span></FORM>";
                         /*<FORM id='game_form{{g.ID}}' action='/team_game_detail' method=POST><input type=hidden name='game_ID' value='{{g.ID}}' /><input type=hidden name='came_from' value='home' /><span onclick="document.getElementById('game_form{{g.ID}}').submit();" class='mouseover-link pointer font-14 contents'>{{g.date_mmmdd}}</span></FORM>
                         */
                         //html += <span class='font-12'>" + bkt.opp_short_code + " (" + bkt.short_date_str + (bkt.last_year ? "*" : "") + ")</span></div>";
@@ -422,7 +472,7 @@
                     }
                     if(show_last_year){
                         html += "<div class='flex no-padding'>";
-                        html += " <div class='col-12 right'><span class='font-12'>* Last Season</span></div>";
+                        html += " <div class='col-12 right'><span class='font-12'>* " + (misc.year-1) + " Season</span></div>";
                         html += "</div>";
                     }
                     elem.append(html); 
@@ -437,6 +487,177 @@
                 $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
                 report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
             }
+            
+            
+            id = 'fogo_splits_div'; success = false;            
+            try{
+                if(misc.data.gender == "men"){
+                    $("#fogo_splits_top_div").removeClass("hidden");
+                    // Data
+                    //console.log("misc.data.next_game.opp_fogos"); console.log(misc.data.next_game.opp_fogos);
+                    fogos = misc.data.next_game.opp_fogos;
+
+                    if(fogo_specs.career == null){ 
+                        fogo_specs.career = fogos[0].default_career ? "career" : "season"; 
+                        fogo_specs.fogo_player_ID = fogos[0].player_ID;
+                    }
+                    // Visualization
+
+                    
+                    focus_fogo = fogos.filter(r=> r.player_ID == fogo_specs.fogo_player_ID)[0];
+     
+                    // Create player list
+                    elem = $("#fogo_splits_players"); elem.empty();
+                    html = "<div class='flex'  style='background-color:#EEF;'>"
+                    
+                        html += "<div class='margin white' style='padding:4px;'>";
+                        html += "<div class='no-padding mob col-12' style='padding-top:5px;'><span class='light font-12'>Select FOGO</span></div>";
+                        html += "<div class='col-12 no-padding inline-flex'>"
+                        html += "<div class='no-padding dtop' style='margin-right:10px;'><span class='font-12'>Select FOGO</span></div>";
+                        html += "<select onchange='switch_fogo_focus(this.value);' class='font-12' style='margin-left:5px;'>";
+                        for(var a = 0;a<fogos.length;a++){ fogo = fogos[a];
+                            html += "<option value='" + fogo.player_ID + "' " + ((fogo.player_ID == fogo_specs.fogo_player_ID) ? " selected": "") + ">" +  fogo.player + "</option>";
+                        }
+                        html += "</select>";
+                        html += "</div></div>";
+                    
+                        html += "<div class='margin white' style='padding:4px;'>";
+                        html += "<div class='no-padding mob col-12' style='padding-top:5px;'><span class='light font-12'>Select Split</span></div>";
+                        html += "<div class='no-padding inline-flex'>"
+             
+                        html += '<span id="quarter_index_view_tag" class="pointer tag-' + (fogo_specs.quarter=="quarter_index" ? "on" : "off") + ' quarter_tag font-15" onclick=\'toggle_fogo_filter(&quot;quarter&quot;, &quot;quarter_index&quot;);\'>';
+                        html += '<span class="font-12"><span class="dtop">By Quarter</span><span class="mob">Qtr</span></span></span>'
+                        html += '<span id="seq_bucket_view_tag" class="pointer tag-' + (fogo_specs.quarter=="quarter_index" ? "off" : "on") + ' quarter_tag font-15" onclick=\'toggle_fogo_filter(&quot;quarter&quot;, &quot;seq_bucket&quot;);\'>';
+                        html += '<span class="font-12"><span class="dtop">By Sequence</span><span class="mob">Seq</span></span></span>'
+               
+                        html += "</div></div>";
+                    
+                        html += "<div class='margin white' style='padding:4px;'>";
+                        html += "<div class='no-padding mob col-12' style='padding-top:5px;'><span class='light font-12'>Select Period</span></div>";
+                        html += "<div class='no-padding inline-flex'>"
+             
+                        html += '<span id="career_view_tag" class="pointer tag-' + (fogo_specs.career=="career" ? "on" : "off") + ' career_tag font-15" onclick=\'toggle_fogo_filter(&quot;career&quot;, &quot;career&quot;);\'>';
+                        html += '<span class="font-12">Career</span></span>'
+                        html += '<span id="season_view_tag" class="pointer tag-' + (fogo_specs.career=="career" ? "off" : "on") + ' career_tag font-15" onclick=\'toggle_fogo_filter(&quot;career&quot;, &quot;season&quot;);\'>';
+                        html += '<span class="font-12">Season</span></span>'
+               
+                        html += "</div></div>";
+                    
+                    html += "</div>";
+                    elem.append(html);
+                    
+                    // Create graph
+                    elem = $("#fogo_splits_graph"); elem.empty();
+                    
+                    specs = {'margin_left': 40, 'margin_right': 10, 'margin_top': 10, 'margin_bottom': 55, 'chart_size':'small'};
+
+  
+                    fogo_data = focus_fogo[fogo_specs.career + "_data"];
+                    //fogo_data[fogo_specs.quarter].x_label = "X axis"
+  
+                    data = {'axis_labels': {'y': fogo_data[fogo_specs.quarter].header, 'x': fogo_data[fogo_specs.quarter].x_label}, 'data': []};
+      
+                    tmp = {'stroke-dasharray': ('3,5'), 'stroke-width': 2.5, 'stroke': "#AFA", 'points': []}
+                    tmp.points = fogo_data[fogo_specs.quarter + "_by_secondary_fogo"].points.filter(r => r.y != null);
+                    data.data.push(tmp)
+                    
+                    tmp = {'stroke-width': 2.5, 'stroke': "#33F", 'points': []}
+                    tmp.points = fogo_data[fogo_specs.quarter + "_by_primary_fogo"].points.filter(r => r.y != null);
+                    data.data.push(tmp)
+                    
+                    data['legend'] = {'y_offset': 0, 'items': [], 'layout': 'horizontal'}
+
+                    data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2.5, 'color': '#33F', 'label': 'vs primary FOGO'})
+                    data.legend.items.push({'stroke-dasharray': '3,3', 'icon_type': 'line', 'stroke-width': 2.5, 'color': '#5F5', 'label': 'vs secondary FOGO'}) 
+                    
+                    x_ticks = create_game_x_ticks(data.data);
+                    data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
+                    
+                    y_ticks = create_pct_y_ticks(data.data, {'min': 0.0,'max': 1.0});
+                    data['y_ticks'] = y_ticks.ticks;
+                    data['max_y'] = 1.0;  data['min_y'] = 0.0;
+                        
+                    if(on_mobile){
+                        specs.width = $('#fogo_splits_container_div').width() * .95;    
+                    }
+                    else{
+                        specs.width = $('#fogo_splits_container_div').width() * .95 * .666666;    
+                    }
+                    specs.height = 220;
+                    horizontal_line(data, "fogo_splits_graph", specs);
+                    
+                    // Create data table
+                    elem = $("#fogo_splits_data"); elem.empty();
+                    html = "<div class='no-padding'>";
+                    
+                    // Header
+                    html += "<div class='bbottom col-12 no-padding'>";
+                    html += "<span class='font-15 bold'>" + (fogo_specs.career=="career" ? "Career" : "Season") + " View</span>";
+                    html += "</div>"
+                    
+                    // Labels
+                    html += "<div class='col-12 no-padding flex'>";
+                        html += "<div class='col-4 no-padding'></div>";
+                        html += "<div class='col-4 centered no-padding'>";
+                        html += "<span class='font-12 light'>vs Primary</span>";
+                        html += "</div>"
+                        html += "<div class='col-4 centered no-padding'>";
+                        html += "<span class='font-12 light'>vs Secondary</span>";
+                        html += "</div>"
+                    html += "</div>"
+                    
+                    // Count
+                    html += "<div class='col-12 table-row no-padding flex'>";
+                        html += "<div class='col-4 no-padding'><span class='font-12 light'>Count</span></div>";
+                        html += "<div class='col-4 centered no-padding'>";
+                        html += "<span class='font-12 light'>" + jsformat(fogo_data["n_by_primary_fogo"], "0") + "</span>";
+                        html += "</div>"
+                        html += "<div class='col-4 centered no-padding'>";
+                        html += "<span class='font-12 light'>" + jsformat(fogo_data["n_by_secondary_fogo"], "0") + "</span>";
+                        html += "</div>"
+                    html += "</div>"
+                    
+                    // Pct
+                    html += "<div class='col-12 table-row no-padding flex'>";
+                        html += "<div class='col-4 no-padding'><span class='font-12 light'>Win %</span></div>";
+                        html += "<div class='col-4 centered no-padding'>";
+                        html += "<span class='font-12 light'>" + jsformat(fogo_data["pct_by_primary_fogo"], "1%") + "</span>";
+                        html += "</div>"
+                        html += "<div class='col-4 centered no-padding'>";
+                        html += "<span class='font-12 light'>" + jsformat(fogo_data["pct_by_secondary_fogo"], "1%") + "</span>";
+                        html += "</div>"
+                    html += "</div>"
+                    
+                    // Record
+                    html += "<div class='col-12 table-row no-padding flex'>";
+                        html += "<div class='col-4 no-padding'><span class='font-12 light'>Record</span></div>";
+                        html += "<div class='col-4 centered no-padding'>";
+                        html += "<span class='font-12 light'>" + jsformat(fogo_data["record_by_primary_fogo"], "") + "</span>";
+                        html += "</div>"
+                        html += "<div class='col-4 centered no-padding'>";
+                        html += "<span class='font-12 light'>" + jsformat(fogo_data["record_by_secondary_fogo"], "") + "</span>";
+                        html += "</div>"
+                    html += "</div>"
+                    
+                    
+                    
+                    html += "</div>"
+                    
+                    elem.append(html);
+                    
+                }
+                // Mark complete
+                success = true;
+                
+            }
+            catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+            
+            if(!success){
+                $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+                report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+            }
+            
+            
             id = 'matchup_advantages_shooting_div'; success = false;
             try{
                 // Data
@@ -593,8 +814,7 @@
         id = 'matchup_history_div'; success = false;
         try{
             // Data
-            console.log("misc.data.matchup_history");
-            console.log(misc.data.matchup_history);
+            //console.log("misc.data.matchup_history"); console.log(misc.data.matchup_history);
             // Visualization
             elem = $("#" + id); elem.empty();
             html = "";
@@ -611,8 +831,8 @@
             
             html += "<div class='flex bbottom'>";
             html += " <div class='col-2'><span class='font-12 bold'>Date</span></div>";
-            html += " <div class='col-1 centered'><span class='font-12 bold contents'>Result</span></div>";
-            html += " <div class='col-9'><ul class='table-ul left' style='background-color:inherit;'>";
+            html += " <div class='col-1-2 centered'><span class='font-12 bold contents'>Result</span></div>";
+            html += " <div class='col-9-8'><ul class='table-ul left' style='background-color:inherit;'>";
             for(var a = 0;a<tags.length;a++){ tag = tags[a];
             
                 html += " <li style='' class='" + tag.class + " table-li no-padding centered'><div class='cell-holder no-padding'><span class='font-12 bold contents'>" + tag.label + "</span></div></li>";
@@ -633,8 +853,8 @@
                 //html += " <div class='col-2'><span class='font-12'>" + gm.game_date_str + "</span></div>";
                 
                 
-                html += " <div class='col-1 centered'><span class='font-12 " + last_game_style + " contents'>" + gm.result_str + "</span></div>";
-                html += " <div class='col-9'><ul class='table-ul left' style='background-color:inherit;'>";
+                html += " <div class='col-1-2 centered'><span class='font-12 " + last_game_style + " contents'>" + gm.result_str + "</span></div>";
+                html += " <div class='col-9-8'><ul class='table-ul left' style='background-color:inherit;'>";
                 for(var b = 0;b<tags.length;b++){ tag = tags[b];
                     if([null, ''].indexOf(gm[tag.tag]) > -1){ txt = ""; }
                     else if(tag.fmt == "%"){ txt = zFormat(100.0*gm[tag.tag], 1) + "%"; }
@@ -674,16 +894,14 @@
                 stats = misc.last_game_headline_stats.split("|");
                 for(var a = 0;a<stats.length;a++){ stats[a] = {'unit': stats[a].split("~")[0], 'tag': stats[a].split("~")[1] }; }
                 
-                console.log("misc.data.last_game");
-                console.log(misc.data.last_game);
+                //console.log("misc.data.last_game"); console.log(misc.data.last_game);
                 
                 
-                console.log("misc.extra_data.db_statistics");
-                console.log(misc.extra_data.db_statistics);
+                //console.log("misc.extra_data.db_statistics"); console.log(misc.extra_data.db_statistics);
                 
                 data = misc.extra_data.db_team_game_summaries;
-                console.log("misc.extra_data.db_team_game_summaries");
-                console.log(data);
+                //console.log("misc.extra_data.db_team_game_summaries");
+                //console.log(data);
                 game_summaries = misc.data.last_game.summaries.filter(r=> r.team_ID==misc.data.ID && r.filter == null);
                 
                 headline_options = [];
@@ -691,8 +909,8 @@
                 html = ""
                 elem = $("#" + id); elem.empty();
                 
-                console.log("game_summaries");
-                console.log(game_summaries);
+                //console.log("game_summaries");
+                //console.log(game_summaries);
                 
                 
                 html += "<div class='flex-block col-12'>"
@@ -750,13 +968,12 @@
                                     
                 elem.append(html);
                 season_summaries = data.filter(r=> r.team_ID==misc.data.ID && r.filter == null);
-                console.log("Found " + season_summaries.length + " season summaries.");
+                
                 if(season_summaries.length > 2){
                     for(var a = 0;a<stats.length;a++){ stat = stats[a];
                         specs = {'margin_left': 30, 'margin_right': 10, 'margin_top': 2, 'margin_bottom': 5, 'chart_size': 'small', 'flip': db_stat.reverse };
                         unit_summaries = season_summaries.filter(r=> r.data_type==stat.unit);
-                        console.log("unit_summaries")
-                        console.log(unit_summaries)
+                        //console.log("unit_summaries"); console.log(unit_summaries)
                         
                         data = {'axis_labels': {'y': 'Season Trend (Raw)', 'x': 'Games'}, 'data': []};
                         tmp = {'stroke-dasharray': '3-3', 'stroke-width': 2.5, 'stroke': "#33F", 'points': []}
@@ -803,8 +1020,7 @@
                 // Visualization
                 
                 for(var a = 0;a<units.length;a++){ unit = units[a];
-                    //console.log("misc.data.last_game.adjusted_performance." + unit.tag);
-                    //console.log(misc.data.last_game.adjusted_performance[unit.tag]);
+                    //console.log("misc.data.last_game.adjusted_performance." + unit.tag); console.log(misc.data.last_game.adjusted_performance[unit.tag]);
                 
                     elem = $("#" + unit.div); elem.empty();
                     html = "";
@@ -871,8 +1087,7 @@
                 // Visualization
                 
                 for(var a = 0;a<units.length;a++){ unit = units[a];
-                    //console.log("misc.data.last_game.adjusted_performance." + unit.tag);
-                    //console.log(misc.data.last_game.adjusted_performance[unit.tag]);
+                    //console.log("misc.data.last_game.adjusted_performance." + unit.tag); console.log(misc.data.last_game.adjusted_performance[unit.tag]);
                 
                     elem = $("#" + unit.div); elem.empty();
                     html = "";
@@ -932,14 +1147,16 @@
             id = "last_game_positional_breakdown_div"; success = false;
             try{
                 // Data
-                //console.log("misc.data.last_game.positional_breakdown");
-                //console.log(misc.data.last_game.positional_breakdown);
+                //console.log("misc.data.last_game.positional_breakdown"); console.log(misc.data.last_game.positional_breakdown);
                 // Visualization
                 
                 units = []
                 units.push({'desc': 'Attack', 'tag': 'A'})
                 units.push({'desc': 'Midfield/FO', 'tag': 'M'})
                 units.push({'desc': 'Defense/GK', 'tag': 'D'})
+                units.push({'desc': 'Not Specified', 'tag': '?'})
+                
+                
                 
                 
                 // Visualization
@@ -954,19 +1171,34 @@
                     html += " <div class='col-3 no-padding centered'><span class='font-12 bold contents'>" + unit.desc + "</span></div>";
                 }
                 html += "</div>";
+                for(var b = 0;b<misc.data.last_game.positional_breakdown.length;b++){
+                    stat = misc.data.last_game.positional_breakdown[b]; stat.seq = 1000;
+                    if(stat.label == "Shots"){ stat.seq = 3; }
+                    if(stat.label == "Goals"){ stat.seq = 1; }
+                    if(stat.label == "Assists"){ stat.seq = 2; }
+                    if(stat.label == "Shots on Goal"){ stat.seq = 4; }
+                }
+                misc.data.last_game.positional_breakdown = misc.data.last_game.positional_breakdown.sort(function(first, second){
+                    return first.seq - second.seq; 
+                });
 
                 for(var b = 0;b<misc.data.last_game.positional_breakdown.length;b++){
                     stat = misc.data.last_game.positional_breakdown[b];
                     //console.log(stat);
+                    txt = stat.label;
+                    if(txt == "Shots on Goal"){ txt = "SOG"; }
                     
                     html += "<div class='flex table-row no-padding'>";
-                    html += " <div class='col-3 no-padding'><span class='font-12'>" + stat.label + "</span></div>";
+                    html += " <div class='col-3 no-padding'><span class='font-12'>" + txt + "</span></div>";
                     for(var c = 0;c<units.length;c++){ unit = units[c];
+                  
                         val = stat.values.filter(r=> r.tag == unit.tag)[0];
-                        /*value_share = stat.value_share.filter(r=> r.tag == unit.tag)[0];
+                        value_share = stat.value_share.filter(r=> r.tag == unit.tag)[0];
+        
+                        
                         share_str = (['', 'N/A', 'n/a/', null].indexOf(value_share.value) > -1) ?  "N/A" : (zFormat(100.0*value_share.value, 0) + "%");
-                        html += " <div class='col-3 no-padding centered'><span class='font-12 contents'>" + share_str + " (" +
-                        jsformat(val.value, stat.js_fmt) + ")" + "</span></div>";*/
+                        txt =  val.value == 0 ? "---" : share_str + " (" + jsformat(val.value, stat.js_fmt) + ")";
+                        html += " <div class='col-3 no-padding centered'><span class='font-12 contents'>" + txt + "</span></div>";
                     }
                     html += "</div>";
                 }
@@ -987,8 +1219,8 @@
             id = "last_game_situation_splits_div"; success = false;
             try{
                 // Data
-                //console.log("misc.data.last_game.situational_splits");
-                //console.log(misc.data.last_game.situational_splits);
+                //console.log("misc.data.last_game.situational_splits"); console.log(misc.data.last_game.situational_splits);
+                
                 // Visualization
                 
                 units = [{'desc': 'Offense', 'tag': 'offense'}, {'desc': 'Defense', 'tag': 'defense'}, {'desc': 'Faceoff Unit', 'tag': 'faceoffs'}, {'desc': 'Goalkeepers', 'tag': 'goalkeepers'}];
@@ -1020,7 +1252,6 @@
                         html += " <div class='no-padding'>";
                         for(var b = 0;b<misc.data.last_game.situational_splits[unit.tag].length;b++){
                             stat = misc.data.last_game.situational_splits[unit.tag][b];
-                            console.log(stat);
                             
                             
                  
@@ -1115,14 +1346,99 @@
         }
     }
     
+    function expand_game(seq){
+        elem = document.getElementById("game" + seq + "_expansion");
+        class_list = elem.classList.value.split(" ")
+        if(class_list.indexOf("visible") == -1){
+            $("#game" + seq + "_expansion").addClass("visible");
+        }
+        else{
+            $("#game" + seq + "_expansion").removeClass("visible");
+        }
+    }
+    
     function display_full_schedule(panel){
         if([null, 'full_schedule', 'record_scenarios', 'bubble_watch', 'conf_seed_probabilities', 'selection_rivals'].indexOf(panel) == -1){ return; }
         
-        id = 'record_scenarios'; success = false;
+        id = 'full_schedule_list'; success = false;
         try{
             // Data
+            //console.log("misc.data.season_games"); console.log(misc.data.season_games)
+            gms = misc.data.season_games.sort(function(first, second) {
+                    return first.game_epoch - second.game_epoch;
+            });
+            
             
             // Visualization
+            elem = $("#" + id + "_div"); elem.empty();
+            for(var a = 0;a<gms.length;a++){
+                gm = gms[a];
+                gm.class = gm.status.indexOf("complete") > -1 ? "complete":"scheduled";
+                gm.summary_detail1 = gm.class == "complete" ? gm.score_str_html : (gm.opp_short_code + " Rankings - " + gm.opp_rankings_summary_str);
+                gm.summary_detail1_mob = gm.class == "complete" ? gm.score_str_html : (gm.opp_short_code + ": " + gm.opp_rankings_summary_str_mob);
+                
+                gm.seq = a;
+            }
+            
+            for(var a = 0;a<gms.length;a++){
+                gm = gms[a];
+                html = "";
+                html += "<div class='schedule-game " + gm.class + "'>";
+
+                    // Summary
+                    html += "<div class='flex' id='game" + gm.seq + "_summary'>";
+                    
+                        // Date
+                        html += "<div class='col-1-2'>";
+                        if(gm.class == "complete"){
+                            html += "<FORM id='schedule_game_form" + gm.seq + "' action='/team_game_detail' method=POST><input type=hidden name='ID' value='" + gm.ID + "'><input type=hidden name='came_from' value='team_my_schedule' />";
+                            html += "<span class='mouseover-link pointer font-15' onclick=\"document.getElementById('schedule_game_form" + gm.seq + "').submit();\">" + gm.date_mmmdd + "</span>";
+                            html += "</FORM>";
+                        }
+                        else{
+                            html += "<span class='font-15'>" + gm.date_mmmdd + "</span>";
+                        }   
+                        html += "</div>";
+                    
+                        // Opponent    
+                        html += "<div class='col-3'>";
+                        html += "<FORM id='schedule_opp_form" + gm.seq + "' action='/team_detail' style='padding: 0px 5px;' method=POST><input type=hidden name='detail_team_ID' value='" + gm.opponentID + "'><input type=hidden name='came_from' value='team_my_schedule' /><span class='mouseover-link pointer font-15 contents' onclick=\"document.getElementById('schedule_opp_form" + gm.seq + "').submit();\">" + gm.opponent_display + "</span></FORM>";
+                        html += "</div>";
+                    
+                        // Result    
+                        html += "<div class='col-7-6'>";
+                        html += "<span class='font-15 dtop'>" + gm.summary_detail1 + "</span>";
+                        html += "<span class='font-15 mob'>" + gm.summary_detail1_mob + "</span>";
+                        html += "</div>";
+                    
+                    
+                        // Expand    
+                        html += "<div class='col-1 right'>";
+                        html += "<!--img id='game" + gm.seq + "_imgicon' class='icon-15 row-toggle' onclick='expand_game(" + gm.seq + ");' src='static/img/Gray_Plus_Skinny150.png' /-->";
+                        html += "</div>";
+                    
+                    html += "</div>";
+                    
+                    
+                    // Expansion
+                    html += "<div class='no-padding expanded' id='game" + gm.seq + "_expansion'>";
+                    
+                        // Date
+                        html += "<div class='col-1'>";
+                        html += "<span class='font-15'>" + gm.date_mmmdd + "</span>";
+                        html += "</div>";
+                    
+                        // Opponent    
+                        html += "<div class='col-3'>";
+                        html += "<span class='font-15'>" + gm.opponent_display + "</span>";
+                        html += "</div>";
+                    
+                        
+                    html += "</div>";
+                
+                html += "</div>";
+                elem.append(html);
+            }
             
             // Mark complete
             success = true;
@@ -1203,13 +1519,14 @@
             display_full_schedule(panel);
             
             
+            if('observe' in misc && misc.observe){ report_user_view(misc.handler + "|" + panel + "|" + misc.nhca); }
             
         }
         
     }
     
     // Select the appropriate panel to display
-    if('active_element' in misc){ choose_left_menu_item(misc.active_element); }
+    if('active_element' in misc && ["None", null, -1, ' ', ''].indexOf(misc.active_element) == -1){ choose_left_menu_item(misc.active_element); }
     else{ choose_left_menu_item("next_game"); }
     
     console_log.push({'msg': 'Start finish load...'});

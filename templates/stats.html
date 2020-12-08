@@ -1,0 +1,114 @@
+
+{% extends layout %}
+
+
+{% block body %}
+
+        <div class='col-12 dtop flex menu-header-bar'>
+            <div class='col-12 inline-flex'>
+                <div class='no-padding'> <a href='/' class='menu-link'><span class='menu-link font-15'>Home</span></span></a></div>
+                <div class='no-padding'> <a href='/team_my_schedule' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Schedule</span></a></div>
+                <div class='no-padding'> <a href='/team_my_stats' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Stats</span></a></div>
+                <div class='no-padding'> <a href='/team_my_rankings' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Rankings</span></a></div>
+                <div class='no-padding' id='explore_menu_item'><div class='no-padding'><a class='menu-link'><span class='menu-link font-15 pointer'>Explore</span></a></div></div>
+            </div>
+        </div>
+
+        <div class='col-12 centered' id='banner'></div>
+        
+        
+        
+        {% if misc.error %}
+            <div class='col-12 error centered'><span class='error' >{{misc.error|safe}}</span></div>
+        {% endif %}
+        {% if misc.msg %}
+            <div class='col-12 error centered'><span class='' >{{misc.msg}}</span></div>
+        {% endif %}
+        <div class=''>
+            <div class='no-padding options-bar col-12 flex'>
+                <div class='no-padding col-9'>
+                {% if misc.breadcrumbs %}
+                    <div class='breadcrumbs'>
+                        {{misc.breadcrumbs|safe}}
+                    </div>
+                {% endif %}
+                </div>
+            </div>
+            
+            
+            <div id='explanation' class='non-dashboard-landing'> </div>
+            
+            <div id='landing' class='non-dashboard-landing'> </div>
+            
+        </div>
+    
+<script src="static/js/d3.v4.min.js"></script><script src="static/js/laxrefpro_graphing.js?dt=203"></script>
+<script>
+    var on_mobile = null;
+    var console_log = []; var success = null;
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
+    
+    var misc = parse_misc({{misc|to_json2}});
+    console_log.push({'msg': 'Loaded misc...'});
+    var user_obj = {'settings': {{user_obj.settings|to_json2}}};
+    console.log(user_obj);
+    console.log(misc);
+    
+    specs = {'league': 'league' in user_obj.settings ? user_obj.settings.league.val : "NCAAD1Men", 'stat_grouping': 'basic', 'link_to_teams': 1};
+    if(misc.substat != "active"){ specs.link_to_teams = 0; }
+    else if (misc.product_i == 1 && misc.product_t < 2){ specs.link_to_teams = 0; }
+    else if (misc.product_i == 2 && misc.product_t < 2){ specs.link_to_teams = 0; }
+
+    stat_groupings = [{'tag': 'basic'}];
+    stats = [];
+    stats.push({'grouping': 'basic', 'tag': 'adjusted_offensive_efficiency', 'desc': 'Adj Off%', 'jsfmt': "1%"})
+    stats.push({'grouping': 'basic', 'tag': 'adjusted_defensive_efficiency', 'desc': 'Adj Def%', 'jsfmt': "1%"})
+    stats.push({'grouping': 'basic', 'tag': 'adjusted_faceoff_win_rate', 'desc': 'Adj FO%', 'jsfmt': "1%"})
+    stats.push({'grouping': 'basic', 'tag': 'elo_rating', 'desc': 'LaxELO', 'jsfmt': "0"})
+    stats.push({'grouping': 'basic', 'tag': 'expected_shooting_pct', 'desc': 'Exp. Shot%', 'jsfmt': "1%", 'class': 'dtop'})
+    stats.push({'grouping': 'basic', 'tag': 'excess_shooting_pct', 'desc': 'Excess Shot%', 'jsfmt': "1%", 'class': 'dtop'})
+    
+    function redraw(){
+        elem = $("#landing"); elem.empty();
+        
+        league = misc.leagues.filter(r=> r.tag == specs.league)[0];
+        console.log("league");console.log(league);
+        selected_stats = stats.filter(r=> r.grouping == specs.stat_grouping);
+        console.log("selected_stats"); console.log(selected_stats);
+        
+        teams = misc.extra_data.db_teams[league.tag].sort(function(a,b){ return b.elo_rating - a.elo_rating; }).filter(r=> r.elo_rating != null);
+        for(var a = 0;a<teams.length;a++){
+            team = teams[a]; team.seq = a;
+            team.team_link = "<FORM id='team_detail_form" + team.seq + "' action='/team_detail' style='padding: 0px 5px;' method=POST><input type=hidden name='detail_team_ID' value='" + team.ID + "'><input type=hidden name='came_from' value='stats' /><span class='mouseover-link pointer font-12 contents' onclick=\"document.getElementById('team_detail_form" + team.seq + "').submit();\">" + team.display_name + "</span></FORM>";
+            
+            
+        }
+        
+        var js_data = {'fields': [], 'cell_size': 'large-cell-holder'}
+        js_data.classes = [{'class': 'col-2-4 ' + (specs.link_to_teams ? 'mouseover-link': '')}, {'outer_class': 'col-10-8', 'classes': []}];
+        js_data.fmt = [{'fmt': ""}];
+        js_data.fields.push({'sort_by': 'display_name', 'tag': (specs.link_to_teams ? 'team_link' : "display_name"), 'display': 'Team'});
+        for(var a = 0;a<selected_stats.length;a++){
+            stat = selected_stats[a];
+            
+            js_data.fields.push({'tag': stat.tag, 'display': stat.desc, 'sort_by' : ('sort_by' in stat) ? stat.sort_by : stat.tag});
+            js_data.classes[1].classes.push({'class': 'centered ' + ('class' in stat ? stat.class : "") });
+            js_data.fmt.push({'fmt': stat.jsfmt});            
+        }
+        console.log(js_data);
+        js_data.data = teams;
+        generic_create_table(js_data, {'id': "landing", 'target_elem': "landing"});
+            
+        if('observe' in misc && misc.observe){ report_user_view(misc.handler + "|" + panel + "|" + misc.nhca); }
+    }
+    
+    redraw();
+    
+    console_log.push({'msg': 'Start finish load...'});
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+      
+    window.addEventListener("resize", redraw); 
+        
+</script>
+{% endblock %}
+

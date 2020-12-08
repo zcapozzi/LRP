@@ -25,14 +25,14 @@
                     
                     {% if not user_obj.active_subscription.trial %}
                         {% if user_obj.active_subscription.status == "non-renewing" %}
-                            <FORM action='/subscription' method=POST>
+                            <FORM action='/subscription' method=POST><input type=hidden name='subscription_ID' value='{{misc.subscription_ID}}' />
                                 <input type=hidden name='confirmed' value='{{misc.confirmed}}' />
-                                <div class='' style='padding-bottom:20px;'><span class='font-15 contents'>You previously disabled the auto-renewal of this subscription, which ends {{user_obj.active_subscription.end_date_str}}. Re-enabling autorenewal will ensure you have no break in access.</span></div>
+                                <div class='' style='padding-bottom:20px;'><span class='font-15 lh-24 contents'>You previously disabled the auto-renewal of this subscription, which ends {{user_obj.active_subscription.end_date_str}}. Re-enabling autorenewal will ensure you have no break in access.</span></div>
                                 
                                 
                                 {% if misc.confirmed == "yes" and misc.action == "set_renewing" %}
-                                    <div class='' style='padding-bottom:20px;'><span class='font-15 contents' style='color:blue;'>To confirm, when you click 'RE-ENABLE AUTORENEW', we will change your subscription to an auto-renewal. This means your payment method will be automatically charged when your current subscription ends on the date above.</span></div>
-                                    <div class='' style='padding-bottom:20px;'><input id='reenable_check' type=checkbox name='understand'  style='margin-right:15px;' /><span class='font-15 contents'>Click to confirm</span></div>
+                                    <div class='' style='padding-bottom:20px;'><span class='font-15 lh-24 contents' style='color:blue;'>To confirm, when you click 'RE-ENABLE AUTORENEW', we will change your subscription to an auto-renewal. This means your payment method will be automatically charged when your current subscription ends on the date above.</span></div>
+                                    <div class='' style='padding-bottom:20px;'><input id='reenable_check' type=checkbox name='understand'  style='margin-right:15px;' /><span class='font-15 lh-24 contents'>Click to confirm</span></div>
                                 {% endif %}
                                 
                                 {% if misc.error and misc.action == "set_renewing" %}
@@ -56,9 +56,9 @@
                         {% endif %}
                     {% endif %}
                     {% if user_obj.active_subscription.trial %}
-                        <FORM action='/subscription' method=POST>
+                        <FORM action='/subscription' method=POST><input type=hidden name='subscription_ID' value='{{misc.subscription_ID}}' />
                             <input type=hidden name='confirmed' value='{{misc.confirmed}}' />
-                            <div class='' style='padding-bottom:20px;'><span class='font-15 contents'>Ready to extend your free trial into a paid subscription? As a reminder, your trial ends on {{user_obj.active_subscription.end_date_str}} and you will lose access to the platform after that date unless you convert to a paid subscription.</span></div>
+                            <div class='' style='padding-bottom:20px;'><span class='font-15 lh-24 contents'>Ready to extend your free trial into a paid subscription? As a reminder, your trial ends on {{user_obj.active_subscription.end_date_str}} and you will lose access to the platform after that date unless you convert to a paid subscription.</span></div>
                             
                             
                             
@@ -73,12 +73,12 @@
                         </FORM>
                     {% else %}
                         {% if user_obj.active_subscription.status == "active" %}
-                            <FORM action='/subscription' method=POST>
+                            <FORM action='/subscription' method=POST><input type=hidden name='subscription_ID' value='{{misc.subscription_ID}}' />
                                 <input type=hidden name='confirmed' value='{{misc.confirmed}}' />
-                                <div class='' style='padding-bottom:20px;'><span class='font-15 contents'>Enjoying LacrosseReference PRO, but not sure you want to auto-renew when your subscription ends on {{user_obj.active_subscription.end_date_str}}? Simply disable auto-renew so that YOU decide whether you want to renew when the time comes.</span></div>
+                                <div class='' style='padding-bottom:20px;'><span class='font-15 lh-24 contents'>Enjoying LacrosseReference PRO, but not sure you want to auto-renew when your subscription ends on {{user_obj.active_subscription.end_date_str}}? Simply disable auto-renew so that YOU decide whether you want to renew when the time comes.</span></div>
                                 {% if misc.confirmed == "yes" and misc.action == "disable_autorenew" %}
-                                    <div class='' style='padding-bottom:20px;'><span class='font-15 contents' style='color:blue;'>To confirm, when you click 'DISABLE AUTORENEW', we will set your subscription to expire after the date above unless you renew it.</span></div>
-                                    <div class='' style='padding-bottom:20px;'><input id='disable_check' type=checkbox name='understand'  style='margin-right:15px;' /><span class='font-15 contents'>Click to confirm</span></div>
+                                    <div class='' style='padding-bottom:20px;'><span class='font-15 lh-24 contents' style='color:blue;'>To confirm, when you click 'DISABLE AUTORENEW', we will set your subscription to expire after the date above unless you renew it.</span></div>
+                                    <div class='' style='padding-bottom:20px;'><input id='disable_check' type=checkbox name='understand'  style='margin-right:15px;' /><span class='font-15 lh-24 contents'>Click to confirm</span></div>
                                 {% endif %}
                                 
                                 
@@ -100,13 +100,13 @@
                             {% endif %}
                         {% endif %}
                         
-                        <FORM action='/subscription' method=POST>
+                        <FORM action='/subscription' method=POST><input type=hidden name='subscription_ID' value='{{misc.subscription_ID}}' />
                             <input type=hidden name='confirmed' value='{{misc.confirmed}}' />
                             
-                            <div class='' style='padding-bottom:20px;'><span class='font-15 contents'>Not happy with LacrosseReference PRO? We'd love to hear how we can do better, but if you do want to cancel, here's how to do it. We will refund your subscription costs and immediately disable your account.</span></div>
+                            <div class='' style='padding-bottom:20px;'><span class='font-15 lh-24 contents'>Not happy with LacrosseReference PRO? We'd love to hear how we can do better, but if you do want to cancel, here's how to do it. We will refund your subscription costs and immediately disable your account.</span></div>
                             {% if misc.confirmed == "yes" and misc.action == "request_refund" %}
-                                <div class='' style='padding-bottom:20px;'><span class='font-15 contents' style='color:blue;'>To confirm, when you click 'REQUEST REFUND', we will terminate your subscription and issue a full refund. You will no longer have access to the paid features of LacrosseReference PRO.</span></div>
-                                <div class='' style='padding-bottom:20px;'><input id='refund_check' type=checkbox name='understand'  style='margin-right:15px;' /><span class='font-15 contents'>Click to confirm</span></div>
+                                <div class='' style='padding-bottom:20px;'><span class='font-15 lh-24 contents' style='color:blue;'>To confirm, when you click 'REQUEST REFUND', we will terminate your subscription and issue a full refund. You will no longer have access to the paid features of LacrosseReference PRO.</span></div>
+                                <div class='' style='padding-bottom:20px;'><input id='refund_check' type=checkbox name='understand'  style='margin-right:15px;' /><span class='font-15 lh-24 contents'>Click to confirm</span></div>
                             {% endif %}
                             
                             {% if misc.error and misc.action == "request_refund" %}

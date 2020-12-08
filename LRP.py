@@ -79,6 +79,8 @@ appengine.monkeypatch()
 ## STANDARD REGEXES
 
 email_regex = re.compile(r'([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,63})(?:[\s,;\n\r><]|$)', re.IGNORECASE)
+cc_email_regex = re.compile(r'\[(.*?)\]', re.IGNORECASE)
+                    
 def create_cipher():
     f = open('client_secrets.json', 'r')
     client_secrets = json.loads(f.read())
@@ -212,60 +214,114 @@ def finish_user_obj(user_obj):
                 n['first_viewed'] = ""
 
         user_obj['notifications'] = json.dumps(user_obj['notifications'])
-        
-        # If we are observing the user, store this view
-        if 'auth' in user_obj and user_obj['auth'] and 'ID' in user_obj and user_obj['ID'] is not None and 'observe' in user_obj and user_obj['observe'] and os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
-            
-            query = "INSERT INTO LRP_User_Views (timestamp, user_ID, handler, context) VALUES (%s, %s, %s, %s)"
-            param = [datetime.now(), user_obj['ID'], misc['handler'] if 'handler' in misc else None, misc['context'] if 'context' in misc else None]
-            conn, cursor = mysql_connect()
-            cursor.execute(query, param)
-            conn.commit(); cursor.close(); conn.close()
             
     except Exception:
         logging.error("finish_user_obj fail: %s" % traceback.format_exc())
     return user_obj
+    
+def swap_urls(url):
+    if url == "home":
+        return ""
+    return url
 
+def copyright():
+    res = ""
+    res += "<div class='viewbox left'>"
+    res += "<div class='no-padding dtop'><ul class='table-ul' style='background-color:inherit;'>"
+    
+    if datetime.now().year > 2021:
+        res += "<li class='table-li centered  no-padding'><div class='no-padding'><span class='font-14'>&#xA9; LacrosseReference 2021-%d</span></div></li>" % (datetime.now().year)
+    else:
+        
+        res += "<li class='table-li centered  no-padding'><div class='no-padding'><span class='font-14'>&#xA9; LacrosseReference %d</span></div></li>" % (datetime.now().year)
+        
+    res += "<li class='table-li centered  no-padding'><div class='no-padding'><a href='/terms'><span class='font-14'>Terms of Use</span></a></div></li>"
+    res += "<li class='table-li centered  no-padding'><div class='no-padding'><a href='/faq'><span class='font-14'>FAQ</span></a></div></li>"
+    res += "<li class='table-li centered  no-padding'><div class='no-padding'><a href='/privacy'><span class='font-14'>Privacy Policy</span></a></div></li>"
+    
+    res += "</ul></div>"
+    
+    
+    res += "<div class='no-padding mob'>"
+    
+    if datetime.now().year > 2021:
+        res += "<div class='col-12'><span class='font-14'>&#xA9; LacrofsseReference 2021-%d</span></div>" % (datetime.now().year)
+    else:
+        res += "<div class='col-12'><span class='font-14'>&#xA9; LacrofsseReference %d</span></div>" % (datetime.now().year)
+    res += "<div class='col-12'><a href='/terms'><span class='font-14'>Terms of Use</span></a></div>"
+    res += "<div class='col-12'><a href='/faq'><span class='font-14'>FAQ</span></a></div>"
+    res += "<div class='col-12'><a href='/privacy'><span class='font-14'>Privacy Policy</span></a></div>"
+    
+    res += "</div>"
+    res += "</div>"
+    return res
+    
 def finish_misc(misc, user_obj):
 
+    # Subscription status
+    misc['product_i'] = None; misc['product_t'] = None; misc['substat'] = None; misc['observe'] = 0
+    if user_obj is not None and 'active_subscription' in user_obj and user_obj['active_subscription'] is not None:
+        misc['product_i'] = user_obj['active_subscription']['product_ID']
+        misc['product_t'] = user_obj['active_subscription']['product_tier']
+        misc['substat'] = user_obj['active_subscription']['status']
+        if misc['substat'] == "cancelled":
+            misc['cancelled_on'] = user_obj['active_subscription']['cancellation_date'].strftime("%b %d, %Y").replace(" 0"," ")
+            misc['cancelled_by'] = user_obj['active_subscription']['cancelled_by_email']
+        elif misc['substat'] == "expired":
+            misc['expired_on'] = user_obj['active_subscription']['end_date'].strftime("%b %d, %Y").replace(" 0"," ")
+    if user_obj is not None and 'observe' in user_obj:
+        misc['observe'] = user_obj['observe']
+                
+
+    # Populate the select bar for the year option
+    
+    year_option_start = 2019
+    if misc['target_template'] == "team_player_detail.html": # Only let users pick the yearsthat the player was active
+        misc['year_select_options'] = sorted([{'year': z['year']} for z in misc['data']['season_log']],reverse=True)
+    else:
+        misc['year_select_options'] = sorted([{'year': z} for z in range(year_option_start, datetime.now().year + 1)], key=lambda x:x['year'],reverse=True)
+    
+    if 'tracking_tag' in misc and misc['tracking_tag'] is None: misc['tracking_tag'] = ""
+    
     if 'time_log' not in misc:
         misc['time_log'] = []
     misc['time_log'] = json.dumps(misc['time_log'])    
-    def swap_urls(url):
-        if url == "home":
-            return ""
-        return url
     #misc['breadcrumbs'] = "<span class='font-13'><a class='text-link' href='/'>Home</a> > <a href='/admin'>Admin</a></span>"
     if 'came_from' in misc:
-        lg("Misc.came from: %s" % misc['came_from'])
+        
+        #lg("misc.came_from: %s" % misc['came_from'])
         tokens = [{'html': None, 'raw': z, 'include': 1, 'clickable': 1, 'clickable_str': "clickable"} for z in misc['came_from'].split("|") if z.strip() not in [None, '']]
         for i, z in enumerate(tokens):
             z['seq'] = i
        
         if len(tokens) > 0:       
-            tokens[-1]['clickable'] = 0; tokens[-1]['clickable_str'] = ""
             n = len(tokens) - 1
             while n > -1:
                 
                 tokens[n]['min_loc'] = min([z['seq'] for z in tokens if z['raw'] == tokens[n]['raw']])
                 tokens[n]['other'] = 1 if tokens[n]['min_loc'] != tokens[n]['seq'] else 0
-                lg( "{:<60}{:>10}{:>10}".format(tokens[n]['raw'], tokens[n]['min_loc'], tokens[n]['other']))
                 n -= 1
-            lg ("There are %d tokens" % len(tokens))
+            #lg ("There are %d tokens" % len(tokens))
+            #pd(tokens)
+            
             while 1 in [z['other'] for z in tokens]:
                 for i, token in enumerate(tokens):
                     if token['other']:
                         tokens = tokens[0: token['min_loc'] + 1]
                         misc['came_from'] = "|".join([z['raw'] for z in tokens])
                         break
-            lg ("There are now %d tokens" % len(tokens))
+            #lg ("There are now %d tokens" % len(tokens))
+            #pd(tokens)
+            tokens[-1]['clickable'] = 0; tokens[-1]['clickable_str'] = ""
             for i, token in enumerate(tokens):
                 path_details = token['raw'].split("~")
                 if len(path_details) == 1:
-                    if "_" in path_details[0] or path_details[0] in ['home']:
+                    if "_" in path_details[0] or path_details[0] in ['home', 'stats', 'players', 'teams']:
                         text = path_details[0].replace("_", " ").title()
                     else:   
                         text = path_details[0]
+                    text = text.replace("Team ", "")    
+                    
                     url = swap_urls(path_details[0])
                     if token['clickable']:
                         token['html'] = "<span class='%s font-13'><a href='/%s'>%s</a></span>" % (token['clickable_str'], url, text)
@@ -288,19 +344,20 @@ def finish_misc(misc, user_obj):
             if len(tokens) > 1:
                 misc['breadcrumbs'] = "<span class='no-padding' style='margin-top:0px;'> > </span>".join([z['html'] for z in tokens if z['include'] and z['html'] is not None])
     misc['on_server'] = 1 if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/') else 0
-    misc['refresh_settings_tags'] = ["general_focus_year"]
+    misc['refresh_settings_tags'] = ["general_focus_year", "player_focus_year"]
     try:
     
         if 'handler' not in misc: 
             misc['handler'] = ""
         elif misc['handler'] not in [None, '']:
             misc['handler'] = "?c=%s" % misc['handler']
-            
-        misc['copyright'] = "&#xA9; LacrosseReference %d" % datetime.now().year
+
+        misc['copyright'] = copyright()
+        
         
         if 'banner_msg' not in misc: misc['banner_msg'] = None
-        if 'standalone_user_types' in misc:
-            misc['standalone_user_types'] = [{'val': '','desc': ''}] + misc['standalone_user_types']
+        if 'user_types' in misc:
+            misc['user_types'] = [{'val': '','desc': ''}] + misc['user_types']
         
         if 'products' in misc and misc['products'] is not None:
             if user_obj is not None and 'cart' in user_obj and user_obj['cart'] is not None:
@@ -308,10 +365,14 @@ def finish_misc(misc, user_obj):
                     p['in_cart'] = 0
                     if p['ID'] in [z['product_ID'] for z in user_obj['cart'] if z['active'] and z['status'] == "added"]:
                         p['in_cart'] = 1
-        misc['nhca'] = ""
+        misc['nhca'] = -1
+        
         if user_obj is not None and 'ID' in user_obj:
             misc['nhca'] = user_obj['ID']
-            
+            misc['AB'] = None if 'AB_group' not in user_obj else user_obj['AB_group']
+        else:
+            random.seed(time.time())
+            misc['AB'] = min(47, int(random.random()*48.))
         misc, user_obj = establish_default_settings(misc, user_obj)
     except Exception:
         logging.error("finish_misc fail: %s" % traceback.format_exc())   
@@ -319,11 +380,15 @@ def finish_misc(misc, user_obj):
 
 def establish_default_settings(misc, user_obj):
     misc['default_settings'] = None
-    if misc['target_template'] in ["team_player_detail.html", "team_detail.html", "team_my_rankings.html", "team_my_schedule.html", "team_my_stats.html"]:
+    if misc['target_template'] in ["team_detail.html", "team_my_rankings.html", "team_my_schedule.html", "team_my_stats.html"]:
         misc['default_settings'] = {}
         misc['default_settings']['general_focus_year'] = datetime.now().year
-    
-
+    elif misc['target_template'] in ["team_player_detail.html"]:
+        misc['default_settings'] = {}
+        misc['default_settings']['player_focus_year'] = datetime.now().year
+    elif misc['target_template'] in ["stats.html"]:
+        misc['default_settings'] = {}
+        misc['default_settings']['league'] = "NCAAD1Men"
         
     
     return misc, user_obj
@@ -332,7 +397,7 @@ def get_user_obj(creds=None):
     auth_timeout = 10800000# - 10799
     user_obj = None
     
-    conn, cursor = mysql_connect(); queries = []; params = []
+    conn, cursor = mysql_connect('LRP'); queries = []; params = []
         
     if creds is not None and 'username' in creds: # User has submitted credentials... 
         
@@ -360,11 +425,11 @@ def get_user_obj(creds=None):
             tmp = preferences[ [z['user_ID'] for z in preferences].index(user_obj['ID']) ]
             
             user_obj['preferences'] = process_preferences([{'key': k, 'value': v} for k, v in zip(tmp.keys(), tmp.values())])
-            logging.info("%s--->%s" % (user_obj['password'], decrypt(user_obj['password'])))
+            #logging.info("%s--->%s" % (user_obj['password'], decrypt(user_obj['password'])))
             user_obj['password'] = decrypt(user_obj['password'])
-            logging.info("Password: %s" % user_obj['password'])
+            #logging.info("Password: %s" % user_obj['password'])
             user_obj['method'] = 'from --> credentials'
-            logging.info( "\n\n%s, %s, %s\n\n" % (user_obj['password'],creds['password'],user_obj['password'] == creds['password']))
+            #logging.info( "\n\n%s, %s, %s\n\n" % (user_obj['password'],creds['password'],user_obj['password'] == creds['password']))
             if user_obj['password'] == creds['password']: # password was a match
                 
                 user_obj['auth'] = True
@@ -384,8 +449,10 @@ def get_user_obj(creds=None):
                     
                     user_obj['session_ID'] = "%d%09d" % ((user_obj['last_log_in'] - datetime(1970,1,1)).total_seconds()*1000.0, user_obj['ID'])
             else:
+                lg("Password/Username fail: %s|%s" % (creds['username'], creds['password']))
                 user_obj['auth'] = False
         else:
+            lg("Password/Username fail: %s|%s" % (creds['username'], creds['password']))
             user_obj = {'auth': False}
         
     elif creds is not None and 'session_ID' in creds: # User has a stored session... 
@@ -455,10 +522,10 @@ def get_user_obj(creds=None):
         groups = zc.dict_query_results(cursor)
         cursor.execute("SELECT * from LRP_Group_Access where active=1", [])
         all_group_access = zc.dict_query_results(cursor)
-        group_access = [z for z in all_group_access if z['user_ID'] == user_obj['ID']]
-        user_obj['groups'] = [z for z in groups if z['ID'] in [y['group_ID'] for y in group_access]]
+        user_obj['group_access'] = [z for z in all_group_access if z['user_ID'] == user_obj['ID']]
+        user_obj['groups'] = [z for z in groups if z['ID'] in [y['group_ID'] for y in user_obj['group_access']]]
         user_obj['group_IDs'] = [z['ID'] for z in user_obj['groups']]
-        user_obj['active_groups'] = [z for z in groups if z['ID'] in [y['group_ID'] for y in group_access if y['status'] == "active"]]
+        user_obj['active_groups'] = [z for z in groups if z['ID'] in [y['group_ID'] for y in user_obj['group_access'] if y['status'] == "active"]]
         user_obj['active_group_IDs'] = [z['ID'] for z in user_obj['active_groups']]
         
         user_obj['num_active_groups'] = len(user_obj['active_groups'])
@@ -471,7 +538,21 @@ def get_user_obj(creds=None):
         
         
         user_obj['all_subscriptions'] = [z for z in subscriptions if z['user_ID'] == user_obj['ID'] or z['group_ID'] in user_obj['group_IDs']]
+        for s in user_obj['all_subscriptions']:
+            s['group_name'] = "N/A"
+            if s['group_ID'] in [z['ID'] for z in user_obj['groups']]:
+                gr = user_obj['groups'][ [z['ID'] for z in user_obj['groups']].index(s['group_ID'])]
+                access =  user_obj['group_access'][ [z['group_ID'] for z in user_obj['group_access']].index(s['group_ID'])]
+                s['group_name'] = gr['group_name']
+                s['group_name'] = gr['group_name']
+                s['is_admin'] = access['admin']
+                
         user_obj['active_subscriptions'] = [z for z in user_obj['all_subscriptions'] if z['status'] in ["non-renewing", "active"] and z['start_date'] <=  datetime.now() <= z['end_date']]
+        
+        user_obj['active_subscription'] = None
+        if user_obj['active_group'] in [z['group_ID'] for z in user_obj['all_subscriptions']]:
+            user_obj['active_subscription'] = user_obj['all_subscriptions'][ [z['group_ID'] for z in user_obj['all_subscriptions']].index(user_obj['active_group']) ]
+        
         user_obj['non_renewed_subscriptions'] = [z for z in user_obj['all_subscriptions'] if z['status'] == "non-renewing" and datetime.now() > z['end_date']]
         
         
@@ -487,13 +568,15 @@ def get_user_obj(creds=None):
             user_obj['active_group_name'] = user_obj['groups'][ [z['ID'] for z in user_obj['active_groups']].index(user_obj['active_group']) ]['group_name']
             user_obj['active_group_num_members'] = len([1 for z in all_group_access if z['status'] == "active" and z['group_ID'] == user_obj['active_group']])
             
-            user_obj['active_group_admin'] = 1 if len([1 for z in group_access if z['admin'] and z['user_ID'] == user_obj['ID'] and z['status'] == "active" and z['group_ID'] == user_obj['active_group']]) > 0 else 0
+            user_obj['active_group_admin'] = 1 if len([1 for z in user_obj['group_access'] if z['admin'] and z['user_ID'] == user_obj['ID'] and z['status'] == "active" and z['group_ID'] == user_obj['active_group']]) > 0 else 0
             user_obj['active_group_members'] = [z for z in all_group_access if z['status'] == "active" and z['group_ID'] == user_obj['active_group']]
             user_obj['inactive_group_members'] = [z for z in all_group_access if z['status'] != "active" and z['group_ID'] == user_obj['active_group']]
-        if user_obj['active_group'] not in [-1, '', None] and user_obj['active_group'] in [z['group_ID'] for z in user_obj['active_subscriptions']]:
+            
+            
+        if user_obj['active_group'] not in [-1, '', None] and user_obj['active_group'] in [z['group_ID'] for z in user_obj['all_subscriptions']]:
                 
             
-            user_obj['active_subscription'] = user_obj['active_subscriptions'][ [z['group_ID'] for z in user_obj['active_subscriptions']].index(user_obj['active_group']) ]
+            user_obj['active_subscription'] = user_obj['all_subscriptions'][ [z['group_ID'] for z in user_obj['all_subscriptions']].index(user_obj['active_group']) ]
             
             user_obj['active_subscription']['end_date_str'] = None
             if user_obj['active_subscription']['end_date'] is not None:
@@ -569,6 +652,11 @@ def finalize_mail_send(msg):
     res = None
     
     url = "https://api.sendinblue.com/v3/smtp/email"
+    
+    if 'recipient_type' not in msg or msg['recipient_type'] in ['', None]:
+        msg['recipient_type'] = "ind"
+        
+    #lg("Send email to %s (type=%s)" % (msg['email'], msg['recipient_type']))
 
     msg['content_type'] = "textContent"
     if ('html_file' in msg and msg['html_file']) or 'html' in msg:
@@ -595,10 +683,18 @@ def finalize_mail_send(msg):
         msg['send_name'] = "LRP Admin"
         
     db_payload = "{\"sender\":{\"name\":\"%s\",\"email\":\"%s\"},\"to\":[{\"email\":\"%s\"}],\"%s\":\"%s\",\"subject\":\"%s\"}" % (msg['send_name'], msg['send_as'], msg['email'], msg['content_type'], "[removed-content]", msg['subject'])
-    if False and msg['email'] not in ["zcapozzi@gmail.com", "zack@lacrossereference.com", "zack@looseleafguide.com", "zack@mainstreetdataguy.com", "bot@lacrossereference.com", "kyle@lacrossereference.com", "guide@looseleafguide.com", "zack@durhamcornholecompany.com"]:
-        payload = "{\"sender\":{\"name\":\"%s\",\"email\":\"%s\"},\"to\":[{\"email\":\"%s\"}],\"bcc\":[{\"email\":\"zcapozzi@gmail.com\",\"name\":\"BCC Zack\"}],\"%s\":\"%s\",\"subject\":\"%s\"}" % (msg['send_name'], msg['send_as'], msg['email'], msg['content_type'], msg['content'], msg['subject'])
-    else:
+    
+    if msg['recipient_type'] == "ind":
         payload = "{\"sender\":{\"name\":\"%s\",\"email\":\"%s\"},\"to\":[{\"email\":\"%s\"}],\"%s\":\"%s\",\"subject\":\"%s\"}" % (msg['send_name'], msg['send_as'], msg['email'], msg['content_type'], msg['content'], msg['subject'])
+    elif msg['recipient_type'] == "cc":
+        cc_email_addresses = re.findall(email_regex, msg['email'])
+        first_email = cc_email_addresses[0]
+        other_emails = cc_email_addresses[1:]
+        other_emails_str = ",".join(['{"email": "%s"}' % z for z in other_emails])
+        if len(other_emails) > 0: # There were at least two emails, so send using cc
+            payload = "{\"sender\":{\"name\":\"%s\",\"email\":\"%s\"},\"to\":[{\"email\":\"%s\"}],\"cc\":[%s],\"%s\":\"%s\",\"subject\":\"%s\"}" % (msg['send_name'], msg['send_as'], first_email, other_emails_str, msg['content_type'], msg['content'], msg['subject'])
+        else: #Even though it said cc, there was only one email, so just send as normal
+            payload = "{\"sender\":{\"name\":\"%s\",\"email\":\"%s\"},\"to\":[{\"email\":\"%s\"}],\"%s\":\"%s\",\"subject\":\"%s\"}" % (msg['send_name'], msg['send_as'], first_email, msg['content_type'], msg['content'], msg['subject'])
         
     logging.info(payload)
     headers = {
@@ -666,74 +762,76 @@ class ImmutableDict(dict):
     def __hash__(self):
         return hash(tuple(sorted(self.items())))
 
-CLOUDSQL_PROJECT = 'capozziinc'
-CLOUDSQL_INSTANCE = 'us-east1:lrpdb'
+
     
 f = open('client_secrets.json', 'r')
 client_secrets = json.loads(f.read())
 f.close()
-cloud_dbpass = client_secrets['web']['DBPASS']
-cloud_dbhost = client_secrets['web']['DBHOST']
-cloud_dbuser = client_secrets['web']['DBUSER']
-cloud_dbname = client_secrets['web']['DBNAME']
-cloud_dbport = client_secrets['web']['DBPORT']
 
 
-SQLALCHEMY_DATABASE_URI='mysql+mysqldb://'+cloud_dbuser+':'+cloud_dbpass+'@/'+cloud_dbname+'?unix_socket=/cloudsql/'+CLOUDSQL_PROJECT+':'+CLOUDSQL_INSTANCE
+CLOUDSQL_PROJECT = 'capozziinc'
 
-
-
-#print "SQLALCHEMY: %s" % SQLALCHEMY_DATABASE_URI
-db = sqlalchemy.create_engine(
-    # Equivalent URL:
-    # mysql+pymysql://<db_user>:<db_pass>@/<db_name>?unix_socket=/cloudsql/<cloud_sql_instance_name>
-	SQLALCHEMY_DATABASE_URI,
-
-    # ... Specify additional properties here.
-    # ...
-    pool_size=20,
-    max_overflow=10
-)
-
-
-
-def mysql_connect(test_db=False):
-
-    f = open('client_secrets.json', 'r')
-    client_secrets = json.loads(f.read())
-    f.close()
-
-    
-    CLOUDSQL_PROJECT = 'capozziinc'
+if client_secrets['local']['test']:
+    CLOUDSQL_INSTANCE = 'us-east1:test'
+    cloud_dbpass = client_secrets['test']['LRPDBPASS']
+    cloud_dbhost = client_secrets['test']['LRPDBHOST']
+    cloud_dbuser = client_secrets['test']['LRPDBUSER']
+    cloud_dbname = client_secrets['test']['LRPDBNAME']
+    cloud_dbport = client_secrets['test']['LRPDBPORT']
+else:
     CLOUDSQL_INSTANCE = 'us-east1:lrpdb'
+    cloud_dbpass = client_secrets['web']['LRPDBPASS']
+    cloud_dbhost = client_secrets['web']['LRPDBHOST']
+    cloud_dbuser = client_secrets['web']['LRPDBUSER']
+    cloud_dbname = client_secrets['web']['LRPDBNAME']
+    cloud_dbport = client_secrets['web']['LRPDBPORT']
+
+SQLALCHEMY_DATABASE_URI_LRP='mysql+mysqldb://'+cloud_dbuser+':'+cloud_dbpass+'@/'+cloud_dbname+'?unix_socket=/cloudsql/'+CLOUDSQL_PROJECT+':'+CLOUDSQL_INSTANCE
+#logging.info("SQLALCHEMY_DATABASE_URI_LRP: %s" % SQLALCHEMY_DATABASE_URI_LRP)
+lrpdb = sqlalchemy.create_engine( SQLALCHEMY_DATABASE_URI_LRP, pool_size=20, max_overflow=10 )
 
 
-    #conn = db.connect() #MySQLdb.connect(unix_socket='/cloudsql/{}:{}'.format(CLOUDSQL_PROJECT, CLOUDSQL_INSTANCE), user=cloud_dbuser, host=cloud_dbhost, passwd=cloud_dbpass, db=cloud_dbname)
+cloud_dbpass = client_secrets['web']['LRDBPASS']
+cloud_dbhost = client_secrets['web']['LRDBHOST']
+cloud_dbuser = client_secrets['web']['LRDBUSER']
+cloud_dbname = client_secrets['web']['LRDBNAME']
+cloud_dbport = client_secrets['web']['LRDBPORT']
+
+CLOUDSQL_INSTANCE = 'us-east1:laxrefdb'
+SQLALCHEMY_DATABASE_URI_LR='mysql+mysqldb://'+cloud_dbuser+':'+cloud_dbpass+'@/'+cloud_dbname+'?unix_socket=/cloudsql/'+CLOUDSQL_PROJECT+':'+CLOUDSQL_INSTANCE
+lrdb = sqlalchemy.create_engine( SQLALCHEMY_DATABASE_URI_LR, pool_size=20, max_overflow=10 )
+
+
+
+def mysql_connect(db_name, test_db=False):
+
     if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+        #logging.info("SQLALCHEMY_DATABASE_URI_LRP: %s" % SQLALCHEMY_DATABASE_URI_LRP)
+        #logging.info("SQLALCHEMY_DATABASE_URI_LR: %s" % SQLALCHEMY_DATABASE_URI_LR)
+        if db_name == "LRP":
+            conn=lrpdb.raw_connection()
+        elif db_name == "LR":
+            conn=lrdb.raw_connection()
         
-        cloud_dbpass = client_secrets['web']['DBPASS']
-        cloud_dbhost = client_secrets['web']['DBHOST']
-        cloud_dbuser = client_secrets['web']['DBUSER']
-        cloud_dbname = client_secrets['web']['DBNAME']
-        cloud_dbport = client_secrets['web']['DBPORT']
-        conn=db.raw_connection()
-        #conn = MySQLdb.connect(unix_socket='/cloudsql/{}:{}'.format(CLOUDSQL_PROJECT, CLOUDSQL_INSTANCE), user=cloud_dbuser, host=cloud_dbhost, passwd=cloud_dbpass, db=cloud_dbname)
     else:
+        f = open('client_secrets.json', 'r')
+        client_secrets = json.loads(f.read())
+        f.close()
         if client_secrets['local']['test'] or test_db:
             lg("Connect to Test DB")
-            cloud_dbpass = client_secrets['test']['DBPASS']
-            cloud_dbhost = client_secrets['test']['DBHOST']
-            cloud_dbuser = client_secrets['test']['DBUSER']
-            cloud_dbname = client_secrets['test']['DBNAME']
-            cloud_dbport = client_secrets['test']['DBPORT']
+            cloud_dbpass = client_secrets['test']['%sDBPASS' % db_name]
+            cloud_dbhost = client_secrets['test']['%sDBHOST' % db_name]
+            cloud_dbuser = client_secrets['test']['%sDBUSER' % db_name]
+            cloud_dbname = client_secrets['test']['%sDBNAME' % db_name]
+            cloud_dbport = client_secrets['test']['%sDBPORT' % db_name]
         
         else:
-            cloud_dbpass = client_secrets['local']['DBPASS']
-            cloud_dbhost = client_secrets['local']['DBHOST']
-            cloud_dbuser = client_secrets['local']['DBUSER']
-            cloud_dbname = client_secrets['local']['DBNAME']
-            cloud_dbport = client_secrets['local']['DBPORT']
-        #conn = MySQLdb.connect(unix_socket='/cloudsql/{}:{}'.format(CLOUDSQL_PROJECT, CLOUDSQL_INSTANCE), user=cloud_dbuser, host=cloud_dbhost, passwd=cloud_dbpass, db=cloud_dbname)
+            cloud_dbpass = client_secrets['local']['%sDBPASS' % db_name]
+            cloud_dbhost = client_secrets['local']['%sDBHOST' % db_name]
+            cloud_dbuser = client_secrets['local']['%sDBUSER' % db_name]
+            cloud_dbname = client_secrets['local']['%sDBNAME' % db_name]
+            cloud_dbport = client_secrets['local']['%sDBPORT' % db_name]
+        
         conn = MySQLdb.connect(user=cloud_dbuser, host=cloud_dbhost, passwd=cloud_dbpass, db=cloud_dbname)
         
         
@@ -757,13 +855,14 @@ class QueryHandler(webapp2.RequestHandler):
     
     def post(self):
         misc = {'came_from': '', 'target_template': 'query.html', 'time_log': [], 'handler': 'query', 'error': None, 'msg': None, 'run_test_checked': " checked" if self.request.get("run_test") else ""}
-        lg("run_test: %s" % self.request.get("run_test"))
+        
         session_ID = self.session.get('session_ID')
-        if True or session_ID not in [None, 0]:
-            user_obj = None #get_user_obj({'session_ID': session_ID})
-            if True or ('ID' in user_obj and user_obj['ID'] == 1):
+        on_server = os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
+        if not on_server or session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if not on_server or ('ID' in user_obj and user_obj['ID'] == 1):
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 cursor.execute("SHOW TABLES", [])
                 misc['tables'] = zc.dict_query_results(cursor)
                 cursor.close(); conn.close()
@@ -772,19 +871,19 @@ class QueryHandler(webapp2.RequestHandler):
                 queries = req['query'].split("\n")
                 misc['query'] = queries[0]
                 misc = self.process_queries(misc, queries)
-                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_admin.html'}
                 path = os.path.join("templates", "query.html")
                 self.response.out.write(template.render(path, tv))
             
             else:
                     
                 misc['target_template'] = get_template(user_obj)
-                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_admin.html'}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
             misc['target_template'] = "index.html"
             user_obj = process_non_auth(self)
-            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_admin.html'}
             path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
     def process_queries(self, misc, queries, table=None):
         field_type = {
@@ -834,7 +933,7 @@ class QueryHandler(webapp2.RequestHandler):
         misc['columns'] = []
         misc['types'] = []
         misc['data'] = []
-        mysql_conn, cursor = mysql_connect()
+        mysql_conn, cursor = mysql_connect('LRP')
         misc['error'] = None
         cnt = 0
         try:
@@ -845,8 +944,7 @@ class QueryHandler(webapp2.RequestHandler):
                 
                 cursor.execute(query)
                 if misc['run_test_checked'] != "" and query.strip().split(" ")[0].upper() in ["UPDATE", "INSERT", "DELETE", "ALTER"]:
-                    lg("Run in the test DB too.")
-                    zconn, zcursor = mysql_connect(test_db=True)
+                    zconn, zcursor = mysql_connect('LRP', test_db=True)
                     zcursor.execute(query)
                     zconn.commit()
                     zcursor.close(); zconn.close()
@@ -874,6 +972,10 @@ class QueryHandler(webapp2.RequestHandler):
                             for i, row in enumerate(res):
                                 row_  = []
                                 for r in row:
+                                    
+                                    tokens = r.split("_")
+                                    r = "%s_%s" % (tokens[0].upper(), "_".join([z.title() for z in tokens[1:]]))
+
                                     r_ = "<a href='/query?table=%s'>%s</a>" % (r, r)
                                     row_.append(r_)
 
@@ -947,7 +1049,7 @@ class QueryHandler(webapp2.RequestHandler):
 
                             types_ = [i[1] for i in cursor.description]
                             for t in types_:
-                                logging.info("Convert %d to %s" % (t, field_type[t]))
+                                #logging.info("Convert %d to %s" % (t, field_type[t]))
                                 misc['types'].append(field_type[t])
                             for i, row in enumerate(res):
                                 misc['data'].append(row)
@@ -974,17 +1076,25 @@ class QueryHandler(webapp2.RequestHandler):
     def get(self):
         misc = {'came_from': '', 'target_template': 'query.html', 'time_log': [], 'handler': 'query', 'error': None, 'msg': None, 'run_test_checked': ''}
         session_ID = self.session.get('session_ID')
-        if True or session_ID not in [None, 0]:
+        
+        on_server = os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
+        
+        if not on_server or session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
-            if True or user_obj['ID'] == 1:
+            if not on_server or user_obj['is_admin'] == 1:
             
                 if self.request.get('encrypt') != "":
                     encrypt_user_info()
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 cursor.execute("SHOW TABLES", [])
                 misc['tables'] = zc.dict_query_results(cursor)
                 cursor.close(); conn.close()
+                
+                for t in misc['tables']:
+                    if 'Tables_in_lrpdb' in t:
+                        tokens = t['Tables_in_lrpdb'].split("_")
+                        t['Tables_in_lrpdb'] = "%s_%s" % (tokens[0].upper(), "_".join([z.title() for z in tokens[1:]]))
  
                 
                 table = ""
@@ -995,8 +1105,11 @@ class QueryHandler(webapp2.RequestHandler):
                 table = None
                 if self.request.get('table') != "":
                     table = self.request.get('table')
-                    if table in ['LRP_Product_Requests', 'LRP_Product_Views']:
-                        queries = ["SELECT * from %s order by ID desc limit 100" % table]
+                    if table in ['LRP_User_Views']:
+                        queries = ["SELECT * from %s order by timestamp desc limit 100" % table]
+                        reverse_sort = True
+                    elif table in ['LRP_Product_Requests', 'LRP_Product_Views']:
+                        queries = ["SELECT * from %s order by datestamp desc limit 100" % table]
                         reverse_sort = True
                     else:
                         queries = ["SELECT * from %s limit 100" % table]
@@ -1009,19 +1122,19 @@ class QueryHandler(webapp2.RequestHandler):
                 misc = self.process_queries(misc, queries, table)
                 logging.info(misc['error'])
         
-                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'query': "SELECT * from LRP_Users", 'columns': [], 'types': [], 'data': [], 'error': "", 'cnt': 0}; path = os.path.join("templates", "query.html"); self.response.out.write(template.render(path, tv))
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'query': "SELECT * from LRP_Users", 'columns': [], 'types': [], 'data': [], 'error': "", 'cnt': 0, 'layout': 'layout_admin.html'}; path = os.path.join("templates", "query.html"); self.response.out.write(template.render(path, tv))
             else:
-                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}; path = os.path.join("templates", "index.html"); self.response.out.write(template.render(path, tv))
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_admin.html'}; path = os.path.join("templates", "index.html"); self.response.out.write(template.render(path, tv))
         else:
             user_obj = process_non_auth(self)
             
-            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_admin.html'}
             path = os.path.join("templates", 'index.html'); self.response.out.write(template.render(path, tv))
             
 def encrypt_user_info():
     lg("Encrypting existing user information...")
     misc = {'came_from': '', 'target_template': None, 'time_log': []}
-    conn, cursor = mysql_connect()
+    conn, cursor = mysql_connect('LRP')
     cursor.execute("SELECT * from LRP_Users", [])
     misc['users'] = {'data': zc.dict_query_results(cursor), 'table': 'LRP_Users', 'keys': ["email", "username", "phone", "first_name", "last_name", "stripe_customer_id"]}
     cursor.execute("SELECT * from LRP_Quotes", [])
@@ -1074,20 +1187,31 @@ def process_profile(profile):
     return profile
 
 def get_template(user_obj):
-    
-    if user_obj['activated'] != 1:
+
+
+    target_template = "index.html"
+    if 'activated' in user_obj and user_obj['activated'] in [0, None]:
         target_template = "activation_reminder.html"
-    elif user_obj['user_type'] == "individual":
-        target_template = "individual_home.html"
-    elif user_obj['user_type'] == "team":
-        target_template = "team_home.html"
-    elif user_obj['user_type'] == "media":
-        target_template = "media_home.html"
-    elif user_obj['user_type'] == "master":
-        target_template = "master_home.html"
     else:
-        target_template = "index.html"
+        if user_obj['active_subscription'] is not None:
+            if user_obj['active_subscription']['product_ID'] in [1,4,7]: # Individual
+                target_template = "individual_home.html"
+            elif user_obj['active_subscription']['product_ID'] in [2, 5, 8]:
+                target_template = "media_home.html"
+            elif user_obj['active_subscription']['product_ID'] in [3, 6, 9]:
+                target_template = "team_home.html"
+                
+        else:
         
+            if user_obj['user_type'] == "individual":
+                target_template = "individual_home.html"
+            elif user_obj['user_type'] == "team":
+                target_template = "team_home.html"
+            elif user_obj['user_type'] == "media":
+                target_template = "media_home.html"
+            elif user_obj['user_type'] == "master":
+                target_template = "master_home.html"
+            
     #logging.info("Target Template: %s" % target_template)
     return target_template
 
@@ -1105,7 +1229,7 @@ def get_relevant_preferences(user_obj):
 
 def transfer_cart_items(self, user_obj):
     queries = []; params = []
-    conn, cursor = mysql_connect()
+    conn, cursor = mysql_connect('LRP')
     cursor.execute("SELECT * from LRP_Cart where (user_ID=%s or user_cookie=%s) and status='added' and active=1", [user_obj['ID'], user_obj['user_cookie']])
     cart_items = zc.dict_query_results(cursor)
     cursor.close(); conn.close()
@@ -1208,9 +1332,9 @@ def storage_path(server, fname):
         return os.path.join("LocalDocs", fname)
 
 def storage_read(server, path):
-    lg("server: %s" % server)
+    #lg("server: %s" % server)
     if server:
-        lg("Load from %s" % path)
+        #lg("Load from %s" % path)
         return cloudstorage.open(path).read()
     else:
         return open(path, 'r').read()
@@ -1248,7 +1372,7 @@ def build_product_data_team(self, user_obj, misc):
     
     if 'active_group' not in user_obj or user_obj['active_group'] in [None, -1]:
         misc['error'] = "We could not find an active subscription for your account. If this in error, please <a href='https://pro.lacrossereference.com/contact'>contact us</a>."
-        logging.error("%s\n\nContext: %s" % (misc['error'], user_obj['email']))
+        logging.error("%s\n\nContext: %s" % (misc['error'], decrypt(user_obj['email'])))
     else:
         misc['data'] = {}
         active_group = None
@@ -1271,11 +1395,11 @@ def build_product_data_team(self, user_obj, misc):
         try:
             data = json.loads(storage_read(on_server, storage_path(on_server, team_path)))
             
-            if misc['target_template'] == "team_my_rankings.html":
+            if misc['target_template'] in ["team_my_rankings.html", "team_detail.html"]:
                 
                 misc['extra_data']['all_teams_laxelo_history'] = json.loads(storage_read(on_server, storage_path(on_server, os.path.join('TeamData', "AllTeamsELOHistory_%s.json" % (data['league'].replace(" ", ""))))))
                 
-            if misc['target_template'] in ['team_my_schedule.html', "team_my_stats.html"]:
+            if misc['target_template'] in ['team_my_schedule.html', "team_my_stats.html", "team_detail.html"]:
                 lg(storage_path(on_server, os.path.join('GeneralData', "dbLaxRef_Team_Game_Summaries_%d_%s.json" % (misc['year'], data['league'].replace(" ", "")))))
                 misc['extra_data']['db_team_game_summaries'] = json.loads(storage_read(on_server, storage_path(on_server, os.path.join('GeneralData', "dbLaxRef_Team_Game_Summaries_%d_%s.json" % (misc['year'], data['league'].replace(" ", ""))))))
             
@@ -1311,13 +1435,171 @@ def build_product_data_team(self, user_obj, misc):
     misc['time_log'][-1]['end'] = ms()
     return misc, user_obj, tmp
     
+def assign_player_role(off_val, def_val, fogo_val, shots_faced, faceoff_wins):
+    role = None
+    tot = off_val + def_val + fogo_val
+    if tot > 0:
+        
+        
+        off_pct = off_val/tot
+        def_pct = def_val/tot
+        fogo_pct = fogo_val/tot
+        if fogo_pct > .5 and faceoff_wins is not None and faceoff_wins > 0:
+            role = "faceoff"
+        elif def_pct > .5:
+            role = "defensive"
+        else:
+            role = "offensive"
+    elif shots_faced > 0:
+        role = "goalkeeper"
+    return role
+    
 def build_product_data_player(self, user_obj, misc):
+
+    def build_product_data_player_stat_rankings(misc, cur_year_player_seasons, player_careers):
+        misc['stat_keys'] = []
+        misc['stat_keys'].append({'tag': 'excess_saves', 'display': 'Excess Saves', 'short': 'Saves', 'fmt': '{:.2f}', 'jsfmt': '2'})
+        misc['stat_keys'].append({'tag': 'EGA_per_game', 'display': 'EGA/game', 'short': 'EGA/gm', 'fmt': '{:.2f}', 'jsfmt': '3'})
+        misc['stat_keys'].append({'tag': 'EGA', 'display': 'Expected Goals Added', 'short': 'EGA', 'fmt': '{:.1f}', 'jsfmt': '2'})
+        misc['stat_keys'].append({'tag': 'offensive_EGA', 'display': 'Offensive EGA', 'short': 'oEGA', 'fmt': '{:.1f}', 'jsfmt': '2'})
+        misc['stat_keys'].append({'tag': 'defensive_EGA', 'display': 'Defensive EGA', 'short': 'dEGA', 'fmt': '{:.1f}', 'jsfmt': '2'})
+        misc['stat_keys'].append({'tag': 'faceoff_EGA', 'display': 'Faceoff EGA', 'short': 'fEGA', 'fmt': '{:.1f}', 'jsfmt': '2'})
+        misc['stat_keys'].append({'tag': 'excess_goals_scored', 'display': 'Excess Goals', 'short': 'Goals', 'fmt': '{:.2f}', 'jsfmt': '2'})
+        misc['stat_keys'].append({'tag': 'save_pct', 'display': 'Save Percentage', 'short': 'Save %', 'fmt': '{:.0f}%', 'jsfmt': '0%'})
+        misc['stat_keys'].append({'tag': 'caused_turnovers', 'display': 'Caused Turnovers', 'short': 'CT', 'fmt': '{:.0f}', 'jsfmt': '0'})
+        misc['stat_keys'].append({'tag': 'shooting_pct', 'display': 'Shooting Percentage', 'short': 'Shot%', 'fmt': '{:.1f}%', 'jsfmt': '0%'})
+        misc['stat_keys'].append({'tag': 'sog_rate', 'display': 'Shot-on-Goal Rate', 'short': 'SOG%', 'fmt': '{:.1f}%', 'jsfmt': '0%'})
+        
+        for i, sk in enumerate(misc['stat_keys']):
+            sk['exclude'] = 0
+        # Calculate Season Stats
+        if misc['data']['current_season'] is not None and cur_year_player_seasons is not None:
+            off_val = 0. if misc['data']['current_season']['offensive_EGA'] is None else abs(misc['data']['current_season']['offensive_EGA'])
+            def_val = 0. if misc['data']['current_season']['defensive_EGA'] is None else abs(misc['data']['current_season']['defensive_EGA'])
+            fogo_val = 0. if misc['data']['current_season']['faceoff_EGA'] is None else abs(misc['data']['current_season']['faceoff_EGA'])
+            misc['data']['current_season']['role'] = assign_player_role(off_val, def_val, fogo_val, misc['data']['current_season']['shots_faced'], misc['data']['current_season']['faceoff_wins'])
+            
+            
+            for i, sk in enumerate(misc['stat_keys']):
+                sk['exclude'] = 0
+                sk['seq'] = i
+                if 'label_fmt' not in sk: sk['label_fmt'] = sk['fmt']
+                
+                
+                if misc['data']['current_season']['role'] is not None and sk['tag'].endswith("_EGA") and sk['tag'] != "%s_EGA" % misc['data']['current_season']['role']: 
+                    sk['exclude'] = 1
+            
+                if misc['data']['current_season']['sog_faced'] in [None, 0] and "save" in sk['tag']:
+                    sk['exclude'] = 1
+                    
+                if misc['data']['current_season']['shots_taken'] in [None, 0] and sk['tag'] in ["offensive_EGA", "sog_rate","shooting_pct", "excess_goals_scored"]:
+                    sk['exclude'] = 1
+                    
+                if misc['data']['current_season']['shots_taken'] in [None, 0] and misc['data']['current_season']['shots_faced'] > 0 and sk['tag'] in ["EGA_per_game", "EGA", "faceoff_EGA", "defensive_EGA"]:
+                    sk['exclude'] = 1
+                
+            for sk in misc['stat_keys']:
+                if not sk['exclude']:
+                    sk['me_str'] = "N/A"
+                    if misc['data']['current_season'][sk['tag']] is not None:
+                        if "%" in sk['fmt']:
+                            sk['me_str'] = sk['fmt'].format(100. * misc['data']['current_season'][sk['tag']]); 
+                        else:
+                            sk['me_str'] = sk['fmt'].format(misc['data']['current_season'][sk['tag']]); 
+                    else:
+                        sk['insufficient_data'] = 0
+                    stat_vals = sorted([z[sk['tag']] for z in cur_year_player_seasons if z[sk['tag']] not in [None]])
+                    sk['percentile'] = None
+                    if len(stat_vals) > 50:
+                        sk['insufficient_data'] = 0
+                        low_val = stat_vals[0]
+                        high_val = stat_vals[-1] + .000001
+                        if None in [low_val, high_val]:
+                            sk['insufficient_data'] = 1
+                            
+                        else:
+                            nbuckets = 6
+                            rng = high_val-low_val
+                            inc = rng/float(nbuckets)
+                            sk['points'] = [{'x': i} for i in range(nbuckets)]
+                            sk['percentile'] = 100. * (1.0 - (float(len([1 for z in stat_vals if z > misc['data']['current_season'][sk['tag']]]))/float(len(stat_vals))))
+                            sk['percentile_str'] = "%d%s" % (sk['percentile'], zc.get_number_suffix(sk['percentile']))
+                            for i, point in enumerate(sk['points']):
+                                l = low_val + (inc*i); h = low_val + (inc * (i+1))
+                                point['y'] = len([1 for z in stat_vals if l <= z < h])
+                                point['label'] = sk['label_fmt'].format((l+h)/2.) if ('%' not in sk['fmt']) else sk['label_fmt'].format(100.*((l+h)/2.))
+                                point['highlight'] = 1 if l <= misc['data']['current_season'][sk['tag']] < h else 0
+                    else:
+                        sk['insufficient_data'] = 1
+        
+        # Calculate Career Ranks
+
+        if misc['data']['player_career_stats'] is not None and player_careers is not None:
+            off_val = 0. if misc['data']['player_career_stats']['offensive_EGA'] is None else abs(misc['data']['player_career_stats']['offensive_EGA'])
+            def_val = 0. if misc['data']['player_career_stats']['defensive_EGA'] is None else abs(misc['data']['player_career_stats']['defensive_EGA'])
+            fogo_val = 0. if misc['data']['player_career_stats']['faceoff_EGA'] is None else abs(misc['data']['player_career_stats']['faceoff_EGA'])
+            misc['data']['player_career_stats']['role'] = assign_player_role(off_val, def_val, fogo_val, misc['data']['player_career_stats']['shots_faced'], misc['data']['player_career_stats']['faceoff_wins'])
+            for i, sk in enumerate(misc['stat_keys']):
+                
+                sk['exclude'] = 0
+                sk['seq'] = i
+                if 'label_fmt' not in sk: sk['label_fmt'] = sk['fmt']
+                
+                
+                if misc['data']['player_career_stats']['role'] is not None and sk['tag'].endswith("_EGA") and sk['tag'] != "%s_EGA" % misc['data']['player_career_stats']['role']: 
+                    sk['exclude'] = 1
+            
+                if misc['data']['player_career_stats']['sog_faced'] in [None, 0] and "save" in sk['tag']:
+                    sk['exclude'] = 1
+                    
+                if misc['data']['player_career_stats']['shots_taken'] in [None, 0] and sk['tag'] in ["offensive_EGA", "sog_rate","shooting_pct", "excess_goals_scored"]:
+                    sk['exclude'] = 1
+                    
+                if misc['data']['player_career_stats']['shots_taken'] in [None, 0] and misc['data']['player_career_stats']['shots_faced'] > 0 and sk['tag'] in ["EGA_per_game", "EGA", "faceoff_EGA", "defensive_EGA"]:
+                    sk['exclude'] = 1
+                
+            
+            for sk in misc['stat_keys']:
+                if not sk['exclude']:
+                    
+                    stat_vals = sorted([z[sk['tag']] for z in player_careers if z[sk['tag']] not in [None]])
+                    sk['career_percentile'] = None; sk['career_percentile_str'] = "N/A"; sk['career_rank'] = None; sk['career_rank_str'] = "N/A"
+                    if len(stat_vals) > 50:
+                        sk['career_insufficient_data'] = 0
+                        low_val = stat_vals[0]
+                        high_val = stat_vals[-1] + .000001
+                        if None in [low_val, high_val]:
+                            sk['career_insufficient_data'] = 1
+                            
+                        else:
+                            nbuckets = 6
+                            rng = high_val-low_val
+                            inc = rng/float(nbuckets)
+                            sk['career_points'] = [{'x': i} for i in range(nbuckets)]
+                            sk['career_rank'] = float(len([1 for z in stat_vals if z > misc['data']['player_career_stats'][sk['tag']]]))
+                            sk['career_percentile'] = 100. * (1.0 - (sk['career_rank']/float(len(stat_vals))))
+                            sk['career_rank_str'] = ""
+                            if sk['career_percentile'] >= 99.:
+                                sk['career_rank_str'] = "%d%s" % (sk['career_rank'], zc.get_number_suffix(sk['career_rank']))
+                            sk['career_percentile_str'] = "%d%s" % (sk['career_percentile'], zc.get_number_suffix(sk['career_percentile']))
+                            for i, point in enumerate(sk['career_points']):
+                                l = low_val + (inc*i); h = low_val + (inc * (i+1))
+                                point['y'] = len([1 for z in stat_vals if l <= z < h])
+                                point['label'] = sk['label_fmt'].format((l+h)/2.) if ('%' not in sk['fmt']) else sk['label_fmt'].format(100.*((l+h)/2.))
+                                point['highlight'] = 1 if l <= misc['data']['player_career_stats'][sk['tag']] < h else 0
+                    else:
+                        sk['career_insufficient_data'] = 1
+        
+
+        return misc
+        
     misc['time_log'].append({'tag': 'Build Player Data', 'start': ms()})
     
     if 'year' not in misc or misc['year'] is None:
         misc['year'] = datetime.now().year
-    if misc['target_template'] not in ["team_home.html"] and user_obj is not None and 'settings' in user_obj and 'general_focus_year' in user_obj['settings'] and user_obj['settings']['general_focus_year'] is not None:
-        misc['year'] = int(user_obj['settings']['general_focus_year']['val'])
+    
+    if misc['target_template'] not in ["team_home.html"] and user_obj is not None and 'settings' in user_obj and 'player_focus_year' in user_obj['settings'] and user_obj['settings']['player_focus_year'] is not None:
+        misc['year'] = int(user_obj['settings']['player_focus_year']['val'])
        
     now = datetime.now()
         
@@ -1328,19 +1610,64 @@ def build_product_data_player(self, user_obj, misc):
     
     if 'ID' in misc and misc['ID'] not in [None, '']:
         misc['ID'] = int(misc['ID'])
-        player_path = os.path.join("PlayerData", "player%07d_LRP.json" % (misc['ID']))
-        
-        
-        on_server = os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
-            
-        misc['extra_data'] = {}
         misc['data'] = {}
+        on_server = os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
         try:
-            misc['data'] = json.loads(storage_read(on_server, storage_path(on_server, player_path)))
-          
+        
+            conn, cursor = mysql_connect('LR')
+            cursor.execute("SELECT * from LaxRef_Players where active and ID=%s", [misc['ID']])
+            misc['data'] = zc.dict_query_results(cursor)[0]
+            cursor.execute("SELECT a.*, b.game_date, YEAR(b.game_date) 'game_year', c.display_name, c.ID 'opponentID', c.short_code from LaxRef_Player_Game_Summaries a, LaxRef_Games b, LaxRef_Teams c where b.active and a.active and c.active and ((a.team_ID=b.home_ID and b.away_ID=c.ID) or (a.team_ID=b.away_ID and b.home_ID=c.ID)) and a.player_ID=%s and b.ID=a.game_ID", [misc['ID']])
+            misc['data']['game_log'] = zc.dict_query_results(cursor)
+            cursor.execute("SELECT a.*, b.league from LaxRef_Player_Seasons a, LaxRef_Teams b where a.team_ID=b.ID and b.active and a.active and a.player_ID=%s order by a.year asc", [misc['ID']])
+            misc['data']['season_log'] = zc.dict_query_results(cursor)
+            
+            cur_year_player_seasons = None; player_careers = None; misc['data']['current_season'] = None
+            if misc['year'] in [z['year'] for z in misc['data']['season_log']]:
+                misc['data']['current_season'] = misc['data']['season_log'][ [z['year'] for z in misc['data']['season_log']].index(misc['year']) ]
+                cursor.execute("SELECT a.* from LaxRef_Player_Seasons a, LaxRef_Teams b where b.league=%s and a.team_ID=b.ID and b.active and a.active and a.year=%s", [misc['data']['season_log'][0]['league'], misc['year']])
+                cur_year_player_seasons = zc.dict_query_results(cursor)
+            cursor.execute("SELECT a.player_ID, sum(a.caused_turnovers) 'caused_turnovers', sum(a.shots_taken) 'shots_taken', sum(a.shots_faced) 'shots_faced', sum(a.goals_scored) 'goals_scored', sum(a.goals_allowed) 'goals_allowed', sum(a.expected_goals_scored) 'expected_goals_scored', sum(a.expected_goals_allowed) 'expected_goals_allowed', CASE WHEN IFNULL(sum(a.games_appeared_in), 0) = 0 THEN NULL ELSE sum(a.EGA)/sum(a.games_appeared_in) END 'EGA_per_game', sum(a.EGA) 'EGA', sum(a.faceoff_wins) + 0E0 'faceoff_wins', sum(a.faceoff_losses) + 0E0 'faceoff_losses', sum(a.turnovers) 'turnovers', sum(a.gbs) 'gbs', sum(a.sog) 'sog', sum(a.assists) 'assists', CASE WHEN sum(a.sog_faced) > 0 THEN (sum(a.sog_faced) - sum(a.goals_allowed))/(sum(a.sog_faced)) ELSE NULL END 'save_pct', sum(a.sog_faced) 'sog_faced', sum(a.offensive_EGA) 'offensive_EGA', sum(a.defensive_EGA) 'defensive_EGA', sum(a.faceoff_EGA) 'faceoff_EGA', sum(a.excess_goals_scored) 'excess_goals_scored', sum(a.excess_saves) 'excess_saves'  from LaxRef_Player_Seasons a, LaxRef_Teams b where b.league=%s and a.team_ID=b.ID and b.active and a.active group by a.player_ID", [misc['data']['season_log'][0]['league']])
+            #cursor.execute("SELECT a.player_ID, sum(a.shots_taken) 'shots_taken' from LaxRef_Player_Seasons a, LaxRef_Teams b where b.league=%s and a.team_ID=b.ID and b.active and a.active group by a.player_ID", [misc['data']['season_log'][0]['league']])
+            player_careers = zc.dict_query_results(cursor)
+                
+            
+            cursor.close(); conn.close()
+            
+            misc['data']['player_career_stats'] = None
+            
+            if player_careers is not None:
+                for pc in player_careers:
+                    pc['shooting_pct'] = pc['goals_scored']/pc['shots_taken'] if pc['shots_taken'] not in [0, None] else None
+                    pc['sog_rate'] = pc['sog']/pc['shots_taken'] if pc['shots_taken'] not in [0, None] and pc['sog'] not in [0, None] else None
+                
+                lg("Player career is found: %s" % (misc['data']['ID'] in [z['player_ID'] for z in player_careers]))
+                if misc['data']['ID'] in [z['player_ID'] for z in player_careers]:
+                    misc['data']['player_career_stats'] = player_careers[ [z['player_ID'] for z in player_careers].index(misc['data']['ID'])]
+        
+                    
+            for g in misc['data']['game_log']:
+                g['game_epoch'] = (g['game_date'] - datetime(1970, 1, 1)).total_seconds();
+                g['game_date'] = g['game_date'].strftime("%b %d, %Y").replace(" 0", " ")
+                g['this_year'] = 1 if misc['year'] == g['game_year'] else 0
+                g['faceoff_record'] = "%d - %d" % (g['faceoff_wins'], g['faceoffs_taken'] - g['faceoff_wins'])
+                g['faceoff_win_rate'] = None if g['faceoffs_taken'] == 0 else g['faceoff_wins']/g['faceoffs_taken']
+                g['shooting_pct'] = None if g['shots'] == 0 else g['goals']/g['shots']
+                g['sog_rate'] = None if g['shots'] == 0 else g['sog']/g['shots']
+
+                
+            misc = build_product_data_player_stat_rankings(misc, cur_year_player_seasons, player_careers)
+            
+            fogo_json_path = None
+            shooting_json_path = None
+            goalie_json_path = None
+            
+            
+                
+            
                 
         except Exception, e:
-            logging.error("The %s team JSON for Player ID %d could not be read from %s\n\n%s" % ("server" if on_server else "local", misc['ID'], storage_path(on_server, player_path), traceback.format_exc()))
+            logging.error("The %s data Player ID %d could not be read from the DB or from the storage bucket\n\n%s" % ("server" if on_server else "local", misc['ID'], traceback.format_exc()))
     
     if misc['data'] not in [None, {}]:
         pass
@@ -1369,11 +1696,16 @@ def build_product_data_game(self, user_obj, misc):
     lg("Building product data (game)...")
     tmp = {}
     misc['data'] = None;
-    pd(misc)
     
     if 'ID' in misc and misc['ID'] not in [None, '']:
         misc['ID'] = int(misc['ID'])
-        game_path = os.path.join("GameData", "game%07d_LRP.json" % (misc['ID']))
+        conn, cursor = mysql_connect('LR')
+        cursor.execute("SELECT ID, league, YEAR(game_date) 'game_year' from LaxRef_Games where ID=%s", [misc['ID']])
+        gm_rec = zc.dict_query_results(cursor)[0]
+        cursor.close(); conn.close()
+            
+        game_path = os.path.join("GameData", gm_rec['league'].replace(" ",""), "%d" % gm_rec['game_year'], "game%07d_LRP.json" % (misc['ID']))
+        game_path = os.path.join("GameData", gm_rec['league'].replace(" ",""), "%d" % gm_rec['game_year'], "game%07d_LRP.json" % (misc['ID']))
         
         
         on_server = os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
@@ -1388,11 +1720,10 @@ def build_product_data_game(self, user_obj, misc):
             logging.error("The %s team JSON for Game ID %d could not be read from %s\n\n%s" % ("server" if on_server else "local", misc['ID'], storage_path(on_server, game_path), traceback.format_exc()))
     
     if misc['data'] not in [None, {}]:
-        pass
         
         
         # For breadcrumb purposes
-        misc['came_from'] += "|%s~%s~%d~%s" % (misc['handler'], 'ID', misc['ID'], misc['data']['breadcrumb'])
+        misc['came_from'] += "|%s~%s~%d~%s" % (misc['handler'], 'ID', misc['ID'], misc['data']['headline'])
     else:
         misc['error'] = "There was an error loading data."
     
@@ -1488,15 +1819,21 @@ class IndexHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        misc = {'came_from': '', 'target_template': 'index.html', 'time_log': [], 'handler': 'index', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'index.html', 'time_log': [], 'AB_group': None, 'user_ID': None, 'handler': 'index', 'error': None, 'msg': None}; user_obj = None
+        misc['referrer'] = process_referrer(self.request.referrer)
+        misc['tracking_tag'] = process_tracking_tag(self.request.get('t'))
+                
         session_ID = self.session.get('session_ID')
         if session_ID not in [0, None]:
             misc['time_log'].append({'tag': 'get_user_obj()', 'start': ms()}); user_obj = get_user_obj({'session_ID': session_ID})
             misc['time_log'][-1]['end'] = ms()
             if user_obj['auth']:
+            
+                misc['user_ID'] = user_obj['ID']
+                misc['AB_group'] = "A" if user_obj['AB_group'] < 24 else "B"
                 
                 misc['time_log'].append({'tag': 'Get Products/Cart', 'start': ms()}); 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
                 next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
@@ -1506,20 +1843,68 @@ class IndexHandler(webapp2.RequestHandler):
                 misc['target_template'] = get_template(user_obj)
                 if misc['target_template'] == "team_home.html":
                     misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
-                
+                    if user_obj['active_subscription'] is not None and user_obj['active_subscription']['status'] in ["expired", "cancelled"]:
+                        misc['target_template'] = "team_inactive.html"
+                    
+                if misc['target_template'] == "index.html":
+                    if datetime.now().strftime("%Y%m%d") == "20201207" or os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+                        conn, cursor = mysql_connect('LRP')
+                       
+                        cursor.execute("INSERT INTO LRP_Product_Views (datestamp, product_tag, AB_group, user_ID, view_type, tracking_tag, referrer, active) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", [datetime.now(), None, misc['AB_group'], misc['user_ID'], 'landing', misc['tracking_tag'], misc['referrer'], 1])
+                        conn.commit()
+                        cursor.close(); conn.close()
                 user_obj['email_decrypted'] = decrypt(user_obj['email'])
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html" }
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
-                user_obj = process_non_auth(self)        
+                user_obj = process_non_auth(self)  
+                misc['user_ID'] = None if 'ID' not in user_obj else user_obj['ID']   
+                misc['AB_group'] = None if 'AB_group' not in user_obj else ("A" if user_obj['AB_group'] < 24 else "B")
+                if datetime.now().strftime("%Y%m%d") == "20201207" or os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+                    conn, cursor = mysql_connect('LRP')
+                    cursor.execute("INSERT INTO LRP_Product_Views (datestamp, product_tag, AB_group, user_ID, view_type, tracking_tag, referrer, active) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", [datetime.now(), None, misc['AB_group'], misc['user_ID'], 'landing', misc['tracking_tag'], misc['referrer'], 1])
+                    conn.commit()
+                    cursor.close(); conn.close()                
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
-            user_obj = process_non_auth(self)
+            user_obj = process_non_auth(self) 
+            misc['user_ID'] = None if 'ID' not in user_obj else user_obj['ID']   
+            misc['AB_group'] = None if 'AB_group' not in user_obj else ("A" if user_obj['AB_group'] < 24 else "B")
+            if datetime.now().strftime("%Y%m%d") == "20201207" or os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+                conn, cursor = mysql_connect('LRP')
+                cursor.execute("INSERT INTO LRP_Product_Views (datestamp, product_tag, AB_group, user_ID, view_type, tracking_tag, referrer, active) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", [datetime.now(), None, misc['AB_group'], misc['user_ID'], 'landing', misc['tracking_tag'], misc['referrer'], 1])
+                conn.commit()
+                cursor.close(); conn.close()          
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
             path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             
+def process_referrer(s):
+    if s in [None, ""]: return None
+    
+    
+    s = s.replace("https://", "")
+    s = s.replace("http://", "")
+    s = s.replace("www.", "")
+    
+    s = s.replace("pro.lacrossereference.com", "")
+    s = s.replace("test-dot-capozziinc.ue.r.appspot.com", "")
+    
+    if len(s) > 50: s = s[0:50]
+    
+    return s
+
+            
+def process_tracking_tag(s):
+    if s in [None, ""]: return None
+    
+    
+    
+    if len(s) > 15: s = s[0:15]
+    
+    return s
+
 class LoginHandler(webapp2.RequestHandler):
     def dispatch(self):
         self.session_store = sessions.get_store(request=self.request)
@@ -1576,40 +1961,108 @@ class CreateHandler(webapp2.RequestHandler):
     @webapp2.cached_property
     def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
 
-    
+    def user_is_valid(self, misc, req, users, user_type):
+        res = True
+        if user_type == "subscription":
+            if req['subscription_email'].upper() in [z['email'].upper() for z in users if z['active']]:
+                misc['error'] = "Email is already associated with an account."
+
+            elif req['subscription_email'] == "":
+                misc['error'] = "All accounts need an associated email address."
+  
+            elif req['subscription_username'] == "":
+                misc['error'] = "All accounts need an associated username."
+
+            elif req['subscription_username'].upper() in [z['username'].upper() for z in users if z['active']]:
+                misc['error'] = "Username is already associated with an account."
+
+        return misc
     def post(self):
         
         misc = {'came_from': '', 'target_template': 'index.html', 'time_log': [], 'handler': 'create', 'error': None, 'msg': None}; user_obj = None
         misc['create_group_user_display'] = "visible"; misc['create_group_user_tag_display'] = "tag-on"
         misc['create_standalone_user_display'] = "hidden"; misc['create_standalone_user_tag_display'] = "tag-off"
         
-        misc['standalone_user_types'] = [{'val': 'team', 'desc': 'Team'}, {'val': None, 'desc': 'Lurker'}, {'val': 'media', 'desc': 'Media'}, {'val': 'individual', 'desc': 'Individual'}]
+        misc['user_types'] = [{'val': 'team', 'desc': 'Team'}, {'val': None, 'desc': 'Lurker'}, {'val': 'media', 'desc': 'Media'}, {'val': 'individual', 'desc': 'Individual'}]
         
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
+            
+            ab_group = min(47, int(random.random()*48.))
             if user_obj['auth'] and user_obj['is_admin']:
                 req = dict_request(self.request)
+                req['group_user_type'] = self.request.get("group_user_type")
+                req['standalone_user_type'] = self.request.get("standalone_user_type")
+       
                 queries = []; params = []
                 
-                misc['team_ID'] = int(req['team_select'])
-                misc['group_ID'] = None
+                misc['group_ID'] = None if 'group_ID' not in req or req['group_ID'] in [-1,  None] else int(req['group_ID'])
                 # GET USEFUL INFO FROM THE DB
                 if req['action'].startswith("create"):
-                    conn, cursor = mysql_connect()
+                    conn, cursor = mysql_connect('LRP')
                     cursor.execute("SELECT * from LRP_Users")
                     users = zc.dict_query_results(cursor)
                     cursor.execute("SELECT * from LRP_Groups order by group_name asc")
                     misc['groups'] = zc.dict_query_results(cursor)
                     cursor.execute("SELECT * from LRP_Group_Access")
                     access = zc.dict_query_results(cursor)
+                    cursor.execute("SELECT * from LRP_Email_Templates where active=1")
+                    email_templates = zc.dict_query_results(cursor)
                     cursor.close(); conn.close()
                     
+                    for u in users:
+                        u['username'] = decrypt(u['username'])
+                        u['email'] = decrypt(u['email'])
+                       
                     for g in misc['groups']:
-                        g['selected'] = " selected" if misc['team_ID'] == g['team_ID'] else ""
-                        if misc['team_ID'] == g['team_ID']:
-                            misc['group_ID'] = g['ID']
+                        g['selected'] = " selected" if misc['group_ID'] == g['ID'] else ""
+
                 # CREATE A STANDALONE USER
+                if req['action'] == "create_subscription_user":
+                    tmp_keys = ['subscription_email', 'subscription_username', 'subscription_first_name', 'subscription_last_name', 'subscription_phone']
+                    for k in tmp_keys:
+                        req["%s_encrypted" % k] =  encrypt(req[k])
+                    
+                    if req['subscription_username'].startswith("newuser"):
+                        req['subscription_password'] = "Password1"
+                    else:
+                        req['subscription_password'] = create_temporary_password()
+                    
+                    req['subscription_password_encrypted'] = encrypt(req['subscription_password'])
+            
+                    misc = self.user_is_valid(misc, req, users, "subscription")
+                    if misc['error'] is None:
+                        query = ("INSERT INTO LRP_Users (ID, email, active, logins, password, username, AB_group, first_name, last_name, phone, date_created, track_GA, is_admin, activated, observe) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Users fds), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+                        param = [req['subscription_email_encrypted'], 1, 0, req['subscription_password_encrypted'], req['subscription_username_encrypted'], ab_group, req['subscription_first_name_encrypted'], req['subscription_last_name_encrypted'], req['subscription_phone_encrypted'], datetime.now(), 1, 0, 1, 1]
+                        
+                        queries.append(query)
+                        params.append(param)
+                        
+                        query = ("INSERT INTO LRP_Groups (ID, group_name, group_type, active, status) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Groups fds), %s, %s, %s, %s)")
+                        param = ['Individual', 'individual', 1, 'active']
+                        
+                        queries.append(query)
+                        params.append(param)
+                        
+                        query = ("INSERT INTO LRP_Group_Access (ID, user_ID, group_ID, status, active, admin) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Group_Access fds), (SELECT max(ID) from  LRP_Users fdsa), (SELECT max(ID) from  LRP_Groups fdsa), %s, %s, %s)")
+                        param = ['active', 1, 1]
+                        
+                        queries.append(query)
+                        params.append(param)
+                        
+                        
+                        misc['msg'] = "User %s has been created. Welcome email sent to %s." % (req['subscription_username'], req['subscription_email'])
+                        
+                        queries.append("INSERT INTO LRP_User_Preferences (ID, user_ID, active) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_User_Preferences fds), (SELECT max(ID) from  LRP_Users fdsa), %s)")
+                        params.append([1])
+                        map_fields = ["subscription_email", "subscription_username", "subscription_first_name", "subscription_last_name", "subscription_phone", "subscription_password"]
+                        for m in map_fields:
+                            misc[m] = None
+                            if m in req:
+                                misc[m] = req[m]
+  
+                            
                 if req['action'] == "create_standalone_user":
                     misc['create_group_user_display'] = "hidden";  misc['create_standalone_user_display'] = "visible"
                     misc['create_group_user_tag_display'] = "tag-off";  misc['create_standalone_user_tag_display'] = "tag-on"
@@ -1620,7 +2073,7 @@ class CreateHandler(webapp2.RequestHandler):
                         if m in req:
                             misc[m] = req[m]
                     
-                    for o in misc['standalone_user_types']:
+                    for o in misc['user_types']:
                         o['selected'] = ""
                         if o['val'] == req['standalone_user_type'] or o['val'] is None and req['standalone_user_type'] == "None":
                             o['selected'] = " selected"
@@ -1670,11 +2123,22 @@ class CreateHandler(webapp2.RequestHandler):
                             product_ID = 2
                         elif req['standalone_user_type'] == "team":
                             product_ID = 3
-                        ab_group = min(47, int(random.random()*48.))
                         
                         if req['standalone_user_type'] == "": req['standalone_user_type'] = None
                         query = ("INSERT INTO LRP_Users (ID, email, active, logins, user_type, password, username, AB_group, first_name, last_name, phone, date_created, track_GA, is_admin, activated, observe) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Users fds), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
                         param = [req['standalone_email_encrypted'], 1, 0, req['standalone_user_type'], req['standalone_password_encrypted'], req['standalone_username_encrypted'], ab_group, req['standalone_first_name_encrypted'], req['standalone_last_name_encrypted'], req['standalone_phone_encrypted'], datetime.now(), 1, is_admin, 1, 0]
+                        
+                        queries.append(query)
+                        params.append(param)
+                        
+                        query = ("INSERT INTO LRP_Groups (ID, group_name, group_type, active, status) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Groups fds), %s, %s, %s, %s)")
+                        param = ['Individual', 'individual', 1, 'active']
+                        
+                        queries.append(query)
+                        params.append(param)
+                        
+                        query = ("INSERT INTO LRP_Group_Access (ID, user_ID, group_ID, status, active, admin) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Group_Access fds), (SELECT max(ID) from  LRP_Users fdsa), (SELECT max(ID) from  LRP_Groups fdsa), %s, %s, %s)")
+                        param = ['active', 1, 1]
                         
                         queries.append(query)
                         params.append(param)
@@ -1696,9 +2160,23 @@ class CreateHandler(webapp2.RequestHandler):
                             queries.append("INSERT INTO LRP_Subscriptions (ID, user_ID, active, start_date, end_date, group_ID, product_ID, status, trial, product_tier) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Subscriptions fds), (SELECT max(ID) from  LRP_Users fdsa), %s, %s, %s, %s, %s, %s, %s, %s)")
                             params.append([1, start_date, end_date, misc['group_ID'], product_ID, 'active', 1, product_tier])
                             
-                        
-                ex_queries(queries,params)
                 
+                if misc['error'] is None:
+                    ex_queries(queries,params)  
+                    
+                    if req['action'] == "create_subscription_user" and len(queries) > 0:
+                        
+                        msg = email_templates[ [z['template_desc'] for z in email_templates].index('Account Created') ]
+                        msg['email'] = misc['subscription_email']
+                        msg['subject'] = "A LacrosseReference PRO account has been created for you."
+                        
+                        msg['content'] = get_file(msg['bucket'], msg['fname'])
+                        
+                        msg['content'] = msg['content'].replace("[username]", misc['subscription_username']).replace("[password]", misc['subscription_password']) 
+                        
+                        mail_res, dbrec = finalize_mail_send(msg)
+                        if mail_res != "": create_mail_record(dbrec)
+                        
                 misc['target_template'] = "create.html"
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
                 path = os.path.join("templates", misc['target_template'])
@@ -1726,7 +2204,7 @@ class CreateHandler(webapp2.RequestHandler):
             if user_obj['auth'] and user_obj['is_admin']:
                 misc['target_template'] = "create.html"
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 cursor.execute("SELECT * from LRP_Users")
                 misc['users'] = zc.dict_query_results(cursor)
                 cursor.execute("SELECT * from LRP_Groups order by group_name asc")
@@ -1734,6 +2212,10 @@ class CreateHandler(webapp2.RequestHandler):
                 cursor.execute("SELECT * from LRP_Group_Access")
                 misc['access'] = zc.dict_query_results(cursor)
                 cursor.close(); conn.close()
+                    
+                for u in misc['users']:
+                    u['username'] = decrypt(u['username'])
+                    u['email'] = decrypt(u['email'])
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
                 path = os.path.join("templates", misc['target_template'])
@@ -1761,32 +2243,198 @@ class AdminHandler(webapp2.RequestHandler):
 
     
     def post(self):
-        
-        misc = {'came_from': '', 'target_template': 'index.html', 'time_log': [], 'handler': 'admin', 'error': None, 'msg': None}; user_obj = None
-        tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
-        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
-    
-    def get(self):
-        
-        
+        queries = []; params = [];
         misc = {'came_from': '', 'target_template': 'admin.html', 'time_log': [], 'handler': 'admin', 'error': None, 'msg': None}; user_obj = None
         local = not os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
         session_ID = self.session.get('session_ID')
         if local or session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if local or (user_obj['auth'] and user_obj['is_admin']):
-      
-                conn, cursor = mysql_connect()
-                cursor.execute("SELECT * from LRP_Users")
+                if self.request.get("ID") != "":
+                    misc['action'] = "view_group"
+                    misc['ID'] = int(self.request.get("ID"))
+                    ID = misc['ID']
+                elif self.request.get("user_ID") != "" and self.request.get("group_ID") != "" and self.request.get("action") != "":
+                    misc['action'] = self.request.get("action");
+                    misc['user_ID'] = int(self.request.get("user_ID"))
+                    misc['group_ID'] = int(self.request.get("group_ID"))
+                    ID = misc['group_ID']
+                elif self.request.get("end_date") != "" or self.request.get('action') == "create_subscription":
+                    misc['action'] = self.request.get("action")
+                    misc['group_ID'] = int(self.request.get("group_ID"))
+                    ID = misc['group_ID']
+                elif self.request.get('action') == "delete_subscription":
+                    misc['action'] = self.request.get("action")
+                    misc['group_ID'] = int(self.request.get("group_ID"))
+                    ID = misc['group_ID']
+                elif self.request.get('action') == "delete_user":
+                    misc['action'] = self.request.get("action")
+                    misc['user_ID'] = int(self.request.get("user_ID"))
+                    ID = misc['user_ID']
+   
+                    
+
+                
+                if misc['action'] == "delete_user":
+                    query = "UPDATE LRP_Group_Access set active=0 where user_ID=%s"
+                    param = [ID]
+                    queries.append(query); params.append(param)
+                    query = "UPDATE LRP_Users set active=0 where ID=%s"
+                    param = [ID]
+                    queries.append(query); params.append(param)
+                    
+                elif misc['action'] == "add_to_group":
+                    conn, cursor = mysql_connect('LRP')
+                    cursor.execute("SELECT * from LRP_Group_Access")
+                    misc['access'] = zc.dict_query_results(cursor)
+                    cursor.close(); conn.close()
+                    
+                    tup = (misc['user_ID'], misc['group_ID'])
+                    if tup in [(z['user_ID'], z['group_ID']) for z in misc['access']]:
+                        misc['error'] = "User has already been added to this group."
+                    else:
+                        admin = 1 if self.request.get('is_admin') in ["on", 1, True] else 0
+                        
+                        query = "INSERT INTO LRP_Group_Access (ID, user_ID, group_ID, status, active, admin) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Group_Access fds), %s, %s, %s, %s, %s)"
+                        param = [misc['user_ID'], misc['group_ID'], 'active', 1, admin]
+                        queries.append(query); params.append(param)
+                        
+                        misc['msg'] = "User has been added to the group."
+                    
+                    
+                elif misc['action'] == "delete_subscription":
+                    misc['subscription_ID'] = int(self.request.get("subscription_ID"))
+                    
+                    query = "UPDATE LRP_Subscriptions set active=0 where ID=%s"
+                    param = [misc['subscription_ID']]
+                    queries.append(query); params.append(param)
+     
+                elif misc['action'] == "create_subscription":
+                    
+                    try:
+                        misc['product_tier'] = int(self.request.get("product_tier"))
+                    except Exception:
+                        misc['error'] = "Please specify a product tier (1,2,3)"
+                        
+                    misc['group_type'] = self.request.get("group_type")
+                    try:
+                        lg("Input: %s" % ("%s 23:59" % (self.request.get("end_date"))))
+                        misc['end_date'] = datetime.strptime("%s 23:59" % (self.request.get("end_date")), "%Y-%m-%d %H:%M")
+                        lg("EnD Date: %s" % misc['end_date'])
+                    except Exception:
+                        misc['error'] = "End Date fail: %s" % self.request.get("end_date")
+                    misc['trial'] = 0 if self.request.get("trial") == "" else 1
+                    misc['price_paid'] = 0. if self.request.get("trial") == "" else None
+                    misc['product_ID'] = None; misc['product_tag'] = None
+                    if misc['group_type'] == "team":
+                        misc['product_tag'] = "team"
+                    if misc['group_type'] == "media":
+                        misc['product_tag'] = "media"
+                    if misc['group_type'] == "individual":
+                        misc['product_tag'] = "basic"
+                    
+                    if misc['product_tag'] is None:
+                        misc['error'] = "Could not identify the product ID from group type: %s" % misc['group_type']
+                    if misc['error'] is None:
+                        lg("Query date: %s" % misc['end_date'])
+                        query = "INSERT INTO LRP_Subscriptions (ID, active, start_date, end_date, group_ID, product_ID, status, trial, price_paid, product_tier) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Subscriptions fds), %s, %s, %s, %s, (SELECT ID from LRP_Products fdsz where active and product_tier=%s and product_tag=%s), %s, %s, %s, %s)"
+                        param = [1, datetime.now(), misc['end_date'], misc['group_ID'], misc['product_tier'], misc['product_tag'], 'active', misc['trial'], misc['price_paid'], misc['product_tier']]
+                        queries.append(query); params.append(param)
+              
+                if misc['error'] is None:
+                    ex_queries(queries, params)
+                
+                    
+                        
+                conn, cursor = mysql_connect('LRP')
+                cursor.execute("SELECT * from LRP_Users where active")
                 misc['users'] = zc.dict_query_results(cursor)
-                cursor.execute("SELECT * from LRP_Groups")
+                cursor.execute("SELECT * from LRP_Groups where active")
                 misc['groups'] = zc.dict_query_results(cursor)
                 cursor.execute("SELECT * from LRP_Group_Access")
                 misc['access'] = zc.dict_query_results(cursor)
                 cursor.execute("SELECT * from LRP_Product_Requests")
                 misc['product_requests'] = zc.dict_query_results(cursor)
+                cursor.execute("SELECT * from LRP_Subscriptions where active")
+                misc['subscriptions'] = zc.dict_query_results(cursor)
+                cursor.execute("SELECT * from LRP_Email_Templates where active=1")
+                email_templates = zc.dict_query_results(cursor)
                 cursor.close(); conn.close()
                 
+                for u in misc['users']:
+                    u['username_decrypted'] = decrypt(u['username'])
+                    u['email_decrypted'] = decrypt(u['email'])
+                    u['first_name_decrypted'] = decrypt(u['first_name'])
+                    u['last_name_decrypted'] = decrypt(u['last_name'])
+                    u['password_decrypted'] = decrypt(u['password'])
+                
+                misc['group'] = misc['groups'][ [z['ID'] for z in misc['groups']].index(ID) ]
+                misc['group']['subscription'] = None
+                if misc['group']['ID'] in [z['group_ID'] for z in misc['subscriptions']]:
+                    misc['group']['subscription'] = misc['subscriptions'][ [z['group_ID'] for z in misc['subscriptions']].index(misc['group']['ID']) ]
+                    
+                    lg(misc['group']['subscription']['end_date'])
+                    misc['group']['subscription']['end_date_str'] = "N/A" if misc['group']['subscription']['end_date'] is None else (misc['group']['subscription']['end_date'].strftime("%b %d, %Y").replace(" 0", " "))
+                misc['group']['users'] = [z for z in misc['access'] if z['active'] and z['group_ID'] == misc['group']['ID']]
+                for i, u in enumerate(misc['group']['users']):
+                    tmp_user = misc['users'][[z['ID'] for z in misc['users']].index(u['user_ID'])]
+                    u['username'] = tmp_user['username_decrypted']
+                    u['email'] = tmp_user['email_decrypted']
+                    u['first_name'] = tmp_user['first_name_decrypted']
+                    u['last_name'] = tmp_user['last_name_decrypted']
+                
+                if self.request.get("c") not in [None, '']:
+                    misc['target_template'] = self.request.get("c") + ".html"
+                
+                # Assuming everything worked, send out the user email
+                if misc['error'] is None and len(queries) > 0 and misc['action'] == "add_to_group":
+                    user = misc['users'][ [z['ID'] for z in misc['users']].index(misc['user_ID']) ]
+                    msg = email_templates[ [z['template_desc'] for z in email_templates].index('Added User to Group') ]
+                    msg['email'] = user['email_decrypted']
+                    msg['subject'] = "You've been added to %s" % (misc['group']['group_name'])
+                    
+                    msg['content'] = get_file(msg['bucket'], msg['fname'])
+                    msg['content'] = msg['content'].replace("[group_name]", misc['group']['group_name'])
+                    
+                    mail_res, dbrec = finalize_mail_send(msg)
+                    if mail_res != "": create_mail_record(dbrec)
+            else:
+                user_obj = process_non_auth(self); user_obj['ID'] = None
+                layout = "layout_no_auth.html"
+                misc['target_template'] = "index.html"
+        else: 
+            user_obj = process_non_auth(self); user_obj['ID'] = None
+            layout = "layout_no_auth.html"
+            misc['target_template'] = "index.html"
+        
+        tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+    
+    def get(self):
+        
+        
+        misc = {'came_from': '', 'last_deploy': '11:03 AM on 12/08/2020', 'target_template': 'admin.html', 'time_log': [], 'handler': 'admin', 'error': None, 'msg': None}; user_obj = None
+        local = not os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
+        session_ID = self.session.get('session_ID')
+        if local or session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if local or (user_obj['auth'] and user_obj['is_admin']):
+                layout = 'layout_admin.html'
+      
+                conn, cursor = mysql_connect('LRP')
+                cursor.execute("SELECT * from LRP_Users where active")
+                misc['users'] = zc.dict_query_results(cursor)
+                cursor.execute("SELECT * from LRP_Groups where active order by group_name asc")
+                misc['groups'] = zc.dict_query_results(cursor)
+                cursor.execute("SELECT * from LRP_Group_Access")
+                misc['access'] = zc.dict_query_results(cursor)
+                cursor.execute("SELECT * from LRP_Product_Requests")
+                misc['product_requests'] = zc.dict_query_results(cursor)
+                cursor.execute("SELECT * from LRP_Subscriptions where active")
+                misc['subscriptions'] = zc.dict_query_results(cursor)
+                cursor.close(); conn.close()
+                
+
                 for u in misc['product_requests']:
                     u['email_decrypted'] = decrypt(u['email'])
                     u['datestamp_str'] = u['datestamp'].strftime("%b %d, %Y").replace(" 0", " ")
@@ -2093,7 +2741,7 @@ class ActivateHandler(webapp2.RequestHandler):
         misc['password'] = self.request.get('password').strip()
         misc['phone'] = self.request.get('phone').strip()
         
-        conn, cursor = mysql_connect()
+        conn, cursor = mysql_connect('LRP')
         cursor.execute("SELECT * from LRP_Users where ID!=%s", [misc['user_ID']])
         existing_users = zc.dict_query_results(cursor)
         cursor.execute("SELECT b.group_type 'group_type' from LRP_Group_Access a, LRP_Groups b where a.group_ID=b.ID and b.active and a.user_ID=%s and a.active group by b.group_type", [misc['user_ID']])
@@ -2177,7 +2825,7 @@ class ActivateHandler(webapp2.RequestHandler):
         lg(misc['activation_code'])
         
         
-        conn, cursor = mysql_connect()
+        conn, cursor = mysql_connect('LRP')
         cursor.execute("SELECT * from LRP_Users where activation_code=%s", [misc['activation_code']])
         users = zc.dict_query_results(cursor)
         cursor.close(); conn.close()
@@ -2192,12 +2840,12 @@ class ActivateHandler(webapp2.RequestHandler):
                 misc['target_template'] = "finalize_activation.html"
             elif user['activation_type'] == "final":
                 misc['target_template'] = "activated.html"
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 cursor.execute("UPDATE LRP_Users set activated=1 where ID=%s", [misc['user_ID']])
                 conn.commit(); cursor.close(); conn.close()
             else:
                 misc['target_template'] = "activated.html"
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 cursor.execute("UPDATE LRP_Users set activated=1 where ID=%s", [misc['user_ID']])
                 conn.commit(); cursor.close(); conn.close()
                 
@@ -2215,7 +2863,7 @@ def logout(self, user_obj):
     user_obj['auth'] = False
     self.session['session_ID'] = 0               
     
-    conn, cursor = mysql_connect()
+    conn, cursor = mysql_connect('LRP')
     cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [9, user_obj['ID'], datetime.now()]); conn.commit()
     cursor.close(); conn.close()
     return user_obj    
@@ -2259,11 +2907,12 @@ def ex_queries(queries, params, desc=None):
     if len(queries) > 0:
         if desc is not None:
             logging.info("  %d queries to upload (%s)..." % (len(queries), desc))
-        conn, cursor = mysql_connect();
+        conn, cursor = mysql_connect('LRP');
         cursor.execute("START TRANSACTION")
         for i, (q, p) in enumerate(zip(queries, params)):
-            logging.info(q)
-            logging.info(p)
+            if not os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+                logging.info(q)
+                logging.info(p)
             cursor.execute(q, p)
         if '--no-commit' not in client_secrets['local'] or client_secrets['local']['--no-commit'] not in ["Y", 'y', 'yes']: 
             cursor.execute("COMMIT")
@@ -2284,7 +2933,7 @@ def create_mail_record(dbrec, cursor=None):
         create_conn = True if cursor is None else False
         
         if create_conn:
-            conn, cursor = mysql_connect()
+            conn, cursor = mysql_connect('LRP')
 
         query = "INSERT INTO LRP_Sent_Email_Records(email_ID, send_date, active, recipient, status, send_in_blue_ID) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Emails fds), %s, %s, %s, %s, %s)"
         param = [dbrec['send_date'], 1, encrypt(dbrec['recipient']), dbrec['status'], dbrec['send_in_blue_ID']]
@@ -2344,7 +2993,7 @@ class RegisterHandler(webapp2.RequestHandler):
         stripe.api_key = client_secrets['web']['StripeServerKey']
         misc['clientKey'] = client_secrets['web']['StripeClientKey']
                 
-        conn, cursor = mysql_connect()
+        conn, cursor = mysql_connect('LRP')
         cursor.execute("SELECT * from LRP_Users")
         existing_users = zc.dict_query_results(cursor)
         misc['products'] = get_products(cursor, "Data Subscriptions")
@@ -2403,13 +3052,16 @@ class RegisterHandler(webapp2.RequestHandler):
             if self.request.get('from') not in ['', None]:
                 misc['target_template'] = "%s.html" % self.request.get('from')
                 
-            if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/') or not (misc['username'].startswith("newuser")):
+            if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/') and not (misc['username'].startswith("newuser")):
        
                 tmp1 = create_temporary_password()
                 tmp2 = create_temporary_password()
                 activation_code = "%s%s" % (tmp1, tmp2)
             else:
-                activation_code = "%s%s" % (misc['username'], datetime.now().strftime("%Y%m%d"))
+                if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+                    activation_code = "%s%s" % (misc['username'], (datetime.now() - timedelta(seconds=3600*6)).strftime("%Y%m%d"))
+                else:
+                    activation_code = "%s%s" % (misc['username'], datetime.now().strftime("%Y%m%d"))
             random.seed(time.time() + 110935)
             
             dt = datetime.now()
@@ -2440,6 +3092,18 @@ class RegisterHandler(webapp2.RequestHandler):
             
             
                     
+                        
+            query = ("INSERT INTO LRP_Groups (ID, group_name, group_type, active, status) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Groups fds), %s, %s, %s, %s)")
+            param = ['Individual', 'individual', 1, 'active']
+            
+            queries.append(query)
+            params.append(param)
+            
+            query = ("INSERT INTO LRP_Group_Access (ID, user_ID, group_ID, status, active, admin) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Group_Access fds), (SELECT max(ID) from  LRP_Users fdsa), (SELECT max(ID) from  LRP_Groups fdsa), %s, %s, %s)")
+            param = ['active', 1, 1]
+            
+            queries.append(query)
+            params.append(param)
                     
             ex_queries(queries, params)
             
@@ -2560,7 +3224,7 @@ class RegisterConfigHandler(webapp2.RequestHandler):
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
                 next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
@@ -2611,7 +3275,7 @@ class RegisterConfigHandler(webapp2.RequestHandler):
         misc = {'came_from': '', 'target_template': 'index.html', 'time_log': [], 'handler': 'registerConfig', 'username': '', 'password': '', 'email': '', 'phone': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
     
                 
-        conn, cursor = mysql_connect()
+        conn, cursor = mysql_connect('LRP')
         misc['products'] = get_products(cursor, "Data Subscriptions")
         cursor.close(); conn.close()
         
@@ -2673,7 +3337,7 @@ class CartHandler(webapp2.RequestHandler):
             user_obj = process_non_auth(self); user_obj['ID'] = None
             layout = "layout_no_auth.html"
         
-        conn, cursor = mysql_connect()
+        conn, cursor = mysql_connect('LRP')
         misc['products'] = get_products(cursor, "Data Subscriptions")
         cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
         next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
@@ -2772,7 +3436,7 @@ class CartHandler(webapp2.RequestHandler):
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [2, user_obj['ID'], datetime.now()]); conn.commit()
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
@@ -2822,7 +3486,7 @@ class SubscriptionHandler(webapp2.RequestHandler):
                 
                 misc['confirmed'] = self.request.get("confirmed")
             
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 #cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [7, user_obj['ID'], datetime.now()]); conn.commit()
                 cursor.execute("SELECT * from LRP_Quotes where active=1", [])
                 quotes = zc.dict_query_results(cursor)
@@ -2832,6 +3496,8 @@ class SubscriptionHandler(webapp2.RequestHandler):
                 groups = zc.dict_query_results(cursor)
                 cursor.execute("SELECT * from LRP_Group_Access where active", [])
                 access = zc.dict_query_results(cursor)
+                cursor.execute("SELECT * from LRP_Subscriptions where active", [])
+                subscriptions = zc.dict_query_results(cursor)
                 cursor.execute("SELECT ID, email from LRP_Users where active", [])
                 users = zc.dict_query_results(cursor)
                 
@@ -2839,7 +3505,12 @@ class SubscriptionHandler(webapp2.RequestHandler):
                 
                 misc['action'] = self.request.get("action")
                 
-                sub = user_obj['active_subscription']
+                if self.request.get("subscription_ID") != "" or int(self.request.get("subscription_ID")) not in [z['ID'] for z in user_obj['all_subscriptions']]:
+                    sub = user_obj['all_subscriptions'][ [z['ID'] for z in user_obj['all_subscriptions']].index(int(self.request.get("subscription_ID")))]
+                    misc['subscription_ID'] = int(self.request.get("subscription_ID"))
+                else:
+                    sub = user_obj['active_subscription']
+                    misc['subscription_ID'] = sub['ID']
                 sub['stripe_payment_intent_decrypted'] = decrypt(sub['stripe_payment_intent'])
                 
                 
@@ -3004,7 +3675,7 @@ class SubscriptionHandler(webapp2.RequestHandler):
             if user_obj['auth']:
                 misc['target_template'] = "subscription.html"
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 #cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [7, user_obj['ID'], datetime.now()]); conn.commit()
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.close(); conn.close()
@@ -3057,7 +3728,7 @@ class UploadHandler(webapp2.RequestHandler):
             logging.info("Attempting an upload to %s (%d chars)" % (path, len(input_data)))
             if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
                     
-                #conn, cursor = mysql_connect()
+                #conn, cursor = mysql_connect('LRP')
                 #conn.commit(); cursor.close(); conn.close()
                     
                 
@@ -3088,7 +3759,7 @@ class UploadHandler(webapp2.RequestHandler):
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
                 next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
@@ -3128,7 +3799,7 @@ class PasswordHandler(webapp2.RequestHandler):
         
                 
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
                 next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
@@ -3191,7 +3862,7 @@ class PasswordHandler(webapp2.RequestHandler):
             if user_obj['auth']:
                 misc['target_template'] = "password.html"
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
                 next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
@@ -3227,24 +3898,56 @@ class ExplanationsHandler(webapp2.RequestHandler):
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth'] and user_obj['is_admin']:
                 
-                conn, cursor = mysql_connect()
-                cursor.execute("SELECT * from LRP_Explanations order by ID desc", [])
+                conn, cursor = mysql_connect('LRP')
+                cursor.execute("SELECT * from LRP_Explanations where active order by ID desc", [])
                 misc['explanations'] = zc.dict_query_results(cursor)
                 cursor.close(); conn.close()
                 
                 
                 req = dict_request(self.request)
+                misc['confirmed'] = "n" if 'confirmed' not in req else req['confirmed']
+                req['action'] = "" if 'action' not in req else req['action']
+                req['delete_action'] = "" if 'delete_action' not in req else req['delete_action']
+                misc['filter_page'] = req['filter_page']
+
+                
+                
+                misc['html_pages'] = [{'value': 'team_player_detail.html'}, {'value':'team_game_detail.html'}, {'value': 'team_detail.html'}, {'value': 'team_home.html'}, {'value': 'team_my_rankings.html'}, {'value': 'team_my_stats.html'}, {'value': 'team_my_schedule.html'}]
+                for m in misc['html_pages']:
+                    m['desc'] = " ".join(m['value'].replace(".html", "").split("_")).title()
+                    m['selected'] = "" if m['value'] != misc['filter_page'] else " selected"
                 
                 
                 if req['action'] == "view_explanation":
                     misc['action'] = "edit_explanation"
                     misc['explanation'] = misc['explanations'][ [z['ID'] for z in misc['explanations']].index(int(req['ID'])) ]
                     misc['target_template'] = "explanation_detail.html"
+                elif req['action'] == "filter":
+              
+                    
+                    misc['target_template'] = "explanations.html"
                 elif req['action'] == "new_explanation":
                     misc['action'] = "add_explanation"
                     
                     misc['explanation'] = {'tag': '', 'html_page': '', 'explanation_html': '', 'header_text': '', 'ID': None}
                     misc['target_template'] = "explanation_detail.html"
+                elif req['delete_action'] == "delete_explanation" and misc['confirmed'] == "n":
+     
+                    misc['explanation'] = misc['explanations'][ [z['ID'] for z in misc['explanations']].index(int(req['ID'])) ]
+                    
+                    misc['confirmed'] = "y"
+                    misc['delete_msg'] = "Are you sure you want to delete this explanation?"
+                    misc['target_template'] = "explanation_detail.html"
+                elif req['delete_action'] == "delete_explanation" and misc['confirmed'] == "y":
+                    query = "UPDATE LRP_Explanations set active=0 where ID=%s"
+                    param = [req['ID']]
+                    queries.append(query); params.append(param)
+                    
+                    misc['explanation'] = misc['explanations'][ [z['ID'] for z in misc['explanations']].index(int(req['ID'])) ]
+                    misc['explanation']['deleted'] = 1
+                    misc['confirmed'] = "n"
+                    misc['target_template'] = "explanations.html"
+                    
                 elif req['action'] == "edit_explanation":
                     misc['action'] = "edit_explanation"
                     misc['explanation'] = misc['explanations'][ [z['ID'] for z in misc['explanations']].index(int(req['ID'])) ]
@@ -3271,14 +3974,21 @@ class ExplanationsHandler(webapp2.RequestHandler):
                 
                 ex_queries(queries, params)
                 
-                misc['explanation']['explanation_html_BR'] = None if misc['explanation']['explanation_html'] is None else misc['explanation']['explanation_html'].replace("\n",  "<BR>")
+                misc['explanations'] = [z for z in misc['explanations'] if misc['filter_page'] in [None, ''] or misc['filter_page'] == z['html_page']]
+                
+                if misc['target_template'] == "explanation_detail.html":
+                    misc['explanation']['explanation_html_BR'] = None if misc['explanation']['explanation_html'] is None else misc['explanation']['explanation_html'].replace("\n",  "<BR>")
                 
                 for m in misc['explanations']:
-                    m['color'] = "black" if len(m['explanation_html']) > 0 else "red"
+                    m['header_text'] = "[None Entered]" if m['header_text'] is None else m['header_text']
+                    m['explanation_html'] = "" if m['explanation_html'] is None else m['explanation_html']
+                    m['color'] = "black" if m['explanation_html'] is None or len(m['explanation_html']) > 0 else "red"
+                    if m['color'] == "black":
+                        m['color'] = "black" if m['header_text'] != "[None Entered]" else "red"
                 nmissing = len([1 for z in misc['explanations'] if z['color'] == "red"])
                 misc['missing_str'] = "" if nmissing == 0 else ("<span class='error'> (%d explanations are  missing)</span>" % nmissing)
                 
-                
+                misc['explanations'] = [z for z in misc['explanations'] if 'deleted' not in z or not z['deleted']]
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", misc['target_template'])
                 self.response.out.write(template.render(path, tv))
@@ -3295,19 +4005,29 @@ class ExplanationsHandler(webapp2.RequestHandler):
 
     def get(self):
         
-        misc = {'came_from': '', 'target_template': 'explanations.html', 'time_log': [], 'handler': 'explanations', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'filter_page': '', 'confirmed': 'n', 'target_template': 'explanations.html', 'time_log': [], 'handler': 'explanations', 'error': None, 'msg': None}; user_obj = None
+        
+        misc['html_pages'] = [{'value': 'team_player_detail.html'}, {'value':'team_game_detail.html'}, {'value': 'team_detail.html'}, {'value': 'team_home.html'}, {'value': 'team_my_rankings.html'}, {'value': 'team_my_stats.html'}, {'value': 'team_my_schedule.html'}]
+        for m in misc['html_pages']:
+            m['desc'] = " ".join(m['value'].replace(".html", "").split("_")).title()
+            m['selected'] = "" if m['value'] != misc['filter_page'] else " selected"
+        
         session_ID = self.session.get('session_ID')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth'] and user_obj['is_admin']:
                 
-                conn, cursor = mysql_connect()
-                cursor.execute("SELECT * from LRP_Explanations order by ID desc", [])
+                conn, cursor = mysql_connect('LRP')
+                cursor.execute("SELECT * from LRP_Explanations where active order by ID desc", [])
                 misc['explanations'] = zc.dict_query_results(cursor)
                 cursor.close(); conn.close()
                 
                 for m in misc['explanations']:
-                    m['color'] = "black" if len(m['explanation_html']) > 0 else "red"
+                    m['header_text'] = "[None Entered]" if m['header_text'] is None else m['header_text']
+                    m['explanation_html'] = "" if m['explanation_html'] is None else m['explanation_html']
+                    m['color'] = "black" if m['explanation_html'] is None or len(m['explanation_html']) > 0 else "red"
+                    if m['color'] == "black":
+                        m['color'] = "black" if m['header_text'] != "[None Entered]" else "red"
                 nmissing = len([1 for z in misc['explanations'] if z['color'] == "red"])
                 misc['missing_str'] = "" if nmissing == 0 else ("<span class='error'> (%d explanations are  missing)</span>" % nmissing)
                 misc['action'] = "edit_explanation"
@@ -3448,7 +4168,7 @@ class ReviewQuoteHandler(webapp2.RequestHandler):
                     try:
                         trial_end_dt = datetime.strptime(misc['trial_end_str'].replace(" ", "").replace("/", "-").strip(), "%Y-%m-%d")
                         misc['trial_end_formatted'] = datetime.strptime(misc['trial_end_str'].replace(" ", "").replace("/", "-").strip(), "%Y-%m-%d").strftime("%b %d, %Y")
-                        if not misc['email_decrypted'].startswith("newuser202") and trial_end_dt < datetime.now():
+                        if not misc['email_decrypted'].startswith("newuser20") and trial_end_dt < datetime.now():
                             misc['error'] = "Trial End date can't be in the past."
                     except Exception:
                         #logging.info(traceback.format_exc())
@@ -3456,7 +4176,7 @@ class ReviewQuoteHandler(webapp2.RequestHandler):
                 try:
                     valid_until_dt = datetime.strptime(misc['valid_until_str'].replace(" ", "").replace("/", "-").strip(), "%Y-%m-%d")
                     misc['valid_until_formatted'] = datetime.strptime(misc['valid_until_str'].replace(" ", "").replace("/", "-").strip(), "%Y-%m-%d").strftime("%b %d, %Y")
-                    if not misc['email_decrypted'].startswith("newuser202") and valid_until_dt < datetime.now():
+                    if not misc['email_decrypted'].startswith("newuser20") and valid_until_dt < datetime.now():
                         misc['error'] = "Valid Until date can't be in the past."
                 except Exception:
                     #logging.info(traceback.format_exc())
@@ -3468,7 +4188,7 @@ class ReviewQuoteHandler(webapp2.RequestHandler):
                     
                 misc['msg_body_html'] = misc['msg_body'].replace("\r\n", "<BR>").replace("\n", "<BR>")
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT * from LRP_Product_Requests where status='active'", [])
                 misc['product_requests'] = zc.dict_query_results(cursor)
@@ -3544,13 +4264,17 @@ class ReviewQuoteHandler(webapp2.RequestHandler):
                     misc['tup'] = (misc['request_ID'], misc['period'], misc['group_ID'], misc['email'], misc['product_ID'])
                 
                 
-                    if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/') or not (misc['email'].startswith("newuser")):
+                    if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/') and not (misc['email'].startswith("newuser")):
                         cur_dt = "%d" % time.time()
                         misc['hash'] = ""
                         for ij in range(10):
                             misc['hash'] += "%s%s" % (cur_dt[ij], create_temporary_password())
                     else:
-                        misc['hash'] = "%s%s" % (misc['email'].split("@")[0], datetime.now().strftime("%Y%m%d"))
+                        if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+                        
+                            misc['hash'] = "%s%s" % (misc['email'].split("@")[0], (datetime.now()-timedelta(seconds=6*3600)).strftime("%Y%m%d"))
+                        else:
+                            misc['hash'] = "%s%s" % (misc['email'].split("@")[0], datetime.now().strftime("%Y%m%d"))
                     #logging.info("Send the template to the user and record the quote in the DB with hash: %s." % misc['hash'])
                     
                     misc['msg_body_div'] = "<div style=''><span style='display:contents;'>{}</span></div>".format(misc['msg_body'])
@@ -3675,7 +4399,7 @@ class CreateRefundHandler(webapp2.RequestHandler):
                 misc['action'] = self.request.get('action')
                 misc['confirmed'] = self.request.get('confirmed')
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT * from LRP_Subscriptions where active", [])
                 misc['subscriptions'] = zc.dict_query_results(cursor)
@@ -3815,7 +4539,7 @@ class CreateRefundHandler(webapp2.RequestHandler):
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth'] and user_obj['is_admin']:
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT * from LRP_Subscriptions where active", [])
                 misc['subscriptions'] = zc.dict_query_results(cursor)
@@ -3900,7 +4624,7 @@ class ExtendSubscriptionHandler(webapp2.RequestHandler):
                 misc['action'] = self.request.get('action')
                 misc['confirmed'] = self.request.get('confirmed')
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT * from LRP_Subscriptions where active", [])
                 misc['subscriptions'] = zc.dict_query_results(cursor)
@@ -4015,7 +4739,7 @@ class ExtendSubscriptionHandler(webapp2.RequestHandler):
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth'] and user_obj['is_admin']:
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT * from LRP_Subscriptions where active", [])
                 misc['subscriptions'] = zc.dict_query_results(cursor)
@@ -4103,7 +4827,7 @@ class CreateQuoteHandler(webapp2.RequestHandler):
             if user_obj['auth'] and user_obj['is_admin']:
                 trial_end_dt = None
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT * from LRP_Product_Requests where status='active'", [])
                 misc['product_requests'] = zc.dict_query_results(cursor)
@@ -4194,7 +4918,7 @@ class CreateQuoteHandler(webapp2.RequestHandler):
                         try:
                             trial_end_dt = datetime.strptime(misc['trial_end_str'].replace(" ", "").replace("/", "-").strip(), "%Y-%m-%d")
                             misc['trial_end_formatted'] = datetime.strptime(misc['trial_end_str'].replace(" ", "").replace("/", "-").strip(), "%Y-%m-%d").strftime("%b %d, %Y")
-                            if not misc['email_decrypted'].startswith("newuser202") and trial_end_dt < datetime.now():
+                            if not misc['email_decrypted'].startswith("newuser") and trial_end_dt < datetime.now():
                                 misc['error'] = "Trial End date can't be in the past."
                         except Exception:
                             #logging.info(traceback.format_exc())
@@ -4202,7 +4926,7 @@ class CreateQuoteHandler(webapp2.RequestHandler):
                     try:
                         valid_until_dt = datetime.strptime(misc['valid_until_str'].replace(" ", "").replace("/", "-").strip(), "%Y-%m-%d")
                         misc['valid_until_formatted'] = datetime.strptime(misc['valid_until_str'].replace(" ", "").replace("/", "-").strip(), "%Y-%m-%d").strftime("%b %d, %Y")
-                        if not misc['email_decrypted'].startswith("newuser202") and valid_until_dt < datetime.now():
+                        if not misc['email_decrypted'].startswith("newuser") and valid_until_dt < datetime.now():
                             misc['error'] = "Valid Until date can't be in the past."
                     except Exception:
                         #logging.info(traceback.format_exc())
@@ -4234,7 +4958,7 @@ class CreateQuoteHandler(webapp2.RequestHandler):
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth'] and user_obj['is_admin']:
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT * from LRP_Product_Requests where status='active' order by datestamp desc", [])
                 misc['product_requests'] = zc.dict_query_results(cursor)
@@ -4261,7 +4985,7 @@ class CreateQuoteHandler(webapp2.RequestHandler):
             path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
 
 def display_quote(misc):
-    conn, cursor = mysql_connect()
+    conn, cursor = mysql_connect('LRP')
     
     cursor.execute("SELECT * from LRP_Quotes where active and hash=%s", [misc['quote_hash']])
     misc['quote'] = None
@@ -4356,7 +5080,7 @@ class ViewQuoteHandler(webapp2.RequestHandler):
         if misc['action'] == "requote":
             
             tup = (datetime.now().strftime("%Y%m%d"), misc['quote']['user_email'], misc['quote']['team_ID'], misc['quote']['product_ID'])
-            conn, cursor = mysql_connect()
+            conn, cursor = mysql_connect('LRP')
             cursor.execute("SELECT datestamp, email, team_ID, product_ID from LRP_Product_Requests where active", [])
             requests = zc.dict_query_results(cursor)
             cursor.close(); conn.close()
@@ -4365,8 +5089,8 @@ class ViewQuoteHandler(webapp2.RequestHandler):
                 z['tup'] = (z['datestamp'].strftime("%Y%m%d"), z['email'], z['team_ID'], z['product_ID'])
             
             if tup not in [z['tup'] for z in requests]:
-                query = "INSERT INTO LRP_Product_Requests (ID, datestamp, email, team_ID, product_ID, group_ID, status, active, request_type) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Product_Requests fds), %s, %s, %s, %s, %s, %s, %s, %s)"
-                param = [datetime.now(), misc['quote']['user_email'], misc['quote']['team_ID'], misc['quote']['product_ID'], misc['quote']['group_ID'], 'active', 1, 'trial-request']
+                query = "INSERT INTO LRP_Product_Requests (ID, datestamp, email, team_ID, product_ID, group_ID, status, active, request_type, made_from) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Product_Requests fds), %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                param = [datetime.now(), misc['quote']['user_email'], misc['quote']['team_ID'], misc['quote']['product_ID'], misc['quote']['group_ID'], 'active', 1, 'trial-request', 'quote']
                 queries.append(query); params.append(param)
                 
                 misc['resend_msg'] = "Thank you for your request. I will be in touch via email as soon as possible (and certainly within 48 hours)."
@@ -4431,7 +5155,7 @@ class SwitchGroupsHandler(webapp2.RequestHandler):
                 if switch_to_group_ID in [z['ID'] for z in user_obj['active_groups']]:
                     
                 
-                    conn, cursor = mysql_connect()
+                    conn, cursor = mysql_connect('LRP')
                     cursor.execute("UPDATE LRP_Users set active_group=%s", [switch_to_group_ID])
                     cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [13, user_obj['ID'], datetime.now()])
                     conn.commit()
@@ -4442,6 +5166,8 @@ class SwitchGroupsHandler(webapp2.RequestHandler):
                     misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
                     
                     misc['target_template'] = "team_home.html"
+                    if user_obj['active_subscription'] is not None and user_obj['active_subscription']['status'] in ["expired", "cancelled"]:
+                        misc['target_template'] = "team_inactive.html"
                     tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                     path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
                 else:
@@ -4479,7 +5205,7 @@ class SwitchGroupsHandler(webapp2.RequestHandler):
                 elif user_obj['num_active_groups'] ==  1:
                     misc['target_template'] = get_template(user_obj)
                     
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [8, user_obj['ID'], datetime.now()]); conn.commit()
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
@@ -4518,7 +5244,7 @@ class PreferencesHandler(webapp2.RequestHandler):
             
                 
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
                 next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
@@ -4567,7 +5293,7 @@ class PreferencesHandler(webapp2.RequestHandler):
             if user_obj['auth']:
                 relevants = get_relevant_preferences(user_obj)
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [5, user_obj['ID'], datetime.now()]); conn.commit()
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
@@ -4609,7 +5335,7 @@ class ProfileHandler(webapp2.RequestHandler):
             
                 
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
                 next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
@@ -4657,7 +5383,7 @@ class ProfileHandler(webapp2.RequestHandler):
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
             
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [6, user_obj['ID'], datetime.now()]); conn.commit()
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
@@ -4730,7 +5456,7 @@ class ForgotHandler(webapp2.RequestHandler):
         
         misc['username'] = self.request.get('username').strip().lower()
         
-        conn, cursor = mysql_connect()
+        conn, cursor = mysql_connect('LRP')
         cursor.execute("SELECT * from LRP_Users")
         users = zc.dict_query_results(cursor)
         cursor.execute("SELECT * from LRP_Email_Templates where template_desc='Password Reset'")
@@ -4749,30 +5475,34 @@ class ForgotHandler(webapp2.RequestHandler):
             user = None
             if misc['username'] in [decrypt(z['username']).strip().lower() for z in users]:
                 user = users[ [decrypt(z['username']).strip().lower() for z in users].index(misc['username']) ]
-            elif misc['username'] in [decrypt(z['email'].strip().lower()) for z in users]:
+            elif misc['username'] in [decrypt(z['email']).strip().lower() for z in users]:
                 user = users[ [decrypt(z['email'].strip().lower()) for z in users].index(misc['username']) ]
             
-            misc['msg'] = "Password has been reset; check your inbox for a password reset message."
-            
-            tmp_password = create_temporary_password()
-            msg['email'] = decrypt(user['email'])
-            msg['subject'] = "Password Reset"
-            
-            query = "UPDATE LRP_Users set password=%s where ID=%s"
-            param = [encrypt(tmp_password), user['ID']]
-            queries.append(query); params.append(param)
-            
-            
-            msg['content'] = get_file(msg['bucket'], msg['fname'])
-            msg['content'] = msg['content'].replace("[password]", tmp_password)
-            msg['content'] = msg['content'].replace("[username]", decrypt(user['username']))
-            msg['content'] = msg['content'].replace("\r\n", "\\n")
-            msg['content'] = msg['content'].replace("\n", "\\n")
-            
-            mail_res, dbrec = finalize_mail_send(msg)
-            if mail_res != "": create_mail_record(dbrec)
-            
-            ex_queries(queries, params)
+            if user is None:
+                misc['error'] = "Could not find an account associated with your entry."
+            else:
+                misc['msg'] = "Password has been reset; check your inbox for a password reset message."
+                
+                tmp_password = create_temporary_password()
+                
+                msg['email'] = decrypt(user['email'])
+                msg['subject'] = "Password Reset"
+                
+                query = "UPDATE LRP_Users set password=%s where ID=%s"
+                param = [encrypt(tmp_password), user['ID']]
+                queries.append(query); params.append(param)
+                
+                
+                msg['content'] = get_file(msg['bucket'], msg['fname'])
+                msg['content'] = msg['content'].replace("[password]", tmp_password)
+                msg['content'] = msg['content'].replace("[username]", decrypt(user['username']))
+                msg['content'] = msg['content'].replace("\r\n", "\\n")
+                msg['content'] = msg['content'].replace("\n", "\\n")
+                
+                mail_res, dbrec = finalize_mail_send(msg)
+                if mail_res != "": create_mail_record(dbrec)
+                
+                ex_queries(queries, params)
                     
         tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj)}
         path = os.path.join("templates", misc['target_template'])
@@ -4868,19 +5598,21 @@ class CronHandler(webapp2.RequestHandler):
                 status = 500
         if orig_url == "ping":
         
-            conn, cursor = mysql_connect()
+            conn, cursor = mysql_connect('LRP')
             cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, send_date)  VALUES (%s, %s, %s)", [11, 1, datetime.now()]); conn.commit()
             cursor.close(); conn.close()
         if orig_url == "send-mail":
             queries = []; params = []
             utc_dt = datetime.utcnow()
             utc_dt_local = datetime.strptime(utc_dt.strftime("%Y%m%d %H%M%S"), "%Y%m%d %H%M%S")
-            conn, cursor = mysql_connect()
+            conn, cursor = mysql_connect('LRP')
             cursor.execute("SELECT * from LRP_Emails where active and status='scheduled'", []); 
             emails = zc.dict_query_results(cursor)
             cursor.execute("SELECT * from LRP_Sent_Email_Records where active", []); 
             email_records = zc.dict_query_results(cursor)
             cursor.close(); conn.close()
+            
+            
             
             for z in emails:
                 z['seconds_until'] = (z['send_date'] - utc_dt_local).total_seconds()
@@ -4888,9 +5620,12 @@ class CronHandler(webapp2.RequestHandler):
             # If we are within 5 minutes of the scheduled time, just send it
             to_send = [z for z in emails if -300 <= z['seconds_until'] <= 300]
             
-            for m in to_send:
-                m['recipients'] = list(set([decrypt(z['recipient']) for z in email_records if z['email_ID'] == m['ID'] and z['active']]))
-            
+            for msg in to_send:
+                records = [z for z in email_records if z['email_ID'] == msg['ID'] and z['active'] and z['recipient_type'] == "ind"]
+                msg['recipients'] = list(set([decrypt(z['recipient']) for z in records]))
+                records = [z for z in email_records if z['email_ID'] == msg['ID'] and z['active'] and z['recipient_type'] == "cc"]
+                msg['cc_recipients'] = list(set([decrypt(z['recipient']) for z in records]))
+                
             misc['msg'] = "Found %d emails to send (out of %d scheduled)<BR><BR>" % (len(to_send), len(emails))
             misc['msg'] += "<BR>".join(["Time: %s UTC; Recipients: %d; Subject: %s; Seconds Until: %d" % (z['send_date'].strftime("%b %d, %Y %I:%M %p"), len(z['recipients']), decrypt(z['subject']), z['seconds_until']) for z in to_send])
             
@@ -4913,8 +5648,30 @@ class CronHandler(webapp2.RequestHandler):
                     
                 all_passed = 1
                 if msg['content'] is not None:
+                
+                    # Process individual email addresses
                     for r in msg['recipients']:
                         msg['email'] = r
+                        msg['recipient_type'] = "ind"
+                        mail_res, dbrec = finalize_mail_send(msg)
+                        if mail_res == "Success" or client_secrets['local']['--no-mail'] in ["Y", 'y', 'yes'] or test_address(msg['email']):
+                    
+                            # Success
+                            misc['msg'] = "Email was sent."
+                            queries.append("UPDATE LRP_Sent_Email_Records set send_in_blue_ID=%s, status='sent' where email_ID=%s and recipient=%s")
+                            params.append([dbrec['send_in_blue_ID'], msg['ID'], encrypt(msg['email'])])
+                            
+                        else:
+                            all_passed = 0
+                            misc['error'] = "Email send failed"
+                            queries.append("UPDATE LRP_Sent_Email_Records set status='failed' where email_ID=%s and recipient=%s")
+                            params.append([msg['ID'], encrypt(msg['email'])])
+                            misc['msg'] = None
+                
+                    # Process cc/group email addresses
+                    for r in msg['cc_recipients']:
+                        msg['email'] = r
+                        msg['recipient_type'] = "cc"
                         mail_res, dbrec = finalize_mail_send(msg)
                         if mail_res == "Success" or client_secrets['local']['--no-mail'] in ["Y", 'y', 'yes'] or test_address(msg['email']):
                     
@@ -4976,10 +5733,9 @@ class LoggerHandler(webapp2.RequestHandler):
                 # global tags are those that are not specific to a given page
                 if req['tag'] in misc['global_tags']: req['target_template'] = None
                 
-                pd(req)
                 tup = (req['target_template'], req['tag'])
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 cursor.execute("SELECT * from LRP_User_Settings where active and user_ID=%s", [req['user_ID']])
                 settings = zc.dict_query_results(cursor)
                 
@@ -5011,6 +5767,14 @@ class LoggerHandler(webapp2.RequestHandler):
                 params.append([datetime.now(), req['html_page'], req['tag'], req['user_ID']])
                 
                 
+            if orig_url == "userView":
+                args = self.request.get('c').split("|")
+                req = {'handler': str(args[0]).replace("?c=", ""), 'context': str(args[1]), 'user_ID': None if args[2] in [u'', '', None, -1] else int(str(args[2]))}
+                if req['context'] in ['']: req['context'] = None
+                
+                queries.append("INSERT INTO LRP_User_Views (timestamp, handler, context, user_ID) VALUES (%s, %s, %s, %s)")
+                params.append([datetime.now(), req['handler'], req['context'], req['user_ID']])
+            
             if orig_url == "jsVisualizationFail":
                 args = self.request.get('c').split("|")
                 req = {'html_page': str(args[0]), 'div_ID': str(args[1]), 'user_ID': None if args[2] in [u'', '', None, -1] else int(str(args[2]))}
@@ -5019,10 +5783,16 @@ class LoggerHandler(webapp2.RequestHandler):
             
             if orig_url == "explanationFeedback":
                 args = self.request.get('c').split("|")
-                req = {'html_page': str(args[0]), 'tag': str(args[1]), 'user_ID': None if args[2] in [u'', '', None, -1] else int(str(args[2])), 'was_helpful': int(str(args[3]))}
-                
-                queries.append("INSERT INTO LRP_Explanation_Feedback (datestamp, html_page, tag, user_ID, was_helpful) VALUES (%s, %s, %s, %s, %s)")
-                params.append([datetime.now(), req['html_page'], req['tag'], req['user_ID'], req['was_helpful']])
+                req = {'html_page': str(args[0]), 'tag': str(args[1]), 'user_ID': None if args[2] in [u'', '', None, -1] else int(str(args[2])), 'raw': str(args[3]).split("-")}
+                req['was_helpful'] = None
+                req['could_be_more_clear'] = None
+                if req['raw'][0] == "helpful":
+                    req['was_helpful'] = int(req['raw'][1])
+                if req['raw'][0] == "moreClear":
+                    req['could_be_more_clear'] = int(req['raw'][1])
+                    
+                queries.append("INSERT INTO LRP_Explanation_Feedback (datestamp, html_page, tag, user_ID, was_helpful, could_be_more_clear) VALUES (%s, %s, %s, %s, %s, %s)")
+                params.append([datetime.now(), req['html_page'], req['tag'], req['user_ID'], req['was_helpful'], req['could_be_more_clear']])
             ex_queries(queries, params)
                 
         except Exception:
@@ -5252,7 +6022,7 @@ class ManualPreregistrationHandler(webapp2.RequestHandler):
         misc['product_ID'] = int(misc['product_ID'])
         tup = (misc['email_encrypted'], misc['product_ID'])
         
-        conn, cursor = mysql_connect()
+        conn, cursor = mysql_connect('LRP')
         misc['products'] = get_products(cursor)
         cursor.execute("SELECT * from LRP_Product_Requests where active and status='active'", [])
         product_requests = zc.dict_query_results(cursor)
@@ -5261,7 +6031,6 @@ class ManualPreregistrationHandler(webapp2.RequestHandler):
         for pr in product_requests:
             pr['tup'] = (pr['email'], pr['product_ID'])
                 
-        pd(misc)
             
         if misc['product_ID'] == -1:
             misc['error'] = "Please select a product."
@@ -5292,8 +6061,8 @@ class ManualPreregistrationHandler(webapp2.RequestHandler):
         if misc['error'] is None:
             product = misc['products'][ [z['ID'] for z in misc['products']].index(misc['product_ID']) ]
             
-            query = "INSERT INTO LRP_Product_Requests (ID, datestamp, email, product_tag, product_ID, status, active, request_type) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Product_Requests fds), %s, %s, %s, %s, %s, %s, %s)"
-            param = [datetime.now(), misc['email_encrypted'], product['product_tag'], misc['product_ID'], 'active', 1, 'pre-product-notification']
+            query = "INSERT INTO LRP_Product_Requests (ID, datestamp, email, product_tag, product_ID, status, active, request_type, made_from) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Product_Requests fds), %s, %s, %s, %s, %s, %s, %s, %s)"
+            param = [datetime.now(), misc['email_encrypted'], product['product_tag'], misc['product_ID'], 'active', 1, 'pre-product-notification', 'admin']
             queries.append(query); params.append(param)
             ex_queries(queries, params)
             
@@ -5314,7 +6083,7 @@ class ManualPreregistrationHandler(webapp2.RequestHandler):
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:      
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 misc['products'] = get_products(cursor)
                 cursor.close(); conn.close()
                 layout = "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"
@@ -5345,20 +6114,22 @@ class EmailHandler(webapp2.RequestHandler):
            
         for m in misc['emails']:
             m['subject_decrypted'] = decrypt(m['subject'])
-            rcpts = sorted([decrypt(z['recipient']) for z in misc['email_records'] if z['email_ID'] == m['ID']])
-            m['recipients'] = " ".join(rcpts)
-            m['recipients_str'] = "; ".join(rcpts)
-            if len(m['recipients_str']) < 30 :
-                m['recipients_str_preview'] = m['recipients_str']
+            individual_rcpts = sorted([decrypt(z['recipient']) for z in misc['email_records'] if z['email_ID'] == m['ID'] and z['recipient_type'] == "ind"])
+            group_rcpts = sorted(["[%s]" % (decrypt(z['recipient'])) for z in misc['email_records'] if z['email_ID'] == m['ID'] and z['recipient_type'] == "cc"])
+            m['individual_recipients'] = " ".join(individual_rcpts)
+            m['group_recipients'] = " ".join(group_rcpts)
+            m['individual_recipients_str'] = "; ".join(individual_rcpts)
+            if len(m['individual_recipients_str']) < 30 :
+                m['individual_recipients_str_preview'] = m['individual_recipients_str']
             else:
-                if len(rcpts) > 2:
-                    m['recipients_str_preview'] = "%s, %s and %d others." % (rcpts[0], rcpts[1], len(rcpts)-2)
-                elif len(rcpts) == 2:
-                    m['recipients_str_preview'] = "%s and 1 other." % (rcpts[0])
-                elif len(rcpts) == 1:
-                    m['recipients_str_preview'] = rcpts[0]
+                if len(individual_rcpts) > 2:
+                    m['individual_recipients_str_preview'] = "%s, %s and %d others." % (individual_rcpts[0], individual_rcpts[1], len(individual_rcpts)-2)
+                elif len(individual_rcpts) == 2:
+                    m['individual_recipients_str_preview'] = "%s and 1 other." % (individual_rcpts[0])
+                elif len(individual_rcpts) == 1:
+                    m['individual_recipients_str_preview'] = individual_rcpts[0]
                 else:
-                    m['recipients_str_preview'] = "???"
+                    m['individual_recipients_str_preview'] = "???"
             #m['recipient_decrypted'] = decrypt(m['recipient'])
             #if ".com" not in m['recipient_decrypted'] :
             #    m['subject_decrypted'] = m['subject']
@@ -5437,7 +6208,7 @@ class EmailHandler(webapp2.RequestHandler):
                     
                     misc['email_ID'] = int(misc['email_ID'])
                     misc['selected_ID'] = misc['email_ID']
-                    conn, cursor = mysql_connect()
+                    conn, cursor = mysql_connect('LRP')
                     cursor.execute("SELECT * from LRP_Emails where active order by send_date desc", [])
                     misc['emails'] = zc.dict_query_results(cursor)
                     cursor.execute("SELECT * from LRP_Sent_Email_Records where active", [])
@@ -5456,7 +6227,8 @@ class EmailHandler(webapp2.RequestHandler):
                         
                         misc['send_as'] = msg['send_as']
                         misc['msg_body'] = msg['content']
-                        misc['recipients'] = msg['recipients']
+                        misc['individual_recipients'] = msg['individual_recipients']
+                        misc['group_recipients'] = msg['group_recipients']
                         misc['msg_is_plain_text'] = 1 if "<div" not in msg['content'].lower() else 0
                         misc['subject'] = decrypt(msg['subject'])
                         
@@ -5571,7 +6343,7 @@ class EmailHandler(webapp2.RequestHandler):
             if local or (user_obj['auth'] and user_obj['is_admin']):    
                 user_obj['user_cookie'] = None
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 cursor.execute("SELECT * from LRP_Emails where active order by send_date desc", [])
                 misc['emails'] = zc.dict_query_results(cursor)
                 cursor.execute("SELECT * from LRP_Sent_Email_Records where active", [])
@@ -5615,7 +6387,7 @@ class CreateEmailHandler(webapp2.RequestHandler):
             if local or (user_obj['auth'] and user_obj['is_admin']):
                 if misc['error'] is None:
                     
-                    conn, cursor = mysql_connect()
+                    conn, cursor = mysql_connect('LRP')
                     cursor.execute("SELECT * from LRP_Emails where active order by send_date desc", [])
                     existing_emails = zc.dict_query_results(cursor)
                     cursor.execute("SELECT IFNULL(max(ID), 0) + 1 'next_email_ID' from LRP_Emails", [])
@@ -5658,10 +6430,25 @@ class CreateEmailHandler(webapp2.RequestHandler):
                     misc['msg_is_plain_text'] = 1 if "<div" not in misc['msg_body'].lower() else 0
                     misc['email_type'] = "plainText" if "<div" not in misc['msg_body'].lower() else "htmlContent"
                     
-                    matches = [{'seq': i, 'email': z.strip().lower()} for i, z in enumerate(list(set(re.findall(email_regex, misc['recipients']))))]
-                    if len(matches) == 0:
+                    # Id the email addresses
+                    individual_matches = [{'seq': i, 'email': z.strip().lower()} for i, z in enumerate(list(set(re.findall(email_regex, misc['individual_recipients']))))]
+                    misc['num_individual_recipients'] = len(individual_matches)
+                    
+                    group_matches = [{'seq': i, 'emails': z.strip().lower()} for i, z in enumerate(list(set(re.findall(cc_email_regex, misc['group_recipients']))))]
+                    for group_match in group_matches:
+                        
+                        group_match_emails = [z.strip().lower() for i, z in enumerate(list(set(re.findall(email_regex, group_match['emails']))))]
+                        group_match['emails'] = ", ".join(group_match_emails)
+                    
+                    misc['num_group_recipients'] = len(group_matches)
+                    
+                    if len(group_matches) + len(individual_matches) == 0:
                         misc['error'] = "No email addresses were detected in your entry."
-                    misc['num_recipients'] = len(matches)
+                    
+                    # Check for quality checks
+                    if misc['subject'] is None or len(misc['subject']) < 10:
+                        misc['error'] = "Email Subject must be at least 10 characters"
+                    
                     if misc['subject'] is None or len(misc['subject']) < 10:
                         misc['error'] = "Email Subject must be at least 10 characters"
                     
@@ -5670,9 +6457,15 @@ class CreateEmailHandler(webapp2.RequestHandler):
                     
                     if misc['error'] is None and misc['action'] == "create_email":
                         
-                        for m in matches:
-                            query = "INSERT INTO LRP_Sent_Email_Records (email_ID, active, recipient, status) VALUES (%s, %s, %s, %s)"
-                            param = [next_email_ID, 1, encrypt(m['email']), 'scheduled']
+                        for m in individual_matches:
+                            query = "INSERT INTO LRP_Sent_Email_Records (email_ID, active, recipient, status, recipient_type) VALUES (%s, %s, %s, %s, %s)"
+                            param = [next_email_ID, 1, encrypt(m['email']), 'scheduled', 'ind']
+                            queries.append(query)
+                            params.append(param)
+                        
+                        for m in group_matches:
+                            query = "INSERT INTO LRP_Sent_Email_Records (email_ID, active, recipient, status, recipient_type) VALUES (%s, %s, %s, %s, %s)"
+                            param = [next_email_ID, 1, encrypt(m['emails']), 'scheduled', 'cc']
                             queries.append(query)
                             params.append(param)
                         
@@ -5685,9 +6478,9 @@ class CreateEmailHandler(webapp2.RequestHandler):
                         misc['ID'] = next_email_ID; next_email_ID += 1
                         
                     elif misc['error'] is None and misc['action'] == "update_email":
-                        existing_recipients = [{'recipient': decrypt(z['recipient']).strip().lower(), 'active': z['active']} for z in email_records if z['email_ID'] == misc['ID']]
+                        existing_recipients = [{'recipient': decrypt(z['recipient']).strip().lower(), 'recipient_type': z['recipient_type'], 'active': z['active']} for z in email_records if z['email_ID'] == misc['ID']]
 
-                        for m in matches:
+                        for m in individual_matches:
                             if m['email'] in [z['recipient'] for z in existing_recipients]:
                                 existing = existing_recipients[ [z['recipient'] for z in existing_recipients].index(m['email']) ]
                                 if not existing['active']:
@@ -5696,11 +6489,31 @@ class CreateEmailHandler(webapp2.RequestHandler):
                                     queries.append(query)
                                     params.append(param)
                             else:
-                                query = "INSERT INTO LRP_Sent_Email_Records(email_ID, active, recipient, status) VALUES (%s, %s, %s, %s)"
-                                param = [misc['ID'], 1, encrypt(m['email']), 'scheduled']
+                                query = "INSERT INTO LRP_Sent_Email_Records(email_ID, active, recipient, status, recipient_type) VALUES (%s, %s, %s, %s, %s)"
+                                param = [misc['ID'], 1, encrypt(m['email']), 'scheduled', 'ind']
                                 queries.append(query)
                                 params.append(param)
-                        removed_recipients = [z for z in existing_recipients if z['recipient'].strip().lower() not in [y['email'] for y in matches]]
+                        removed_recipients = [z for z in existing_recipients if z['recipient_type'] == "ind" and z['recipient'].strip().lower() not in [y['email'] for y in individual_matches]]
+                        for r in removed_recipients:
+                            query = "UPDATE LRP_Sent_Email_Records set active=0 where email_ID=%s and recipient=%s"
+                            param = [misc['ID'], encrypt(r['recipient'])]
+                            queries.append(query)
+                            params.append(param)
+                        
+                        for m in group_matches:
+                            if m['emails'] in [z['recipient'] for z in existing_recipients]:
+                                existing = existing_recipients[ [z['recipient'] for z in existing_recipients].index(m['emails']) ]
+                                if not existing['active']:
+                                    query = "UPDATE LRP_Sent_Email_Records set active=1 where email_ID=%s and recipient=%s"
+                                    param = [misc['ID'], encrypt(m['emails'])]
+                                    queries.append(query)
+                                    params.append(param)
+                            else:
+                                query = "INSERT INTO LRP_Sent_Email_Records(email_ID, active, recipient, status, recipient_type) VALUES (%s, %s, %s, %s, %s)"
+                                param = [misc['ID'], 1, encrypt(m['emails']), 'scheduled', 'cc']
+                                queries.append(query)
+                                params.append(param)
+                        removed_recipients = [z for z in existing_recipients if z['recipient_type'] == "cc" and z['recipient'].strip().lower() not in [y['emails'] for y in group_matches]]
                         for r in removed_recipients:
                             query = "UPDATE LRP_Sent_Email_Records set active=0 where email_ID=%s and recipient=%s"
                             param = [misc['ID'], encrypt(r['recipient'])]
@@ -5740,7 +6553,7 @@ class CreateEmailHandler(webapp2.RequestHandler):
     
     def get(self):
         
-        misc = {'action': 'create_email', 'msg_is_plain_text': 1, 'target_template': "create_email.html", 'time_log': [], 'handler': 'create_email', 'confirmed': 'no', 'selected_ID': None, 'new_date_str': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
+        misc = {'action': 'create_email', 'send_as': 'zack@lacrossereference.com', 'msg_is_plain_text': 1, 'target_template': "create_email.html", 'time_log': [], 'handler': 'create_email', 'confirmed': 'no', 'selected_ID': None, 'new_date_str': '', 'user_ID': None, 'process_step': 'start'}; user_obj = None
         local = not os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
         session_ID = self.session.get('session_ID')
         if local or session_ID not in [None, 0]:
@@ -5748,7 +6561,7 @@ class CreateEmailHandler(webapp2.RequestHandler):
             if local or (user_obj['auth'] and user_obj['is_admin']):    
                 user_obj['user_cookie'] = None
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 cursor.execute("SELECT * from LRP_Emails where active order by send_date desc", [])
                 misc['emails'] = zc.dict_query_results(cursor)
                 cursor.close(); conn.close()
@@ -5870,7 +6683,7 @@ def process_non_auth(self):
     user_obj = {'user_cookie': user_cookie, 'auth': 0, 'notifications': []}
     
     try:
-        conn, cursor = mysql_connect()
+        conn, cursor = mysql_connect('LRP')
         cursor.execute("SELECT * from LRP_Cart", [])
         items = zc.dict_query_results(cursor)
         cursor.execute("SELECT * from LRP_Products", [])
@@ -5907,7 +6720,7 @@ class ProductPricingHandler(webapp2.RequestHandler):
         
         misc = {'came_from': '', 'target_template': None, 'time_log': [], 'handler': 'productPricing', 'error': None, 'product_tag': product_tag,  'team_ID': None}; user_obj = None; queries = []; params = []
         
-        conn, cursor = mysql_connect()
+        conn, cursor = mysql_connect('LRP')
         cursor.execute("SELECT * from LRP_Groups where active", [])
         groups = zc.dict_query_results(cursor)
         products = get_products(cursor)
@@ -5937,6 +6750,7 @@ class ProductPricingHandler(webapp2.RequestHandler):
         misc['request_type'] = self.request.get('request_type')
         misc['AB_group'] = self.request.get('AB_group')
         misc['from_template'] = self.request.get('from_template')
+        misc['tracking_tag'] = "" if self.request.get('t') == "" else self.request.get('t')
         
         misc['group_ID'] = None
         if product_tag == "team":
@@ -5970,7 +6784,6 @@ class ProductPricingHandler(webapp2.RequestHandler):
             layout = 'layout_no_auth.html'
         
         misc['target_template'] = "product_pricing_%s%s.html" % (product_tag, misc['AB_group'])  
-        pd(misc)
         if misc['error'] is None:
             if misc['action'] in ["add_to_cart"]:
 
@@ -5997,7 +6810,7 @@ class ProductPricingHandler(webapp2.RequestHandler):
                     
                 
             
-        conn, cursor = mysql_connect()
+        conn, cursor = mysql_connect('LRP')
         cursor.execute("SELECT * from LRP_Groups where active=1 order by group_name asc", [])
         misc['groups'] = zc.dict_query_results(cursor)
         cursor.close(); conn.close()
@@ -6018,8 +6831,9 @@ class ProductPricingHandler(webapp2.RequestHandler):
         url_match = self.url_regex.search(orig_url)
         product_tag = url_match.group(1)
         
+        misc['tracking_tag'] = "" if self.request.get('t') == "" else self.request.get('t')
         
-        conn, cursor = mysql_connect()
+        conn, cursor = mysql_connect('LRP')
         products = get_products(cursor)
         cursor.close(); conn.close()
         
@@ -6038,7 +6852,7 @@ class ProductPricingHandler(webapp2.RequestHandler):
                 if self.request.get('v') != "": misc['AB_group'] = self.request.get('v')
                 misc['target_template'] = "product_pricing_%s%s.html" % (product_tag, misc['AB_group'])
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [12, user_obj['ID'], datetime.now()]); conn.commit()
                 cursor.close(); conn.close()
                 
@@ -6054,13 +6868,219 @@ class ProductPricingHandler(webapp2.RequestHandler):
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
         
-        conn, cursor = mysql_connect()
+        conn, cursor = mysql_connect('LRP')
         cursor.execute("SELECT * from LRP_Groups where active=1 order by group_name asc", [])
         misc['groups'] = zc.dict_query_results(cursor)
         
-        if datetime.now().strftime("%Y%m%d") == "20200709" or os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+        if datetime.now().strftime("%Y%m%d") == "20201207" or os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
         
-            cursor.execute("INSERT INTO LRP_Product_Views (datestamp, product_tag, AB_group, user_ID, active) VALUES (%s, %s, %s, %s, %s)", [datetime.now(), product_tag, misc['AB_group'], misc['user_ID'], 1])
+            cursor.execute("INSERT INTO LRP_Product_Views (datestamp, product_tag, AB_group, user_ID, view_type, tracking_tag, referrer, active) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", [datetime.now(), product_tag, misc['AB_group'], misc['user_ID'], 'pricing', misc['tracking_tag'], process_referrer(self.request.referrer), 1])
+            conn.commit()
+            
+        cursor.close(); conn.close()
+        
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+
+class ProductTourHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        self.url_regex = re.compile(r'product\-tour\-?(.+)',re.IGNORECASE)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self, orig_url):
+    
+        url_match = self.url_regex.search(orig_url)
+        product_tag = url_match.group(1)
+        
+        
+        
+        misc = {'came_from': '', 'target_template': None, 'time_log': [], 'handler': 'productTour', 'error': None, 'product_tag': product_tag,  'team_ID': None}; user_obj = None; queries = []; params = []
+        
+        conn, cursor = mysql_connect('LRP')
+        cursor.execute("SELECT * from LRP_Groups where active", [])
+        groups = zc.dict_query_results(cursor)
+        products = get_products(cursor)
+        cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
+        next_cart_ID = zc.dict_query_results(cursor)[0]['cnt']
+        cursor.execute("SELECT datestamp, email, team_ID, product_ID from LRP_Product_Requests where active", [])
+        requests = zc.dict_query_results(cursor)
+        cursor.close(); conn.close()
+           
+        for z in requests:
+            z['tup'] = (z['datestamp'].strftime("%Y%m%d"), z['email'], z['team_ID'], z['product_ID'])
+                
+       
+        misc['product'] = products[ [z['product_tag'] for z in products].index(product_tag.lower()) ]
+        misc['email'] = self.request.get('email').strip().lower()
+        misc['email_decrypted'] = self.request.get('email').strip().lower()
+        misc['tracking_tag'] = "" if self.request.get('tracking_tag') == "" else self.request.get('tracking_tag')
+        
+        misc['action'] = self.request.get('action').lower().strip()
+        misc['request_type'] = self.request.get('request_type')
+        misc['AB_group'] = self.request.get('AB_group')
+        misc['from_template'] = self.request.get('from_template')
+        
+        misc['group_ID'] = None
+        if product_tag == "team":
+            misc['team_ID'] = int(self.request.get('team_select'))
+            gr = groups[ [z['team_ID'] for z in groups].index(misc['team_ID'])]
+            misc['group_ID'] = gr['ID']
+            
+        if misc['action'] in ["pre-register", "quotable"]:
+            email_match = email_regex.search(misc['email'])
+            if email_match is None:
+                misc['error'] = "You must enter a valid email."
+        
+        
+        if misc['product_tag'] == "team":
+            if misc['team_ID'] in ["-1", -1,  None, '']:
+                misc['error'] = "You must select a team."
+
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:      
+                user_obj['user_cookie'] = None
+                layout = "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"
+            else:
+                user_obj = process_non_auth(self); user_obj['ID'] = None
+                layout = 'layout_no_auth.html'
+        else:
+            user_obj = process_non_auth(self); user_obj['ID'] = None
+            layout = 'layout_no_auth.html'
+        
+        misc['target_template'] = "product_tour_%s%s.html" % (product_tag, misc['AB_group'])    
+        if misc['error'] is None:
+            if misc['action'] in ["pre-register", "quotable"]:
+                email_match = email_regex.search(misc['email'])
+                if email_match is None:
+                    misc['error'] = "You must enter a valid email."
+                else:
+                    tmp_keys = ['email']
+                    for k in tmp_keys:
+                        misc["%s_encrypted" % k] =  encrypt(misc[k])
+                    
+                    tup = (datetime.now().strftime("%Y%m%d"), misc['email_encrypted'], misc['team_ID'], misc['product']['ID'])
+                    if tup not in [z['tup'] for z in requests]:
+                        query = "INSERT INTO LRP_Product_Requests (ID, datestamp, email, team_ID, group_ID, product_tag, product_ID, status, active, request_type, request_comments, tracking_tag, AB_group, made_from) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Product_Requests fds), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                        param = [datetime.now(), misc['email_encrypted'], misc['team_ID'], misc['group_ID'], misc['product_tag'], misc['product']['ID'], 'active', 1, misc['request_type'], None, misc['tracking_tag'], misc['AB_group'], 'tour']
+                        queries.append(query); params.append(param)
+                        misc['msg'] = "Request received."
+                        
+                        msg = {'email': client_secrets['local']['personal_email'], 'subject': "%s has made a product request for %s" % (misc['email'], misc['product_tag']), 'content': "Team ID: %s\nGroup ID: %s\nRequest Type: %s" % (misc['team_ID'], misc['group_ID'], misc['request_type'])}
+            
+                        
+                        mail_res, dbrec = finalize_mail_send(msg)
+                        if mail_res != "": create_mail_record(dbrec)
+                        if mail_res == "Success" or client_secrets['local']['--no-mail'] in ["Y", 'y', 'yes'] or test_address(misc['email']):
+                            
+                            # Success
+                            pass
+                            
+                        else:
+                            logging.error("Failed to send a notification email about a product request\n\n%s" % (str(msg)))
+                        
+                    else:
+                        misc['msg'] = "Your request was received."
+                    
+                ex_queries(queries, params)
+                
+            elif misc['action'] in ["available"] and misc['product']['call_to_action'] == "ADD TO CART":
+
+                tup = (user_obj['ID'], user_obj['user_cookie'], misc['product']['ID'])
+                if tup not in [(z['user_ID'], z['user_cookie'], z['product_ID']) for z in user_obj['cart'] if z['status'] in ["added"]]:
+                    
+                    price = misc['product']['price']
+                    list_price = price
+                    
+                    query = "INSERT INTO LRP_Cart (ID, user_ID, user_cookie, product_ID, status, date_added, price, discount_tag, list_price, active) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Cart fds), %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                    param = [user_obj['ID'], user_obj['user_cookie'], misc['product']['ID'], 'added', datetime.now(), price, None, list_price, 1]
+                    queries.append(query); params.append(param)
+                    misc['msg'] = "Cart has been updated."                    
+                    ex_queries(queries, params)
+                    
+                    
+                    
+                    
+                    user_obj['cart'].append({'ID': next_cart_ID, 'user_ID': user_obj['ID'], 'user_cookie': user_obj['user_cookie'], 'product_ID': misc['product']['ID'], 'date_added': datetime.now(), 'status': 'added', 'active': 1, 'price': price, 'list_price': list_price, 'product': misc['product']}); next_cart_ID += 1
+                    
+                    
+                else:
+                    misc['error'] = "Product has been added already."
+                    
+                
+            
+        conn, cursor = mysql_connect('LRP')
+        cursor.execute("SELECT * from LRP_Groups where active=1 order by group_name asc", [])
+        misc['groups'] = zc.dict_query_results(cursor)
+        cursor.close(); conn.close()
+        for g in misc['groups']:
+            g['selected'] = " selected" if misc['team_ID'] == g['team_ID'] else ""
+        
+        
+        tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': layout}
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+
+    
+        
+    def get(self, orig_url):
+        
+        misc = {'came_from': '', 'target_template': None, 'time_log': [], 'handler': 'productTour', 'user_ID': None, 'email': "", "AB_group": None, 'hash': create_temporary_password()}; user_obj = None
+        random.seed(time.time()); misc['AB_group'] = "A" if random.random() < .5 else "B"
+        if self.request.get('v') != "": misc['AB_group'] = self.request.get('v')
+        url_match = self.url_regex.search(orig_url)
+        product_tag = url_match.group(1)
+        
+        misc['tracking_tag'] = "" if self.request.get('t') == "" else self.request.get('t')
+        
+        conn, cursor = mysql_connect('LRP')
+        products = get_products(cursor)
+        cursor.close(); conn.close()
+        
+        
+        misc['product'] = products[ [z['product_tag'] for z in products].index(product_tag.lower()) ]
+        
+        session_ID = self.session.get('session_ID')
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                misc['user_ID'] = user_obj['ID']
+                misc['email'] = user_obj['email']
+                misc['email_decrypted'] = decrypt(user_obj['email'])
+                misc['AB_group'] = "A" if user_obj['AB_group'] < 24 else "B"
+                if self.request.get('v') != "": misc['AB_group'] = self.request.get('v')
+                misc['target_template'] = "product_tour_%s%s.html" % (product_tag, misc['AB_group'])
+                
+                conn, cursor = mysql_connect('LRP')
+                cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [12, user_obj['ID'], datetime.now()]); conn.commit()
+                cursor.close(); conn.close()
+                
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+
+            else:
+                misc['target_template'] = "product_tour_%s%s.html" % (product_tag, misc['AB_group'])
+                user_obj = process_non_auth(self)
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+        else: 
+            misc['target_template'] = "product_tour_%s%s.html" % (product_tag, misc['AB_group'])
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+        
+        conn, cursor = mysql_connect('LRP')
+        cursor.execute("SELECT * from LRP_Groups where active=1 order by group_name asc", [])
+        misc['groups'] = zc.dict_query_results(cursor)
+        
+        if datetime.now().strftime("%Y%m%d") == "20201207" or os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+        
+            cursor.execute("INSERT INTO LRP_Product_Views (datestamp, product_tag, AB_group, user_ID, view_type, tracking_tag, referrer, active) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", [datetime.now(), product_tag, misc['AB_group'], misc['user_ID'], 'tour', process_tracking_tag(self.request.get('t')), process_referrer(self.request.referrer), 1])
             conn.commit()
             
         cursor.close(); conn.close()
@@ -6089,7 +7109,7 @@ class ProductSummaryHandler(webapp2.RequestHandler):
         
         misc = {'came_from': '', 'target_template': None, 'time_log': [], 'handler': 'productSummary', 'error': None, 'product_tag': product_tag,  'team_ID': None}; user_obj = None; queries = []; params = []
         
-        conn, cursor = mysql_connect()
+        conn, cursor = mysql_connect('LRP')
         cursor.execute("SELECT * from LRP_Groups where active", [])
         groups = zc.dict_query_results(cursor)
         products = get_products(cursor)
@@ -6106,6 +7126,7 @@ class ProductSummaryHandler(webapp2.RequestHandler):
         misc['product'] = products[ [z['product_tag'] for z in products].index(product_tag.lower()) ]
         misc['email'] = self.request.get('email').strip().lower()
         misc['email_decrypted'] = self.request.get('email').strip().lower()
+        misc['tracking_tag'] = "" if self.request.get('tracking_tag') == "" else self.request.get('tracking_tag')
         
         misc['action'] = self.request.get('action').lower().strip()
         misc['request_type'] = self.request.get('request_type')
@@ -6154,8 +7175,8 @@ class ProductSummaryHandler(webapp2.RequestHandler):
                     
                     tup = (datetime.now().strftime("%Y%m%d"), misc['email_encrypted'], misc['team_ID'], misc['product']['ID'])
                     if tup not in [z['tup'] for z in requests]:
-                        query = "INSERT INTO LRP_Product_Requests (ID, datestamp, email, team_ID, group_ID, product_tag, product_ID, status, active, request_type, request_comments) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Product_Requests fds), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-                        param = [datetime.now(), misc['email_encrypted'], misc['team_ID'], misc['group_ID'], misc['product_tag'], misc['product']['ID'], 'active', 1, misc['request_type'], None]
+                        query = "INSERT INTO LRP_Product_Requests (ID, datestamp, email, team_ID, group_ID, product_tag, product_ID, status, active, request_type, request_comments, tracking_tag, AB_group, made_from) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Product_Requests fds), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                        param = [datetime.now(), misc['email_encrypted'], misc['team_ID'], misc['group_ID'], misc['product_tag'], misc['product']['ID'], 'active', 1, misc['request_type'], None, misc['tracking_tag'], misc['AB_group'], 'landing']
                         queries.append(query); params.append(param)
                         misc['msg'] = "Request received."
                         
@@ -6202,7 +7223,7 @@ class ProductSummaryHandler(webapp2.RequestHandler):
                     
                 
             
-        conn, cursor = mysql_connect()
+        conn, cursor = mysql_connect('LRP')
         cursor.execute("SELECT * from LRP_Groups where active=1 order by group_name asc", [])
         misc['groups'] = zc.dict_query_results(cursor)
         cursor.close(); conn.close()
@@ -6223,8 +7244,9 @@ class ProductSummaryHandler(webapp2.RequestHandler):
         url_match = self.url_regex.search(orig_url)
         product_tag = url_match.group(1)
         
+        misc['tracking_tag'] = "" if self.request.get('t') == "" else self.request.get('t')
         
-        conn, cursor = mysql_connect()
+        conn, cursor = mysql_connect('LRP')
         products = get_products(cursor)
         cursor.close(); conn.close()
         
@@ -6242,7 +7264,7 @@ class ProductSummaryHandler(webapp2.RequestHandler):
                 if self.request.get('v') != "": misc['AB_group'] = self.request.get('v')
                 misc['target_template'] = "product_summary_%s%s.html" % (product_tag, misc['AB_group'])
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [12, user_obj['ID'], datetime.now()]); conn.commit()
                 cursor.close(); conn.close()
                 
@@ -6258,13 +7280,13 @@ class ProductSummaryHandler(webapp2.RequestHandler):
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
         
-        conn, cursor = mysql_connect()
+        conn, cursor = mysql_connect('LRP')
         cursor.execute("SELECT * from LRP_Groups where active=1 order by group_name asc", [])
         misc['groups'] = zc.dict_query_results(cursor)
         
-        if datetime.now().strftime("%Y%m%d") == "20200709" or os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+        if datetime.now().strftime("%Y%m%d") == "20201207" or os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
         
-            cursor.execute("INSERT INTO LRP_Product_Views (datestamp, product_tag, AB_group, user_ID, active) VALUES (%s, %s, %s, %s, %s)", [datetime.now(), product_tag, misc['AB_group'], misc['user_ID'], 1])
+            cursor.execute("INSERT INTO LRP_Product_Views (datestamp, product_tag, AB_group, user_ID, view_type, tracking_tag, referrer, active) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", [datetime.now(), product_tag, misc['AB_group'], misc['user_ID'], 'landing', None if self.request.get('t') == "" else self.request.get('t'), process_referrer(self.request.referrer), 1])
             conn.commit()
             
         cursor.close(); conn.close()
@@ -6303,7 +7325,7 @@ class FAQHandler(webapp2.RequestHandler):
         else:
             product_tag = product_tag.lower()
         
-        conn, cursor = mysql_connect()
+        conn, cursor = mysql_connect('LRP')
         products = get_products(cursor)
         query = "SELECT * from LRP_FAQ where active order by seq asc"
         cursor.execute(query, [])
@@ -6439,7 +7461,7 @@ class CheckoutHandler(webapp2.RequestHandler):
                             
                             if is_group:
                                 
-                                conn, cursor = mysql_connect()
+                                conn, cursor = mysql_connect('LRP')
                                 cursor.execute("SELECT * from LRP_Quotes where active", [])
                                 quotes = zc.dict_query_results(cursor)
                                 cursor.execute("SELECT * from LRP_Subscriptions where active", [])
@@ -6500,7 +7522,8 @@ class CheckoutHandler(webapp2.RequestHandler):
                         mail_res, dbrec = finalize_mail_send(misc['receipt'])
                         if mail_res != "": create_mail_record(dbrec)
                         if not (mail_res == "Success" or not ('--no-mail' not in client_secrets['local'] or client_secrets['local']['--no-mail'] not in ["Y", 'y', 'yes'])):
-                            logging.error("Receipt mail send failed for %s" % (user_obj['email_decrypted']))
+                            if not user_obj['email_decrypted'].endswith("email.com") and not user_obj['email_decrypted'].endswith("user.com"):
+                                logging.error("Receipt mail send failed for %s" % (user_obj['email_decrypted']))
                     
                     self.response.set_status(r[1])
                     self.response.out.write(r[0])
@@ -6623,7 +7646,7 @@ class EditGroupHandler(webapp2.RequestHandler):
                 
                 if 'action' in req:
                     if req['action'] == "manage_members":
-                        conn, cursor = mysql_connect()
+                        conn, cursor = mysql_connect('LRP')
                         cursor.execute("SELECT * from LRP_Group_Access where group_ID=%s", [misc['group_ID']])
                         access = zc.dict_query_results(cursor)
                         cursor.close(); conn.close()
@@ -6654,7 +7677,7 @@ class EditGroupHandler(webapp2.RequestHandler):
                         ex_queries(queries, params)
         
                     elif req['action'] == "add_members":
-                        conn, cursor = mysql_connect()
+                        conn, cursor = mysql_connect('LRP')
                         cursor.execute("SELECT * from LRP_Users")
                         users = zc.dict_query_results(cursor)
                         cursor.execute("SELECT * from LRP_Group_Access")
@@ -6691,13 +7714,16 @@ class EditGroupHandler(webapp2.RequestHandler):
                                         seq += 1
                                     m['username'] = "%s%s" % (orig,seq)
                             if not m['user_exists']:
-                                if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/') or not (m['username'].startswith("newuser")):
+                                if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/') and not (m['username'].startswith("newuser")):
        
                                     tmp1 = create_temporary_password()
                                     tmp2 = create_temporary_password()
                                     m['activation_code'] = "%s%s" % (tmp1, tmp2)
                                 else:
-                                    m['activation_code'] = "%s%s" % (m['username'], datetime.now().strftime("%Y%m%d"))
+                                    if os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
+                                        m['activation_code'] = "%s%s" % (m['username'], (datetime.now() - timedelta(seconds=6*3000)).strftime("%Y%m%d"))
+                                    else:
+                                        m['activation_code'] = "%s%s" % (m['username'], datetime.now().strftime("%Y%m%d"))
                                 
                                 
                         misc['users_created'] = len([1 for z in matches if not z['user_exists']])
@@ -6737,10 +7763,24 @@ class EditGroupHandler(webapp2.RequestHandler):
                                 queries.append("INSERT INTO LRP_User_Preferences (ID, user_ID, active) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_User_Preferences fds), %s, %s)")
                                 params.append([next_user_ID, 1])
                                 
+                                
+                        
+                                query = ("INSERT INTO LRP_Groups (ID, group_name, group_type, active, status) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Groups fds), %s, %s, %s, %s)")
+                                param = ['Individual', 'individual', 1, 'active']
+                                
+                                queries.append(query)
+                                params.append(param)
+                                
+                                query = ("INSERT INTO LRP_Group_Access (ID, user_ID, group_ID, status, active, admin) VALUES ((SELECT IFNULL(max(ID), 0) + 1 from LRP_Group_Access fds), (SELECT max(ID) from  LRP_Users fdsa), (SELECT max(ID) from  LRP_Groups fdsa), %s, %s, %s)")
+                                param = ['active', 1, 1]
+                        
+                                queries.append(query)
+                                params.append(param)
+                                
                                 next_user_ID += 1
                         ex_queries(queries, params)
                     
-                        conn, cursor = mysql_connect()
+                        conn, cursor = mysql_connect('LRP')
                         cursor.execute("SELECT * from LRP_Email_Templates where active=1")
                         email_templates = zc.dict_query_results(cursor)
                         cursor.close(); conn.close()
@@ -6776,7 +7816,7 @@ class EditGroupHandler(webapp2.RequestHandler):
                             misc['emails'] = req['emails']
                 
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 cursor.execute("SELECT * from LRP_Users")
                 users = zc.dict_query_results(cursor)
                 cursor.execute("SELECT * from LRP_Group_Access")
@@ -6851,7 +7891,7 @@ class ResendHandler(webapp2.RequestHandler):
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
                 misc['user_ID'] = int(self.request.get('ID'))
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 cursor.execute("SELECT * from LRP_Email_Templates where active=1")
                 email_templates = zc.dict_query_results(cursor)
                 cursor.execute("SELECT * from LRP_Users where ID=%s",[misc['user_ID']])
@@ -6956,6 +7996,9 @@ class TeamsHomeHandler(webapp2.RequestHandler):
                 
                 misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
                 
+                if user_obj['active_subscription'] is not None and user_obj['active_subscription']['status'] in ["expired", "cancelled"]:
+                    misc['target_template'] = "team_inactive.html"
+                    
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
@@ -6991,6 +8034,9 @@ class TeamsMyRankingsHandler(webapp2.RequestHandler):
                 
                 misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
                 misc['active_element'] = self.request.get("active_element")
+                if user_obj['active_subscription'] is not None and user_obj['active_subscription']['status'] in ["expired", "cancelled"]:
+                    misc['target_template'] = "team_inactive.html"
+                    
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
@@ -7006,7 +8052,7 @@ class TeamsMyRankingsHandler(webapp2.RequestHandler):
         
 
     def get(self):
-        misc = {'came_from': '', 'target_template': 'team_my_rankings.html', 'time_log': [], 'handler': 'teams_home', 'error': None, 'msg': None}; user_obj = None
+        misc = {'came_from': '', 'target_template': 'team_my_rankings.html', 'time_log': [], 'handler': 'team_my_rankings', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
         
         if session_ID not in [None, 0]:
@@ -7015,6 +8061,9 @@ class TeamsMyRankingsHandler(webapp2.RequestHandler):
                 
                 misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
                 
+                if user_obj['active_subscription'] is not None and user_obj['active_subscription']['status'] in ["expired", "cancelled"]:
+                    misc['target_template'] = "team_inactive.html"
+                    
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
@@ -7047,11 +8096,14 @@ class TeamsDetailHandler(webapp2.RequestHandler):
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
-                pd(dict_request(self.request))
+                
                 misc['detail_team_ID'] = int(self.request.get("detail_team_ID"))
                 
                 misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
                 misc['active_element'] = self.request.get("active_element")
+                if user_obj['active_subscription'] is not None and user_obj['active_subscription']['status'] in ["expired", "cancelled"]:
+                    misc['target_template'] = "team_inactive.html"
+                    
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
@@ -7077,6 +8129,9 @@ class TeamsDetailHandler(webapp2.RequestHandler):
                 misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
                 
                 
+                if user_obj['active_subscription'] is not None and user_obj['active_subscription']['status'] in ["expired", "cancelled"]:
+                    misc['target_template'] = "team_inactive.html"
+                    
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
@@ -7105,12 +8160,15 @@ class TeamsPlayerDetailHandler(webapp2.RequestHandler):
     def post(self):
         misc = {'came_from': self.request.get("came_from"), 'ID': self.request.get('ID'), 'target_template': 'team_player_detail.html', 'time_log': [], 'handler': 'team_player_detail', 'error': None, 'msg': None}; user_obj = None
         session_ID = self.session.get('session_ID')
-        
+        on_server = os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
-            if user_obj['auth']:
+            if not on_server or user_obj['auth']:
                 
                 misc, user_obj, tmp = build_product_data_player(self, user_obj, misc)
+                if user_obj['active_subscription'] is not None and user_obj['active_subscription']['status'] in ["expired", "cancelled"]:
+                    misc['target_template'] = "team_inactive.html"
+                    
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
@@ -7126,28 +8184,164 @@ class TeamsPlayerDetailHandler(webapp2.RequestHandler):
         
 
     def get(self):
-        misc = {'came_from': "", 'ID': self.request.get('ID'), 'target_template': 'team_player_detail.html', 'time_log': [], 'handler': 'team_player_detail', 'error': None, 'msg': None}; user_obj = None
-        session_ID = self.session.get('session_ID')
+        tv = {'user_obj': None, 'misc': {}}
+        path = os.path.join("templates", "index.html")
+        self.response.out.write(template.render(path, tv))
         
-        misc, user_obj, tmp = build_product_data_player(self, user_obj, misc)
+class TeamsHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+        misc = {'came_from': '', 'target_template': "index.html"}
+        default_get(self)
+        
+    def get(self):
+        misc = {'came_from': '', 'target_template': 'teams.html', 'time_log': [], 'handler': 'teams', 'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
         
         if session_ID not in [None, 0]:
             user_obj = get_user_obj({'session_ID': session_ID})
             if user_obj['auth']:
                 
-                
+                if user_obj['active_subscription'] is not None and user_obj['active_subscription']['status'] in ["expired", "cancelled"]:
+                    misc['target_template'] = "team_inactive.html"
+                    
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
-                misc['target_template'] = "index.html"
                 tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
         else: 
         
-            misc['target_template'] = "index.html"
             user_obj = process_non_auth(self)
             tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
             path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+            
+class StatsHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+        misc = {'came_from': '', 'target_template': "index.html"}
+        default_get(self)
+        
+    def get(self):
+        misc = {'came_from': '', 'target_template': 'stats.html', 'time_log': [], 'handler': 'stats', 'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        
+        on_server = os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
+        
+        if 'year' not in misc or misc['year'] is None:
+            misc['year'] = (datetime.now() - timedelta(days=14)).year
+        
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if user_obj['auth']:
+                
+                #if user_obj['active_subscription'] is not None and user_obj['active_subscription']['status'] in ["expired", "cancelled"]:
+                #    misc['target_template'] = "team_inactive.html"
+                
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+            else:
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+        else: 
+        
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+        if 'settings' in user_obj and 'league' in user_obj['settings'] and user_obj['settings']['league'] is not None:
+            misc['league'] = user_obj['settings']['league']['val']
+       
+        conn, cursor = mysql_connect('LR')
+        cursor.execute("SELECT * from LaxRef_Team_Seasons where year=%s and active", [misc['year']])
+        team_seasons = zc.dict_query_results(cursor)
+        cursor.close(); conn.close()
+        
+        misc['leagues'] = [{'desc': 'NCAA D1 Women'}, {'desc': 'NCAA D1 Men'}, {'desc': 'NCAA D2 Women'}, {'desc': 'NCAA D2 Men'}, {'desc': 'NCAA D3 Women'}, {'desc': 'NCAA D3 Men'}]
+        misc['leagues'] = misc['leagues'][0:2]
+        misc['extra_data'] = {'db_teams': {}}
+        for l in misc['leagues']:
+            l['tag'] = l['desc'].replace(" ", "")
+        
+            
+            misc['extra_data']['db_teams'][l['tag']] = json.loads(storage_read(on_server, storage_path(on_server, os.path.join('GeneralData', "dbLaxRef_Teams_%s.json" % (l['tag'])))))
+            misc['extra_data']['db_teams'][l['tag']] = [z for z in misc['extra_data']['db_teams'][l['tag']] if z['partial_member'] in [0, None]]
+            for t in misc['extra_data']['db_teams'][l['tag']]:
+                
+                if t['ID'] in [z['team_ID'] for z in team_seasons]:
+                    ts = team_seasons[ [z['team_ID'] for z in team_seasons].index(t['ID'])]
+                    for k in ts.keys():
+                        if k not in ['ID', 'active', 'team_ID']:
+                            t[k] = ts[k]
+                        
+        
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        
+        
+class PlayersHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        self.session_store = sessions.get_store(request=self.request)
+        try:
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            self.session_store.save_sessions(self.response)
+    
+    @webapp2.cached_property
+    def session(self): self.response.headers.add_header('X-Frame-Options', 'DENY'); self.response.headers.add('Strict-Transport-Security' ,'max-age=31536000; includeSubDomains'); return self.session_store.get_session()
+
+    
+    def post(self):
+        misc = {'came_from': '', 'target_template': "index.html"}
+        default_get(self)
+        
+    def get(self):
+        misc = {'came_from': '', 'target_template': 'players.html', 'time_log': [], 'handler': 'players', 'error': None, 'msg': None}; user_obj = None
+        session_ID = self.session.get('session_ID')
+        
+        on_server = os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')
+        
+        if 'year' not in misc or misc['year'] is None:
+            misc['year'] = (datetime.now() - timedelta(days=14)).year
+        
+        if session_ID not in [None, 0]:
+            user_obj = get_user_obj({'session_ID': session_ID})
+            if not on_server or user_obj['auth']:
+                
+                #if user_obj['active_subscription'] is not None and user_obj['active_subscription']['status'] in ["expired", "cancelled"]:
+                #    misc['target_template'] = "team_inactive.html"
+                
+                
+                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
+            else:
+                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+        else: 
+        
+            user_obj = process_non_auth(self)
+            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
+        
+        misc['extra_data'] = {'db_players': json.loads(storage_read(on_server, storage_path(on_server, os.path.join('GeneralData', "dbLaxRef_Players.json"))))}
+        for p in misc['extra_data']['db_players']:
+            p['lcase_name'] = p['player'].lower().strip()
+            
+        path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+
         
 class TeamsGameDetailHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -7170,6 +8364,9 @@ class TeamsGameDetailHandler(webapp2.RequestHandler):
             if user_obj['auth']:
 
                 misc, user_obj, tmp = build_product_data_game(self, user_obj, misc)
+                if user_obj['active_subscription'] is not None and user_obj['active_subscription']['status'] in ["expired", "cancelled"]:
+                    misc['target_template'] = "team_inactive.html"
+                    
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
@@ -7185,27 +8382,9 @@ class TeamsGameDetailHandler(webapp2.RequestHandler):
         
 
     def get(self):
-        misc = {'came_from': '', 'ID': self.request.get('ID'), 'target_template': 'team_game_detail.html', 'time_log': [], 'handler': 'team_game_detail', 'error': None, 'msg': None}; user_obj = None
-        session_ID = self.session.get('session_ID')
-        misc, user_obj, tmp = build_product_data_game(self, user_obj, misc)
-        
-        if session_ID not in [None, 0]:
-            user_obj = get_user_obj({'session_ID': session_ID})
-            if user_obj['auth']:
-                
-                
-                tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
-                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
-            else:
-                misc['target_template'] = "index.html"
-                tv = {'user_obj': None, 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-                path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
-        else: 
-        
-            misc['target_template'] = "index.html"
-            user_obj = process_non_auth(self)
-            tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': 'layout_no_auth.html'}
-            path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
+        tv = {'user_obj': None, 'misc': {}}
+        path = os.path.join("templates", "index.html")
+        self.response.out.write(template.render(path, tv))
         
 class TeamsMyStatsHandler(webapp2.RequestHandler):
     def dispatch(self):
@@ -7229,6 +8408,9 @@ class TeamsMyStatsHandler(webapp2.RequestHandler):
                 
                 misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
                 misc['active_element'] = self.request.get("active_element")
+                if user_obj['active_subscription'] is not None and user_obj['active_subscription']['status'] in ["expired", "cancelled"]:
+                    misc['target_template'] = "team_inactive.html"
+                    
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
@@ -7253,6 +8435,9 @@ class TeamsMyStatsHandler(webapp2.RequestHandler):
                 
                 misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
                 
+                if user_obj['active_subscription'] is not None and user_obj['active_subscription']['status'] in ["expired", "cancelled"]:
+                    misc['target_template'] = "team_inactive.html"
+                    
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
@@ -7288,6 +8473,9 @@ class TeamsMyScheduleHandler(webapp2.RequestHandler):
                 
                 misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
                 misc['active_element'] = self.request.get("active_element")
+                if user_obj['active_subscription'] is not None and user_obj['active_subscription']['status'] in ["expired", "cancelled"]:
+                    misc['target_template'] = "team_inactive.html"
+                    
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
@@ -7312,6 +8500,9 @@ class TeamsMyScheduleHandler(webapp2.RequestHandler):
                 
                 misc, user_obj, tmp = build_product_data_team(self, user_obj, misc)
                 
+                if user_obj['active_subscription'] is not None and user_obj['active_subscription']['status'] in ["expired", "cancelled"]:
+                    misc['target_template'] = "team_inactive.html"
+                    
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
             else:
@@ -7373,7 +8564,7 @@ class AccountHandler(webapp2.RequestHandler):
             if user_obj['auth']:
                 misc['target_template'] = "account.html"
                 
-                conn, cursor = mysql_connect()
+                conn, cursor = mysql_connect('LRP')
                 cursor.execute("INSERT INTO LRP_User_Event_Logs(event_ID, user_ID, datestamp)  VALUES (%s, %s, %s)", [1, user_obj['ID'], datetime.now()]); conn.commit()
                 misc['products'] = get_products(cursor, "Data Subscriptions")
                 cursor.execute("SELECT count(1)+1 'cnt' from LRP_Cart", [])
@@ -7395,6 +8586,13 @@ class AccountHandler(webapp2.RequestHandler):
                         
                 misc['preferences_html'] = build_preferences_html(user_obj, misc)
                 
+                
+                        
+                for k in ['active_subscriptions', 'all_subscriptions']:
+                    misc[k] = user_obj[k]
+                misc['num_subscriptions'] = len(misc['all_subscriptions'])
+                
+            
                 
                 tv = {'user_obj': finish_user_obj(user_obj), 'misc': finish_misc(misc, user_obj), 'layout': "layout_main.html" if user_obj['user_type'] is not None else "layout_lurker.html"}
                 path = os.path.join("templates", misc['target_template']); self.response.out.write(template.render(path, tv))
@@ -7453,7 +8651,11 @@ def handle_404(request, response, exception):
     
 def handle_500(request, response, exception):
     logging.exception(exception)
-    user_obj = get_user_obj()
+    user_obj = {'auth': 0}
+    try:
+        user_obj = get_user_obj()
+    except Exception:
+        pass
     misc = {'came_from': '', 'target_template': 'error_general.html', 'time_log': [], 'handler': '500', 'error': None, 'msg': None}
     if not os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/'):
         misc['error'] = traceback.format_exc()
@@ -7528,9 +8730,14 @@ app = webapp2.WSGIApplication([
     ,('/team_detail', TeamsDetailHandler)
     ,('/team_player_detail', TeamsPlayerDetailHandler)
     ,('/team_game_detail', TeamsGameDetailHandler)
+    ,('/teams', TeamsHandler)
+    ,('/players', PlayersHandler)
+    ,('/stats', StatsHandler)
     
     ,('/(product-summary.+)', ProductSummaryHandler)
     ,('/(product-pricing.+)', ProductPricingHandler)
+    ,('/(product-tour.+)', ProductTourHandler)
+    
     ,('/(faq.*?)', FAQHandler)
     ,('/(giftLRP.*?)$', GiftLRPHandler)
     

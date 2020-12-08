@@ -31,36 +31,43 @@
                     <div class='panel col-12'>
                         <div class='col-12 flex'>
                             <div class='col-1'><span class='bold font-12'>ID</span></div>
-                            <div class='col-3'><span class='bold font-12'>Name</span></div>
-                            <div class='col-3'><span class='bold font-12'>Email</span></div>
                             <div class='col-3'><span class='bold font-12'>Username</span></div>
-                            <div class='col-1'><span class='bold font-12'>Phone</span></div>
-                            <div class='col-1'><span class='bold font-12'>Password</span></div>
+                            <div class='col-3'><span class='bold font-12'>Email</span></div>
+                            <div class='col-2'><span class='bold font-12'>Password</span></div>
+                            <div class='col-3'><span class='bold font-12'></span></div>
                         </div>
                         {% for u in misc.users %}
                             <div class='table-row col-12 flex pointer' id='mainrow{{u.ID}}' onclick='toggle({{u.ID}})'>
                                 <div class='col-1'><span class='font-12' title='{{u.decrypted_password}}'>{{u.ID}}</span></div>
-                                <div class='col-3'><span class='font-12'>{{u.first_name_decrypted}} {{u.last_name_decrypted}}</span></div>
-                                <div class='col-3'><span class='font-12'>{{u.email_decrypted}}</span></div>
                                 <div class='col-3'><span class='font-12'>{{u.username_decrypted}}</span></div>
-                                <div class='col-1'><span class='font-12'>{{u.phone_decrypted}}</span></div>
-                                <div class='col-1'><span class='font-12'>{{u.password_decrypted}}</span></div>
+                                <div class='col-3'><span class='font-12'>{{u.email_decrypted}}</span></div>
+                                <div class='col-2'><span class='font-12'>{{u.password_decrypted}}</span></div>
+                                <div class='col-3'><span class='font-12'></span></div>
                             </div>
                             <div class='col-12 toggle-row hidden' id='row{{u.ID}}' style=''>
-                                <div class='col-12 flex'>
+                                
+                                
+                                    <FORM action='/admin?c=admin_users' method=POST><input type=hidden name='user_ID' value='{{u.ID}}' />
+                                    <div class='col-12 flex'>
                                     <div class='col-6'>
                                         <div class='col-12 flex'>
                                             <div class='col-6'><span class='font-12'>Password</span></div>
                                             <div class='col-6 right'><span class='font-12'>{{u.password_decrypted}}</span></div>
-                                        </div><div class='col-12 flex'>
+                                        </div>
+                                        <div class='col-12 flex'>
                                             <div class='col-6'><span class='font-12'>User Type</span></div>
                                             <div class='col-6 right'><span class='font-12'>{{u.user_type}}</span></div>
                                         </div>
                                     </div>
-                                    <div class='col-6'>
-                                    
+                                    <div class='col-3'>
+                                        <div class='col-12 flex'>
+                                            <div class='col-6'><span class='font-12'>Activation Code</span></div>
+                                            <div class='col-6 right'><span class='font-12'>{{u.activation_code}}</span></div>
+                                        </div></div>
+                                    <div class='col-3 right'><button type=submit value='delete_user' name='action' class='action-button font-15'>DELETE</button> </div>
                                     </div>
-                                </div>
+                                    </FORM>
+                                
                             </div>
                         {% endfor %}
                         

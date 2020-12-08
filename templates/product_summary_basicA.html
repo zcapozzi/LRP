@@ -22,7 +22,7 @@
             <div class='col-1'></div>
             <div class='col-10 centered' style='padding-top:60px; padding-bottom:40px;'>
                 <div class='col-12'>
-                    <span class='font-36 bold' style='color:#008;'>Follow your team at a whole new level.</span>
+                    <span class='font-36 bold' style='color:#008;'>A whole new way to follow college lacrosse.</span>
                 </div>
 
             </div>
@@ -38,6 +38,7 @@
                     <input type=hidden name='AB_group' value={{misc.AB_group}} />
                     <input type=hidden name='hash' value={{misc.hash}} />
                     <input type=hidden name='request_type' value='pre-product-notification' />
+                    <input type=hidden name='tracking_tag' value='{{misc.tracking_tag}}' />
                     
                     <div class='col-12 centered' style='border-bottom: solid 2px #88F;'>
                         {% if misc.product.status == "quotable" %}
@@ -64,7 +65,7 @@
 
                     {% if misc.product.status != "available" %}
                         <div class='col-12'>
-                            <div class='col-12'><span class='font-13 light'>Email</div>
+                            <div class='col-12'><span class='font-13 light'>Email</span></div>
                             <div class='col-12'>
                                 <input type=text value='{{misc.email_decrypted}}'  placeholder="Enter Email" name='email' id='email'class='font-15 col-12' />
                             </div>
@@ -81,7 +82,7 @@
                             {%if misc.product.call_to_action != "BUY IT" %}
                                 <button id='action_button' type=submit class='action-button small blue' name='action' value='{{misc.product.status}}'><span class='pointer font-15'>{{misc.product.call_to_action}}</span></button>
                             {% else %}
-                                <button type=button id='buy_button' class='action-button small blue' onclick="window.location='/product-pricing-basic'"><span class='pointer font-15'>{{misc.product.call_to_action}}</span></button>
+                                <button type=button id='buy_button' class='action-button small blue' onclick="window.location='/product-pricing-basic?t={{misc.tracking_tag}}'"><span class='pointer font-15'>{{misc.product.call_to_action}}</span></button>
                             {% endif %}
                         </div>
                     {% endif %}
@@ -93,6 +94,8 @@
         </div>
         
     </div>
+    
+
     
 
     </div>
@@ -125,6 +128,26 @@
         </div>
     </div>
 
+    <div class='flex'>
+        <div class='col-2 dtop'></div>
+        <div class='col-8-12'>
+            <div class='col-12 centered'><img class='' style=' ' src='/static/img/fan_icon.png'></div>
+            <div class='col-12 centered'>
+                <div class=''><span class='contents font-18 lh-30'>LacrosseReference PRO is for college lacrosse fans who want a new way to follow the sport. Basketball, football, even baseball. Pick almost any other sport and there are dozens of ways to follow. To date, college lacrosse fans have been less fortunate. Outside of watching games your choices are a) read IL or b) hang out in forums. LacrosseReference PRO is for fans who want more.</span></div>
+                <div class='' style='padding-bottom:25px;'><span class='contents font-18 lh-30'>With PRO, you'll have access to my most cutting edge statistics and deeper level of customization over the lacrosse content you see. And with my no-questions-asked money-back guarantee, you'll never have to worry whether it's worth the money. If it's not, just cancel any time before your subscription ends and get a full-refund.</span></div>
+            </div>
+        </div>
+        <div class='col-2 dtop'></div>
+    </div>
+    
+    <div class='flex' style='padding-bottom:20px;'>
+        <div class='col-2 no-padding dtop'></div>
+        <div class='col-8-12 no-padding'>
+            <div class='col-12 no-padding centered'><button type=button id='tour_button' class='action-button medium blue' onclick="window.location='/product-tour-basic?t={{misc.tracking_tag}}'"><span class='pointer font-15'>TAKE THE TOUR</span></button></div>
+        </div>
+        <div class='col-2 no-padding dtop'></div>
+    </div>
+    
 <script>
     var on_mobile = null;
     var console_log = []; var success = null;

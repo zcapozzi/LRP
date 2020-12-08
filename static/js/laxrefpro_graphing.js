@@ -112,6 +112,7 @@ function initiate_svg(id, data, specs, initial_specs){
     
     if(client_height > 50 && initial_specs.chart_type != "arrow" && initial_specs.chart_type != "spark"){ height -= 5; }
     
+    if(!misc.on_server && width < 0){ console.error("Error in initiate_svg(): svg width error because it is supposed to have a negative width! (id given: " + id + ")"); }
     //console.log("ID: " + id + "  SVG Width: " + width + "  SVG Height: " + height);
     //console.log(client_height, initial_specs.final_margin_top, initial_specs.margin_bottom, initial_specs.final_margin_left, initial_specs.margin_right);
     var svg = null;
@@ -317,7 +318,7 @@ function graph_add_title(icon_offset, svg, data, initial_specs){
 function graph_add_text(svg, data, initial_specs){
     
     res = svg.selectAll("label").data(data.text).enter().append("text")
-        .attr("x", function(d){ return d.x; })
+        .attr("x", function(d){ if('x' in d){ return d.x; }else{ return initial_specs.x_scale(d.x_scaled); } })
         .attr("y", function(d){ return d.y; })
         .attr("text-anchor", function (d) { return d.align;  }  )
         .attr("class", "lightish chart-tick-label " + initial_specs.chart_size)
@@ -406,6 +407,7 @@ function horizontal_line(data, id, arg_specs, arg_initial_specs = null){
     
     // Add the legend if necessary
     if('legend' in data){ svg = graph_create_legend(svg, x, y, width, height, initial_specs, data); }
+    
     if('shading_vars' in initial_specs && initial_specs.shading_vars != null){
         svg = graph_add_shading_legend(svg, x, data, height, min_x_val, max_x_val, initial_specs);
     }
@@ -419,12 +421,12 @@ function horizontal_line(data, id, arg_specs, arg_initial_specs = null){
 
     for(var a = 0;a<data.data.length;a++){
         tmp_data = data.data[a];
-        
+      
         svg.append("path")
           .datum(tmp_data.points)
           .attr("fill", "none") .attr("stroke", tmp_data['stroke'])
           .attr("stroke-linejoin", "round").attr("stroke-linecap", "round")
-          .attr("stroke-dasharray", tmp_data['stroke-dasharray'])
+          .style("stroke-dasharray", tmp_data['stroke-dasharray'])
           .attr("stroke-width", tmp_data['stroke-width'])
           .attr("d", line);
           
@@ -744,8 +746,14 @@ function create_pct_y_ticks(series, specs){
     diff = max_eff - min_eff
     if(debug){ console.log("Eff Range: " + min_eff + " - " + max_eff + " ( diff=" + diff + ")"); }
     
-    alt_min_eff = min_eff - diff*.2;
-    alt_max_eff = max_eff + diff*.2;
+    if('min' in specs && specs.min != null){ 
+        alt_min_eff = min_eff;
+    }
+    else{ alt_min_eff = min_eff - diff*.2; }
+    if('max' in specs && specs.max != null){ 
+        alt_max_eff = max_eff;
+    }
+    else{ alt_max_eff = max_eff - diff*.2; }
     if(debug){ console.log("Alt Eff Range: " + alt_min_eff + " - " + alt_max_eff); }
     
     rounded_min_eff = null; rounded_max_eff = null; 
@@ -817,6 +825,8 @@ function create_numeric_y_ticks(series, specs = {}){
             }
         }
     }
+    if('y_inc' in specs){ max_eff += specs.y_inc; }
+    //console.log("Eff Range: " + min_eff + " - " + max_eff);
     
     inc = (max_eff - min_eff) * .05;
     //console.log("Numeric inc: " + inc);
@@ -1079,6 +1089,7 @@ function graph_create_legend(svg, x, y, width, height, initial_specs, data){
     legend = data.legend;
     start_loc_x = -initial_specs.margin_left + 5;
     start_loc_y = height + initial_specs.margin_bottom + (initial_specs.chart_size == "small" ? -3 : -5 );
+    if('y_offset' in legend){ start_loc_y += legend.y_offset; }
     
     for(var a = 0;a<legend.items.length;a++){
         var item = legend.items[a];
@@ -1214,7 +1225,7 @@ function graph_add_data_labels(svg, x, y, width, height, chart_type, initial_spe
             //console.log("Done attempt " + attempts);
         }
         
-        if(found_overlap){ solution = null; console_log({'msg': "No data-labels solution found..."}); }
+        if(found_overlap){ solution = null; console_log.push({'msg': "No data-labels solution found..."}); }
         else{ solution = locs; }
         
         time_log[time_log.length-1].end = new Date().getTime();
@@ -1312,7 +1323,7 @@ function graph_add_data_labels(svg, x, y, width, height, chart_type, initial_spe
 function custom_conditional_RPI_tile(misc, id, arg_specs, arg_initial_specs = null){
     var debug = {'on': false, 'spacing': true, 'data': false};
     
-    var games = misc.data.future_games.filter(gm => gm.avg_RPI_with_win != null);
+    var games = misc.data.future_games;
     
     row_height = 29;
     calc_height = 65 + row_height * games.length;
@@ -1321,10 +1332,9 @@ function custom_conditional_RPI_tile(misc, id, arg_specs, arg_initial_specs = nu
     
     let {width, height, specs, initial_specs, svg} = initiate_svg(id, misc, arg_specs, arg_initial_specs);
     if(width <= 0){ return; }
-    
-    var cur_projected_RPI = misc.data.sim_results[misc.data.sim_results.length-1].y
+
+    var cur_projected_RPI = misc.data.sim_results.sort(function(a,b){ return b.epoch - a.epoch; })[0].y
     var cur_projected_RPI_str = Math.round(cur_projected_RPI);
-    
     
     var min_x_val = null;
     var max_x_val = null;
@@ -1335,6 +1345,7 @@ function custom_conditional_RPI_tile(misc, id, arg_specs, arg_initial_specs = nu
         max_x_val = cur_projected_RPI_str*2;
     }
     
+
     for(var a=0;a<games.length;a++){
         var gm = games[a];
         gm.height = row_height * a + 30;
@@ -1348,7 +1359,7 @@ function custom_conditional_RPI_tile(misc, id, arg_specs, arg_initial_specs = nu
     
     
     
-    var x = d3.scaleLinear().range([120, width-30]);
+    var x = d3.scaleLinear().range([160, width-30]);
     var y = d3.scaleLinear().range([height, 0]);
     x.domain([min_x_val, max_x_val]);
     y.domain([0, height]);
@@ -1361,7 +1372,7 @@ function custom_conditional_RPI_tile(misc, id, arg_specs, arg_initial_specs = nu
             .attr("text-anchor", function (d) { return "middle";  }  )
             .text("Current Projected RPI: " + zFormat(cur_projected_RPI_str, 0));
     
-    
+    jsfmt = (max_x_val - min_x_val < 10) ? "1" : "0";
     // Header
     svg.append("text")
         .attr("x", 10).attr("y", 15)
@@ -1390,10 +1401,10 @@ function custom_conditional_RPI_tile(misc, id, arg_specs, arg_initial_specs = nu
         var gm = games[a];
         
         
-        cur_x = x(cur_projected_RPI_str);
-        win_x = x(gm.avg_RPI_with_win);
-        loss_x = x(gm.avg_RPI_with_loss);
-        console.log(gm);
+        gm.cur_x = x(cur_projected_RPI_str);
+        gm.win_x = x(gm.avg_RPI_with_win);
+        gm.loss_x = x(gm.avg_RPI_with_loss);
+
         
         svg.append("text")
             .attr("x", 10).attr("y", gm.height + 27)
@@ -1422,54 +1433,111 @@ function custom_conditional_RPI_tile(misc, id, arg_specs, arg_initial_specs = nu
             .attr("name", 'came_from')
             .attr("type", "hidden");
                     
-        // Print the full range rect
-        svg.append("rect")
-            .attr("x", x(gm.avg_RPI_with_win))
-            .attr("y", gm.height + 15)
-            .attr("width", loss_x - win_x)
-            .attr("height", 10)
-            .style("fill", "#FFF")
-            .style('stroke', '#888');
-        
-        // Print the win rect
-        svg.append("rect")
-            .attr("x", x(gm.avg_RPI_with_win) + 1)
-            .attr("y", gm.height + 15 + 1)
-            .attr("width", function(){ if(win_x > cur_x){ return win_x - cur_x - 1; } else{ return cur_x - win_x - 1; } })
-            .attr("height", 8)
-            .attr("class", "green");
+
+        if([gm.avg_RPI_with_win, gm.avg_RPI_with_loss].indexOf(null) == -1){
+            // Print the full range rect
+            svg.append("rect")
+                .attr("x", x(gm.avg_RPI_with_win))
+                .attr("y", gm.height + 15)
+                .attr("width", gm.loss_x - gm.win_x)
+                .attr("height", 10)
+                .style("fill", "#FFF")
+                .style('stroke', '#888');
             
-        // Print the loss rect
-        svg.append("rect")
-            .attr("x", x(cur_projected_RPI_str) + 1)
-            .attr("y", gm.height + 15 + 1)
-            .attr("width", loss_x - cur_x - 1)
-            .attr("height", 8)
-            .attr("class", "red");
+            win_width = null; loss_width = null;
+            win_start = null; loss_start = null;
             
-        svg.append("text")
-            .attr("x", x(gm.avg_RPI_with_loss) + 5).attr("y", gm.height + 23)
-            .attr("text-anchor", function (d) { return "start";  }  )
-            .attr("class", "lightish chart-tick-label " + initial_specs.chart_size)
-            .text(gm.avg_RPI_with_loss_str);  
             
-        svg.append("text")
-            .attr("x", 
-                function(){ 
-                    if(win_x > cur_x){ return x(gm.avg_RPI_with_win); } 
-                    else{ return x(gm.avg_RPI_with_win) - 5; } 
             
+            if(gm.loss_x < gm.cur_x){ // RPI improves with a loss
+                
+                if(gm.win_x > gm.cur_x){ // RPI gets worse with a win
+                    /*loss_start = x(cur_projected_RPI_str) + 1;
+                    loss_width = gm.loss_x - gm.cur_x - 1;
+                    win_width = (gm.win_x - gm.loss_x - 1)
+                    win_start = x(cur_projected_RPI_str) + 1;*/
                 }
-            )
-            .attr("y", 
-                function(){ 
-                    if(win_x > cur_x){ return gm.height + 10; } 
-                    else{ return gm.height + 23; } }
-            )
-            .attr("text-anchor", function (d) { if(win_x > cur_x){ return "start"; } else{ return "end"; }  }  )
-            .attr("class", "lightish chart-tick-label " + initial_specs.chart_size)
-            .text(gm.avg_RPI_with_win_str);  
-        
+                else{  // RPI improves with a win
+                    rect_width = x(gm.avg_RPI_with_loss) -  gm.win_x;
+                    
+                    win_start = x(gm.avg_RPI_with_win) + 1;
+                    loss_start = win_start + rect_width/2;
+                    win_width = rect_width/2;
+                    loss_width = rect_width/2;
+                }
+            }
+            else{// RPI gets worse with a loss
+                if(gm.win_x > gm.cur_x){ // RPI gets worse with a win
+                    rect_width = x(gm.avg_RPI_with_loss) -  gm.win_x;
+                    
+                    win_start = x(gm.avg_RPI_with_win) + 1;
+                    loss_start = win_start + rect_width/2;
+                    win_width = rect_width/2;
+                    loss_width = rect_width/2;
+                }
+                else{// RPI improves with a win
+                    win_width = (gm.cur_x - gm.win_x - 1)
+                    win_start = x(gm.avg_RPI_with_win) + 1;
+                    loss_start = x(cur_projected_RPI_str) + 1;
+                    loss_width = gm.loss_x - gm.cur_x - 1;
+                }
+            }
+                // Print the win rect
+                if(win_width != null){
+                    svg.append("rect")
+                    .attr("x", win_start)
+                    .attr("y", gm.height + 15 + 1)
+                    .attr("width", win_width)
+                    .attr("height", 8)
+                    .attr("class", "green");
+                }
+                
+                // Print the loss rect
+                if(loss_width != null){
+                    svg.append("rect")
+                    .attr("x", loss_start)
+                    .attr("y", gm.height + 15 + 1)
+                    .attr("width", loss_width)
+                    .attr("height", 8)
+                    .attr("class", "red");
+                }
+                
+                svg.append("text")
+                    .attr("x", x(gm.avg_RPI_with_loss) + 5).attr("y", gm.height + 23)
+                    .attr("text-anchor", function (d) { return "start";  }  )
+                    .attr("class", "lightish chart-tick-label " + initial_specs.chart_size)
+                    .text(jsformat(gm.avg_RPI_with_loss, jsfmt));  
+                    
+                svg.append("text")
+                    .attr("x", 
+                        function(){ 
+                            if(gm.win_x > gm.cur_x){ return x(gm.avg_RPI_with_win); } 
+                            else{ return x(gm.avg_RPI_with_win) - 5; } 
+                    
+                        }
+                    )
+                    .attr("y", 
+                        function(){ 
+                            if(gm.win_x > gm.cur_x){ return gm.height + 10; } 
+                            else{ return gm.height + 23; } }
+                    )
+                    .attr("text-anchor", function (d) { if(gm.win_x > gm.cur_x){ return "start"; } else{ return "end"; }  }  )
+                    .attr("class", "lightish chart-tick-label " + initial_specs.chart_size)
+                    .text(jsformat(gm.avg_RPI_with_win, jsfmt));  
+                
+        }
+        else{
+            svg.append("text")
+                .attr("x",  width-20 )
+                .attr("y", 
+                    function(){ 
+                        if(gm.win_x > gm.cur_x){ return gm.height + 10; } 
+                        else{ return gm.height + 23; } }
+                )
+                .attr("text-anchor", "end"  )
+                .attr("class", "lightish chart-tick-label " + initial_specs.chart_size)
+                .text("N/A");  
+        }
     }
     
     svg.append("line")
@@ -1617,17 +1685,87 @@ function spark_bar(id, arg_specs, arg_initial_specs = null){
     
     // Add data labels if necessary
     if('label' in initial_specs && initial_specs.label != null){
-        anchr = "end"; clr = "white";
+        anchr = "end"; clr = 'color' in specs ? specs.color : "white";
         label = svg.append("text").attr("text-anchor", anchr )
             .attr("x", specs.bar_width*width - 5).attr("y", specs.height - 4)
             .attr("font-size", 10).attr("font-family", "Arial").style("fill", clr).style("opacity", 0)
             .text(initial_specs.label);
             
         if(specs.bar_width < .25){
-            anchr = "start"; clr = "#666";
+            anchr = "start"; clr = 'color' in specs ? specs.color : "#666";
             label.attr("x", specs.bar_width*width + 2).attr("text-anchor", anchr ).style("fill", clr);
         }
         label.style("opacity", 1);
+    }
+    
+}
+
+function split_bar(id, arg_specs, arg_initial_specs = null){
+    var debug = {'on': false, 'spacing': true, 'data': true};
+    let {width, height, specs, initial_specs, svg} = initiate_svg(id, null, arg_specs, arg_initial_specs);
+    
+    if(width <= 0){ return; }
+    if(debug.on && debug.spacing){ console.log("SVG Width x Height: " + rnd(width) + " x " + rnd(height)); }
+   
+    
+
+    svg.append("rect")
+        .attr("x", 0).attr("y", 0)
+        .attr("width", width).attr("height", specs.height)
+        .attr("rx", 3).attr("ry", 3)
+        .attr('id', id + "-split-bar-div")
+        .style("fill", specs.bar_fill)
+        .attr("class", "split-bar-background");
+
+    
+    svg.append("rect")
+		.attr("x", 1).attr("y", 1)
+		.attr("width", specs.split_point * width - 2).attr("height", specs.height-2)
+		.attr("rx", 1).attr("ry", 1)
+		.attr('id', id + "-split-bar")
+        .style("fill", specs.fill).style("stroke-width", 0)
+		.attr("class", "split-bar-fill");
+        
+    if(specs.split_point < 1.0){
+        svg.append("rect")
+            .attr("x", specs.split_point*width - 2).attr("y", 1)
+            .attr("width", 1).attr("height", specs.height-2)
+            .attr('id', id + "-split-bar")
+            .style("fill", specs.fill).style("stroke-width", 0)
+            .attr("class", "split-bar-fill");
+    }
+    
+    // Add data labels if necessary
+    if('label1' in initial_specs && initial_specs.label1 != null){
+        
+        // Away Label
+        teams = {"away": 1, 'home': 1}
+        for(k in teams){
+            if(k == "away"){
+                anchr = "end"; clr = "white";
+                txt = initial_specs.label1;
+                x = specs.split_point*width - 5;
+                alt_x = specs.split_point*width + 2;
+            }
+            else{
+                anchr = "start"; clr = specs.fill;
+                txt = initial_specs.label2;
+                
+                x = specs.split_point*width + 5;
+                alt_x = width - 50;
+            }
+            
+            label = svg.append("text").attr("text-anchor", anchr )
+            .attr("x", x).attr("y", specs.height - 4)
+            .attr("font-size", 10).attr("font-family", "Arial").style("fill", clr).style("opacity", 0)
+            .text(txt);
+            
+            if((on_mobile && specs.split_point < .25) || (!on_mobile && specs.split_point < .10)){
+                anchr = "start"; clr = "#666";
+                label.attr("x", alt_x).attr("text-anchor", anchr ).style("fill", clr);
+            }
+            label.style("opacity", 1);
+        }
     }
     
 }

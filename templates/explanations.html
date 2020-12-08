@@ -26,14 +26,26 @@
             <div class='col-4'><span class='bold font-15 contents'>Header Text</span></div>
             <div class='col-1'></div>
         </div>
-        <div class='right '>
-            <FORM action='/explanations' method=POST>
-                <button name='action' value='new_explanation' class='action-button'><span class='font-12'>NEW</span></button>
-            </FORM>
+        <div class='no-padding flex'>
+            <div class='col-10 inline-flex'>
+                <span class='no-padding bold'>Filter For: </span>
+                <FORM action='/explanations' method=POST><input name='action' type=hidden value='filter'>
+                <select onChange="this.form.submit();" name='filter_page'>
+                    <option value=''></option>
+                    {% for opt in misc.html_pages %}
+                        <option value='{{opt.value}} {{opt.selected}}'>{{opt.desc}}</option>
+                    {% endfor %}
+                </select></FORM>
+            </div>
+            <div class='col-2 right '>
+                <FORM action='/explanations' method=POST>
+                    <button name='action' value='new_explanation' class='action-button'><span class='font-12'>NEW</span></button>
+                </FORM>
+            </div>
         </div>
         
         {% for e in misc.explanations %}
-            <FORM action='/explanations' method=POST><input type=hidden name='ID' value='{{e.ID}}' />
+            <FORM action='/explanations' method=POST><input type=hidden name='ID' value='{{e.ID}}' /><input type=hidden name='filter_page' value='{{misc.filter_page}}' />
             <div class='flex'>
                 <div class='col-3'><span class=' font-15 contents'>{{e.html_page}}</span></div>
                 <div class='col-4'><span class=' font-15 contents'>{{e.tag}}</span></div>

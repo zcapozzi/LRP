@@ -27,7 +27,7 @@
                 
                 <div class="col-12 centered">
                     <span id="group_user_view_tag" class="pointer {{misc.create_group_user_tag_display}} panel_tag font-15" onclick="set_panel(&quot;group_user&quot;);">
-                        <span class="">Group User</span>
+                        <span class="">Team User</span>
                     </span>
                     <span id="standalone_user_view_tag" class="pointer {{misc.create_standalone_user_tag_display}} panel_tag font-15" onclick="set_panel(&quot;standalone_user&quot;);">
                         <span class="">Standalone User</span>
@@ -35,47 +35,46 @@
                 </div>
                 <div class='col-12'>
                     
-                    <div id='group_user_view' class='panel col-12  {{misc.create_group_user_display}}'>
-                        Group User
-                    </div>
-                    
                     <div id='standalone_user_view' class='panel col-12 {{misc.create_standalone_user_display}}'>
+                        <span >Standalone User</span>
+                    </div>
+                    <div id='group_user_view' class='panel col-12  {{misc.create_group_user_display}}'>
                         <FORM action='/create' method=POST>
                         <div class='col-12 flex'>
                             <div class='col-4-6'><span class='font-15'>First Name</span></div>
-                            <div class='col-8-6'><input id='standalone_first_name' class='' type=text name='standalone_first_name' value='{{misc.standalone_first_name}}' /></div>
+                            <div class='col-8-6'><input id='group_first_name' class='' type=text name='group_first_name' value='{{misc.group_first_name}}' /></div>
                         </div>
                         <div class='col-12 flex'>
                             <div class='col-4-6'><span class='font-15'>Last Name</span></div>
-                            <div class='col-8-6'><input id='standalone_last_name' class='' type=text name='standalone_last_name' value='{{misc.standalone_last_name}}' /></div>
+                            <div class='col-8-6'><input id='group_last_name' class='' type=text name='group_last_name' value='{{misc.group_last_name}}' /></div>
                         </div>
                         <div class='col-12 flex'>
                             <div class='col-4-6'><span class='font-15'>Username</span></div>
-                            <div class='col-8-6'><input id='standalone_username' class='' type=text name='standalone_username' value='{{misc.standalone_username}}' /></div>
+                            <div class='col-8-6'><input id='group_username' class='' type=text name='group_username' value='{{misc.group_username}}' /></div>
                         </div>
                         <div class='col-12 flex'>
                             <div class='col-4-6'><span class='font-15'>Email</span></div>
-                            <div class='col-8-6'><input id='standalone_email' class='' type=text name='standalone_email' value='{{misc.standalone_email}}' /></div>
+                            <div class='col-8-6'><input id='group_email' class='' type=text name='group_email' value='{{misc.group_email}}' /></div>
                         </div>
                         <div class='col-12 flex'>
                             <div class='col-4-6'><span class='font-15'>Phone</span></div>
-                            <div class='col-8-6'><input id='standalone_phone' class='' type=text name='standalone_phone' value='{{misc.standalone_phone}}' /></div>
+                            <div class='col-8-6'><input id='group_phone' class='' type=text name='group_phone' value='{{misc.group_phone}}' /></div>
                         </div>
                         <div class='col-12 flex'>
                             <div class='col-4-6'><span class='font-15'>Password</span></div>
-                            <div class='col-8-6'><input id='standalone_password' class='' type=text name='standalone_password' value='{{misc.standalone_password}}' /></div>
+                            <div class='col-8-6'><input id='group_password' class='' type=text name='group_password' value='{{misc.group_password}}' /></div>
                         </div>
                         <div class='col-12 flex'>
                             <div class='col-4-6'><span class='font-15'>Admin?</span></div>
-                            <div class='col-8-6'><input id='standalone_is_admin' class='' type=checkbox name='standalone_is_admin' {{misc.standalone_is_admin_checked}} /></div>
+                            <div class='col-8-6'><input id='group_is_admin' class='' type=checkbox name='group_is_admin' {{misc.group_is_admin_checked}} /></div>
                         </div>
                         <div class='col-12 flex'>
-                            <div class='col-4-6'><span class='font-15'>Select Team</span></div>
+                            <div class='col-4-6'><span class='font-15'>Select Group</span></div>
                             <div class='col-8-6'>
-                                <select name='team_select' id='team_select' class='font-15'>
-                                    <option value=-1>Select Team</option>
+                                <select name='group_ID' id='group_ID' class='font-15'>
+                                    <option value=-1>Select Group</option>
                                     {% for g in misc.groups %}
-                                        <option value='{{g.team_ID}}' {{g.selected}}>{{g.group_name}}</option>
+                                        <option value='{{g.ID}}' {{g.selected}}>{{g.group_name}}</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -84,8 +83,8 @@
                         <div class='col-12 flex'>
                             <div class='col-4-6'><span class='font-15'>User Type</span></div>
                             <div class='col-8-6'>
-                                <select id='standalone_user_type' class='' name='standalone_user_type'>
-                                    {% for o in misc.standalone_user_types %}
+                                <select id='group_user_type' class='' name='group_user_type'>
+                                    {% for o in misc.group_user_types %}
                                         <option value='{{o.val}}' {{o.selected}}>{{o.desc}}</option>
                                     {% endfor %}
                                 </select>
@@ -93,21 +92,51 @@
                         </div>
                         <div class='col-12 flex'>
                             <div class='col-4-6'><span class='font-15'>Full Subscription?</span></div>
-                            <div class='col-8-6'><input id='standalone_subscription' class='' type=checkbox name='standalone_subscription' {{misc.standalone_subscription_checked}} /></div>
+                            <div class='col-8-6'><input id='group_subscription' class='' type=checkbox name='group_subscription' {{misc.group_subscription_checked}} /></div>
                         </div>
                         <div class='col-12 flex'>
                             <div class='col-4-6'><span class='font-15'>Create Trial?</span></div>
-                            <div class='col-8-6'><input id='standalone_trial' class='' type=checkbox name='standalone_trial' {{misc.standalone_trial_checked}} /></div>
+                            <div class='col-8-6'><input id='group_trial' class='' type=checkbox name='group_trial' {{misc.group_trial_checked}} /></div>
                         </div>
-                        <div class='col-12 centered action-button'><button type=submit name='action' value='create_standalone_user' class='action-button font-15'>CREATE USER</button></div>
+                        <div class='col-12 centered action-button'><button type=submit name='action' value='create_group_user' class='action-button font-15'>CREATE USER</button></div>
                         </FORM>
                     </div>
                     
                 </div>
             </div>
             <div class='col-6-12'>
-                <div class='col-12 bbottom'><span class='font-18 bold pointer'>Create Group</div>
-                
+                <div class='col-12 bbottom'><span class='font-18 bold pointer'>Create Group User</div>
+                <div class='col-12'>
+                    
+
+                        <FORM action='/create' method=POST>
+                        <div class='col-12 flex bbottom'><span class='font-12 light'>User Set-Up</span></div>
+                        <div class='col-12 flex'>
+                            <div class='col-4-6'><span class='font-15'>First Name</span></div>
+                            <div class='col-8-6'><input id='subscription_first_name' class='' type=text name='subscription_first_name' value='{{misc.subscription_first_name}}' /></div>
+                        </div>
+                        <div class='col-12 flex'>
+                            <div class='col-4-6'><span class='font-15'>Last Name</span></div>
+                            <div class='col-8-6'><input id='subscription_last_name' class='' type=text name='subscription_last_name' value='{{misc.subscription_last_name}}' /></div>
+                        </div>
+                        <div class='col-12 flex'>
+                            <div class='col-4-6'><span class='font-15'>Username</span></div>
+                            <div class='col-8-6'><input id='subscription_username' class='' type=text name='subscription_username' value='{{misc.subscription_username}}' /></div>
+                        </div>
+                        <div class='col-12 flex'>
+                            <div class='col-4-6'><span class='font-15'>Email</span></div>
+                            <div class='col-8-6'><input id='subscription_email' class='' type=text name='subscription_email' value='{{misc.subscription_email}}' /></div>
+                        </div>
+                        <div class='col-12 flex'>
+                            <div class='col-4-6'><span class='font-15'>Phone</span></div>
+                            <div class='col-8-6'><input id='subscription_phone' class='' type=text name='subscription_phone' value='{{misc.subscription_phone}}' /></div>
+                        </div>
+                        
+                        <div class='col-12 centered action-button'><button type=submit name='action' value='create_subscription_user' class='action-button font-15 blue' id='create_subscription_user_button'>CREATE USER</button></div>
+                        </FORM>
+                    </div>
+                    
+        
 
             
             </div>

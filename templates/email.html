@@ -45,7 +45,7 @@
                             <FORM action='/email' method=POST><input type=hidden name='email_ID' value='{{u.ID}}' /><input type=hidden name='confirmed' value='{{misc.confirmed}}' />
                             <div class='col-12 flex' style=''>
                                 <div class='col-2'><span class='font-12'>{{u.send_date_str_ET}}</span></div>
-                                <div class='col-3'><span class='font-12'>{{u.recipients_str_preview}}</span></div>
+                                <div class='col-3'><span title='{{u.recipients_str}}' class='font-12'>{{u.recipients_str_preview}}</span></div>
                                 <div class='col-3'><span class='font-12 contents' title='{{u.subject_title}}'>{{u.subject_decrypted}}</span></div>
                                 <div class='col-1'>
                                     

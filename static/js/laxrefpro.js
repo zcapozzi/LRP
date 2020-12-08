@@ -151,29 +151,30 @@ function toggler(what=null){
     // Unless the radio input has the same name as the one clicked, switch its state
     radios.each(function(d, i){ if(what == null || what.name != $(this).prop("name")){ cur = $(this).prop("checked"); $(this).prop("checked", !cur); } });
     
+    
     // Do whatever actual JS code is suggested by the object clicked
     if(this_class == "offensive_calculation_radio"){
         calc_specs.offense.calculation = is_not_set ? "adjusted" : "raw";
         display_primary_unit("offense", null);
-        logger_str = ["team_my_stats.html", misc.nhca, 'offensive_ranks_calculation', calc_specs.offense.calculation].join("|");
+        logger_str = [misc.target_template, misc.nhca, 'offensive_ranks_calculation', calc_specs.offense.calculation].join("|");
         document.getElementById('pixel').src = "/logger-editSettings?c=" + logger_str;
     }
     if(this_class == "defensive_calculation_radio"){
         calc_specs.defense.calculation = is_not_set ? "adjusted" : "raw";
         display_primary_unit("defense", null);
-        logger_str = ["team_my_stats.html", misc.nhca, 'defensive_ranks_calculation', calc_specs.defense.calculation].join("|");
+        logger_str = [misc.target_template, misc.nhca, 'defensive_ranks_calculation', calc_specs.defense.calculation].join("|");
         document.getElementById('pixel').src = "/logger-editSettings?c=" + logger_str;
     }
     if(this_class == "faceoffs_calculation_radio"){
         calc_specs.faceoffs.calculation = is_not_set ? "adjusted" : "raw";
         display_faceoffs("faceoffs", null);
-        logger_str = ["team_my_stats.html", misc.nhca, 'faceoffs_ranks_calculation', calc_specs.faceoffs.calculation].join("|");
+        logger_str = [misc.target_template, misc.nhca, 'faceoffs_ranks_calculation', calc_specs.faceoffs.calculation].join("|");
         document.getElementById('pixel').src = "/logger-editSettings?c=" + logger_str;
     }
     if(this_class == "goalkeepers_calculation_radio"){
         calc_specs.goalkeepers.calculation = is_not_set ? "adjusted" : "raw";
         display_goalkeepers("goalkeepers", null);
-        logger_str = ["team_my_stats.html", misc.nhca, 'goalkeepers_ranks_calculation', calc_specs.goalkeepers.calculation].join("|");
+        logger_str = [misc.target_template, misc.nhca, 'goalkeepers_ranks_calculation', calc_specs.goalkeepers.calculation].join("|");
         document.getElementById('pixel').src = "/logger-editSettings?c=" + logger_str;
     }
     
@@ -181,25 +182,25 @@ function toggler(what=null){
     if(this_class == "offensive_peers_radio"){
         calc_specs.offense.peers = is_not_set ? "conference" : "league";
         display_primary_unit("offense", null);
-        logger_str = ["team_my_stats.html", misc.nhca, 'offensive_ranks_peers', calc_specs.offense.peers].join("|");
+        logger_str = [misc.target_template, misc.nhca, 'offensive_ranks_peers', calc_specs.offense.peers].join("|");
         document.getElementById('pixel').src = "/logger-editSettings?c=" + logger_str;
     }
     if(this_class == "defensive_peers_radio"){
         calc_specs.defense.peers = is_not_set ? "conference" : "league";
         display_primary_unit("defense", null);
-        logger_str = ["team_my_stats.html", misc.nhca, 'defensive_ranks_peers', calc_specs.defense.peers].join("|");
+        logger_str = [misc.target_template, misc.nhca, 'defensive_ranks_peers', calc_specs.defense.peers].join("|");
         document.getElementById('pixel').src = "/logger-editSettings?c=" + logger_str;
     }
     if(this_class == "faceoffs_peers_radio"){
         calc_specs.faceoffs.peers = is_not_set ? "conference" : "league";
         display_faceoffs("faceoffs", null);
-        logger_str = ["team_my_stats.html", misc.nhca, 'faceoffs_ranks_peers', calc_specs.faceoffs.peers].join("|");
+        logger_str = [misc.target_template, misc.nhca, 'faceoffs_ranks_peers', calc_specs.faceoffs.peers].join("|");
         document.getElementById('pixel').src = "/logger-editSettings?c=" + logger_str;
     }
     if(this_class == "goalkeepers_peers_radio"){
         calc_specs.goalkeepers.peers = is_not_set ? "conference" : "league";
         display_goalkeepers("goalkeepers", null);
-        logger_str = ["team_my_stats.html", misc.nhca, 'goalkeepers_ranks_peers', calc_specs.goalkeepers.peers].join("|");
+        logger_str = [misc.target_template, misc.nhca, 'goalkeepers_ranks_peers', calc_specs.goalkeepers.peers].join("|");
         document.getElementById('pixel').src = "/logger-editSettings?c=" + logger_str;
     }
     
@@ -341,6 +342,146 @@ function process_time_log(time_log){
     
 }
 
+function display_player_card(seq){
+    
+    
+    p = roster.filter(r=> r.seq == seq)
+    if(p.length == 0){
+        // Fail
+        report_js_visualization_issue(misc.target_template + "|display_player teamID=" + misc.data.ID + " seq=" + seq + "|" + misc.nhca);
+        player_html = "";
+    }
+    else{
+        p = p[0];
+        //console.log("Display player")
+        //console.log(p)
+        
+        loops = [{'tag': 'rate', 'div_style': 'padding-top:20px; padding-bottom:30px;', 'id': 'player_overlay_rate_stats'}, {'tag': 'cnt', 'div_style': '', 'id': 'player_overlay_cnt_stats'}];
+        roles = []
+        
+        tmp = {'tag': 'offensive', 'desc': 'Offense', 'fields': []};
+        tmp.fields.push({'type': 'rate', 'tag': 'EGA_per_game', 'label': 'EGA/gm', 'jsfmt': "2"})
+        tmp.fields.push({'type': 'rate', 'tag': 'EGA_per_game_rank_str', 'label': 'EGA Rank', 'jsfmt': ""})
+        tmp.fields.push({'type': 'rate', 'tag': 'play_shares_rank_str', 'dtop_label': 'Team Play Share Rank', 'mob_label': 'Team Share Rnk', 'jsfmt': ""})
+        tmp.fields.push({'type': 'rate', 'tag': 'shooting_pct', 'label': 'Shooting Pct', 'jsfmt': "1%"})
+        
+        tmp.fields.push({'type': 'cnt', 'tag': 'goals_scored', 'label': 'Goals', 'jsfmt': "0"})
+        tmp.fields.push({'type': 'cnt', 'tag': 'assists', 'label': 'Assists', 'jsfmt': "0"})
+        tmp.fields.push({'type': 'cnt', 'tag': 'shots_taken', 'label': 'Shots Taken', 'jsfmt': "0"})
+        tmp.fields.push({'type': 'cnt', 'tag': 'turnovers', 'label': 'Turnovers', 'jsfmt': "0"})
+        roles.push(tmp);
+        
+        tmp = {'tag': 'defensive', 'desc': 'Defense', 'fields': []};
+        tmp.fields.push({'type': 'rate', 'tag': 'EGA_per_game', 'label': 'EGA/gm', 'jsfmt': "2"})
+        tmp.fields.push({'type': 'rate', 'tag': 'defensive_EGA_rank_str', 'label': 'Def EGA Rank', 'jsfmt': ""})
+        tmp.fields.push({'type': 'rate', 'tag': 'penalties', 'label': 'Penalties', 'jsfmt': ""})
+        tmp.fields.push({'type': 'rate', 'tag': 'caused_turnover_share', 'label': 'Share of Team CTs', 'jsfmt': "0%"})
+        
+        tmp.fields.push({'type': 'cnt', 'tag': 'caused_turnovers', 'label': 'Caused Turnovers', 'jsfmt': "0"})
+        tmp.fields.push({'type': 'cnt', 'tag': 'gbs', 'label': 'Ground balls', 'jsfmt': "0"})
+        tmp.fields.push({'type': 'cnt', 'tag': 'goals_scored', 'label': 'Goals', 'jsfmt': "0"})
+        tmp.fields.push({'type': 'cnt', 'tag': 'assists', 'label': 'Assists', 'jsfmt': "0"})
+        roles.push(tmp);
+        
+        tmp = {'tag': 'faceoff', 'desc': 'Faceoff', 'fields': []};
+        tmp.fields.push({'type': 'rate', 'tag': 'EGA_per_game', 'label': 'EGA/gm', 'jsfmt': "2"})
+        tmp.fields.push({'type': 'rate', 'tag': 'faceoff_EGA_rank_str', 'label': 'FO EGA Rank', 'jsfmt': ""})
+        tmp.fields.push({'type': 'rate', 'tag': 'season_faceoff_ELO_rank_str', 'label': 'FO ELO Rank', 'jsfmt': ""})
+        tmp.fields.push({'type': 'rate', 'tag': 'faceoff_pct', 'label': 'Faceoff Win Rate', 'jsfmt': "1%"})
+        
+        tmp.fields.push({'type': 'cnt', 'tag': 'faceoff_record', 'label': 'Faceoff Record', 'jsfmt': "0"})
+        tmp.fields.push({'type': 'cnt', 'tag': 'gbs', 'label': 'Ground balls', 'jsfmt': "0"})
+        tmp.fields.push({'type': 'cnt', 'tag': 'goals_scored', 'label': 'Goals', 'jsfmt': "0"})
+        tmp.fields.push({'type': 'cnt', 'tag': 'assists', 'label': 'Assists', 'jsfmt': "0"})
+        roles.push(tmp);
+        
+        tmp = {'tag': 'goalkeeper', 'desc': 'Goalkeeper', 'fields': []};
+        tmp.fields.push({'type': 'rate', 'tag': 'excess_saves', 'label': 'Excess Saves', 'jsfmt': "2"})
+        tmp.fields.push({'type': 'rate', 'tag': 'excess_saves_rank_str', 'label': 'Excess Saves Rank', 'jsfmt': ""})
+        tmp.fields.push({'type': 'rate', 'tag': 'save_pct', 'label': 'Save Pct', 'jsfmt': "1%"})
+        tmp.fields.push({'type': 'rate', 'tag': 'save_pct_rank_str', 'label': 'Save Pct Rank', 'jsfmt': "1%"})
+        
+        tmp.fields.push({'type': 'cnt', 'tag': 'shots_faced', 'label': 'Shots Faced', 'jsfmt': "0"})
+        tmp.fields.push({'type': 'cnt', 'tag': 'sog_faced', 'label': 'S.O.G. Faced', 'jsfmt': "0"})
+        tmp.fields.push({'type': 'cnt', 'tag': 'saves', 'label': 'Saves', 'jsfmt': "0"})
+        tmp.fields.push({'type': 'cnt', 'tag': 'goals_allowed', 'label': 'Goals Allowed', 'jsfmt': "0"})
+        roles.push(tmp);
+        
+        role = roles.filter(r=> r.tag == p.role || (r.tag == "offensive" && p.role == null))[0];
+        
+        loop_after = on_mobile ? 2 : 4;
+        player_content = "";
+        for(var b = 0;b<loops.length;b++){ loop = loops[b];
+            
+            player_content += "<div class='no-padding' id='" + loop.id + "' style='" + loop.div_style + "'>";
+            
+            loop_fields = role.fields.filter(r=> r.type == loop.tag);
+            // Add rate/EGA data
+            for(var a = 0;a<loop_fields.length;a++){
+                f = loop_fields[a];
+                if(a % loop_after == 0){
+                    player_content += "<div class='no-padding flex'>";
+                }
+                val = f.tag in p ? (p[f.tag] == null ? "N/A": p[f.tag]) : "N/A";
+                
+                player_content += "<div class='no-padding col-3-6'>";
+                if('dtop_label' in f){
+                    player_content += "<div class='no-padding'><span class='mob light font-15'>" + f.mob_label + "</span><span class='dtop light font-15'>" + f.dtop_label + "</span></div>";
+                }
+                else{
+                    player_content += "<div class='no-padding'><span class='light font-15'>" + f.label + "</span></div>";
+                }
+                player_content += "<div class='no-padding'><span class='bold font-24'>" + jsformat(val, f.jsfmt) + "</span></div>";
+                player_content += "</div>";
+                
+                if(a % loop_after == (loop_after-1) || a == role.fields.length-1){
+                    player_content += "</div>";
+                }
+            }
+            
+            // Wrap-up
+            player_content += "</div>";
+        }    
+            
+
+        
+        
+        
+        player_html = "<div class='col-12 flex'><div class='col-10 inline-flex'><span class='font-36 bold contents'>" + p.player + "</span><FORM id='player_detail_form" + p.player_ID + "' action='/team_player_detail' method=POST><input type=hidden name='ID' value='" + p.player_ID + "' /><input type=hidden name='came_from' value='" + misc.came_from + "' /><img class='font-36 popout-icon' style='padding-left:15px;' onclick=\"document.getElementById('player_detail_form" + p.player_ID + "').submit();\" src=\"static/img/popout25.png\" /></FORM></div>";
+        player_html += "<div class='col-2 right'><img onclick='hide_overlay();' src='/static/img/Close24.png' /></div></div>";
+        player_html += "<div class='col-12 exp-scroll'>" + player_content + "</div>";
+        
+        
+    }
+   
+var logger_str = null;
+
+    
+
+
+html = '';
+    html += '<div class="flex" style="max-height:450px; margin:5px;">';
+        html += '<div class="col-1"></div>';
+        html += '<div class="col-10 popup-content">';
+        html += player_html;
+       
+
+        
+        //html += '<div class="col-12 centered" style="padding-top:15px;"><button class="action-button" onclick="hide_overlay();" class="close"><span class="">Close</span></button></div>    ';
+        html += '</div>';
+        html += '<div class="col-1"></div>';
+    html += '</div>';
+
+
+        $("#fullscreen_overlay_panel").empty(); $("#fullscreen_overlay_panel").append(html); $("#fullscreen_overlay_panel").addClass("shown");
+
+        
+        if('observe' in misc && misc.observe){ report_user_view(misc.handler + "|player_card|" + misc.nhca); }
+
+}
+
+    
+    
 function choose_left_menu_item(id){
     id = id.replace("_menu_item", "");
     console.log("Enable " + id);
@@ -404,8 +545,23 @@ function finish_load(notifications){
     console_log.push({'msg': 'Start apply_user_settings...'});
     apply_user_settings();
     
-    
-    
+    // Populate the Explore menu
+    if(document.getElementById("explore_menu_item") != null){
+        elem = $("#explore_menu_item"); elem.empty();
+        html = "";
+        
+        html += "<div class='no-padding'><a class='menu-link'><span class='menu-link' style=''><span class='font-15 pointer'>Explore</span></span></a></div>";
+        html += "<div class='submenu'>";
+            html += '<div id="menu_modal_explore" class="submenu-content" style="">';
+                //html += "<a class='font-15' id='teams_link' href='/teams'><span class='no-padding contents'>Teams</span></a>";
+                html += "<a class='font-15' id='stats_link' href='/stats'><span class='no-padding contents'>Stats</span></a>";
+                html += "<a class='font-15' id='players_link' href='/players'><span class='no-padding contents'>Players</span></a>";
+            html += "</div>";
+        html += "</div>";
+        elem.append(html);
+        
+        $( "#explore_menu_item" ).click(function( event ) { event.stopPropagation(); explore_toggle(); });
+    }
     // Change color of main logo; this will be used for the testing script to confirm that all JS was run successfully
     if($("#main_logo").css("color") == "rgb(51, 51, 51)"){
         document.getElementById("main_logo").style.color = "rgb(51, 51, 52)";
@@ -415,20 +571,136 @@ function finish_load(notifications){
     }
 }
 
+function display_roster_list(id, roster){
+    roles = [];
+    roles.push({'desc': 'Field', 'tag':  'field', 'role_tags': ['offensive', 'defensive']});
+    roles.push({'desc': 'FOGO', 'tag': 'fogo', 'role_tags': ['faceoff']});
+    roles.push({'desc': 'Goalkeepers', 'tag': 'goalkeepers', 'role_tags': ['goalkeeper']});
+        
+
+    for(var a = 0;a<roster.length;a++){ p = roster[a];
+        p.seq = a;
+        p.faceoff_record = p.faceoff_wins + " - " + p.faceoff_losses;
+        p.save_pct = p.shots_faced > 0 ? 1.0 - (p.goals_allowed / p.shots_faced) : null;
+        p.excess_saves = p.expected_goals_allowed - p.goals_allowed;
+    }
+    
+    for(var b = 0;b<roles.length;b++){ 
+        role_players = roster.filter(r=> roles[b].role_tags.indexOf(r.role) > -1 || (b==0 && r.role == null));
+        js_data = {'no_row_count': 1, 'data': [], 'cell_size': 'cell-holder', 'row_style_class': 'bottom light'}
+        js_data.fields = [{'sort_by': 'player', 'tag': 'player', 'display': 'Player'}];
+
+
+        if(roles[b].tag == "field"){
+            js_data.classes = [{'class': 'col-3 mouseover-link'}, {'outer_class': 'col-9', 'classes': [{'class': 'right'}, {'class': 'right'}, {'class': 'right'}, {'class': 'right'}, {'class': 'dtop right'}, {'class': 'right'}]}];
+            js_data.fmt = [{'fmt': ""}, {'fmt': "2"}, {'fmt': "1%"}, {'fmt': "0"}, {'fmt': "0"}, {'fmt': "0"}, {'fmt': ""}];
+            js_data.fields.push({'sort_by': 'EGA', 'tag': 'EGA', 'display': 'EGA'});
+            js_data.fields.push({'sort_by': 'team_play_shares', 'tag': 'team_play_shares', 'mob_display': 'Share%', 'dtop_display': 'Play Shares'});
+            js_data.fields.push({'sort_by': 'shots_taken', 'tag': 'shots_taken', 'display': 'Shots'});
+            js_data.fields.push({'sort_by': 'goals_scored', 'tag': 'goals_scored', 'display': 'Goals'});
+            js_data.fields.push({'sort_by': 'gbs', 'tag': 'gbs', 'display': 'Ground Balls'});
+        }
+        else if(roles[b].tag == "fogo"){
+            js_data.cell_size = "large-cell-holder";
+            js_data.classes = [{'class': 'col-3 mouseover-link'}, {'outer_class': 'col-9', 'classes': [{'class': 'right'}, {'class': 'right dtop'}, {'class': 'right'}, {'class': 'right'}, {'class': 'right'}]}];
+            js_data.fmt = [{'fmt': ""}, {'fmt': "1%"}, {'fmt': ""}, {'fmt': "0"}, {'fmt': ""}, {'fmt': ""}];
+            js_data.fields.push({'sort_by': 'faceoff_pct', 'tag': 'faceoff_pct', 'mob_display': 'FO Win%', 'dtop_display': 'FO Win Rate'});
+            js_data.fields.push({'sort_by': 'faceoff_pct', 'tag': 'faceoff_record', 'display': 'FO Record'});
+            js_data.fields.push({'sort_by': 'faceoff_ELO', 'tag': 'faceoff_ELO', 'display': 'FO ELO', 'display': 'FO ELO'});
+            js_data.fields.push({'sort_by': 'season_faceoff_ELO_rank', 'tag': 'season_faceoff_ELO_rank_str', 'mob_display': 'ELO Rank', 'dtop_display': 'FO ELO Rank'});
+            
+        }
+        else if(roles[b].tag == "goalkeepers"){
+            js_data.cell_size = "large-cell-holder";
+            js_data.classes = [{'class': 'col-3 mouseover-link'}, {'outer_class': 'col-9', 'classes': [{'class': 'right'}, {'class': 'right'}, {'class': 'right'}, {'class': 'right dtop'}, {'class': 'right'}, {'class': 'right'}]}];
+            js_data.fmt = [{'fmt': ""}, {'fmt': "0%"}, {'fmt': "0"}, {'fmt': "0"}, {'fmt': "1"}, {'fmt': "1"}, {'fmt': "1"}];
+            js_data.fields.push({'sort_by': 'save_pct', 'tag': 'save_pct', 'display': 'Save Pct'});
+            js_data.fields.push({'sort_by': 'shots_faced', 'tag': 'shots_faced', 'mob_display': 'Shots', 'dtop_display': 'Shots Faced'});
+            js_data.fields.push({'sort_by': 'goals_allowed', 'tag': 'goals_allowed', 'mob_display': 'Goals', 'dtop_display': 'Goals Allowed'});
+            js_data.fields.push({'sort_by': 'expected_goals_allowed', 'tag': 'expected_goals_allowed', 'display': 'Expected GA'});
+            js_data.fields.push({'sort_by': 'excess_saves', 'tag': 'excess_saves', 'mob_display': 'Saves+', 'dtop_display': 'Excess Saves'});
+        }
+        js_data.fields.push({'tag': 'expand', 'display': ''});
+        
+        for(var a = 0;a<role_players.length;a++){
+            p = role_players[a];
+            tmp_fields = ['EGA', 'team_play_shares', 'faceoff_pct', 'faceoff_record', 'save_pct', 'shots_faced', 'goals_allowed', 'expected_goals_allowed', 'excess_saves', 'faceoff_ELO', 'season_faceoff_ELO_rank_str', 'shots_taken', 'goals_scored', 'gbs', 'turnovers'];
+            d = {};
+            for(var ab = 0;ab<tmp_fields.length;ab++){ d[tmp_fields[ab]] = p[tmp_fields[ab]]; }
+            d.player = "<FORM id='player" + p.player_ID + "form' action='/team_player_detail' method=POST><input type=hidden name='ID' value='" + p.player_ID + "'><input type=hidden name='came_from' value='" + misc.came_from + "'><span onclick=\"document.getElementById(\'player" + p.player_ID + "form\').submit();\" class='no-padding'>" + p.player+ "</span></FORM>";
+            d.expand = "<img id='player" + p.seq + "_imgicon' class='icon-15 row-toggle' onclick='display_player_card(" + p.seq + ");' src='static/img/Gray_Plus_Skinny150.png' />";
+            js_data.data.push(d);
+        }
+        roles[b].js_data = js_data;
+    }
+    
+    /* visualization */
+    elem = $("#" + id); elem.empty();
+    for(var b = 0;b<roles.length;b++){role = roles[b];
+        html = "<div class='col-12 bbottom'><span class='font-18 bold'>" + role.desc + "</span></div>";
+        elem.append(html);  
+        
+        html = "<div id='role" + b + "_div' class='no-padding' style='padding-bottom:20px;'></div>";
+        elem.append(html);  
+        
+        if(role.js_data.data.length == 0){
+            //$("#role" + b + "_div").empty(); 
+            $("#role" + b + "_div").append("<div class='col-12'><span class='font-12 error'>There are no players to display.</span></div>");
+        }
+        else{
+            if(role.tag == "field"){
+                role.js_data.data = role.js_data.data.sort(function(a,b){ return b.team_play_shares - a.team_play_shares; }); 
+            }
+            else if(role.tag == "fogo"){
+                role.js_data.data = role.js_data.data.sort(function(a,b){ return b.faceoff_ELO - a.faceoff_ELO; }); 
+            }
+            else if(role.tag == "goalkeepers"){
+                role.js_data.data = role.js_data.data.sort(function(a,b){ return b.excess_saves - a.excess_saves; });
+            }
+            generic_create_table(role.js_data, {'id': 'role' + b + '_div', 'target_elem': 'role' + b + '_div'});
+        }
+    }
+    
+    html = "";
+    html += "<div class='col-12 right no-padding' style='padding-top:5px;'><span class='contents font-12'>Note: the roster includes only those players who have appeared in the box score during the season in question.</div>";
+    elem.append(html);
+}
+
+function display_more_menu(){
+    if(typeof user_obj == "undefined" || user_obj == null){ return; }
+    if(typeof misc == "undefined" || misc == null){ return; }
+    console.log(misc);
+    console.log(user_obj);
+}
+
 function explanation_feedback(s){
     document.getElementById('pixel').src = "/logger-explanationFeedback?c=" + s;
-    $(".feedback-request").addClass("hidden");
-    $(".feedback-request-thanks").removeClass("hidden");
+    $(".helpful-request").addClass("hidden");
+    $(".helpful-request-thanks").removeClass("hidden");
 }
 
 function report_js_visualization_issue(s){
     document.getElementById('pixel').src = "/logger-jsVisualizationFail?c=" + s;
 }
 
+function report_user_view(s){
+    console.log(s);
+    document.getElementById('pixel').src = "/logger-userView?c=" + s;
+}
+
 function show_explanation(tags){
-    var feedback_yes = null; var feedback_no = null; var logger_str = null;
-    $(".feedback-request").removeClass("hidden");
-    $(".feedback-request-thanks").addClass("hidden");
+    var feedback_yes = null; var moreClear_yes = null; var feedback_no = null; var logger_str = null;
+    console.log(misc);
+    
+    if(misc.AB % 2 == 1){
+        feedback_type = "helpful";
+    }
+    else{
+        feedback_type = "moreClear"
+    }
+    $("." + feedback_type + "-request").removeClass("hidden");
+    $("." + feedback_type + "-request-thanks").addClass("hidden");
+        
     var tags = tags.split("|");
     if(tags.length != 2){
         exp = 'Oops...|There should be something here, but there isn\'t. Apologies.'
@@ -443,12 +715,14 @@ function show_explanation(tags){
         exp = 'Oops...|There should be something here, but there isn\'t. Apologies.'
         for(var a = 0;a<explanations.length;a++){
             var explanation = explanations[a];
-            console.log(explanation.html_page , tags[0] , explanation.tag , tags[1]);
+            
             if(explanation.html_page == tags[0] && explanation.tag == tags[1]){
                 exp = explanation.header_text + "|" + explanation.explanation_html_BR;
                 logger_str = [tags[0], tags[1], misc.nhca].join("|");
-                feedback_no = logger_str + "|0";
-                feedback_yes = logger_str + "|1";                
+                feedback_no = logger_str + "|helpful-0";
+                feedback_yes = logger_str + "|helpful-1";                
+                moreClear_no = logger_str + "|moreClear-0";
+                moreClear_yes = logger_str + "|moreClear-1";                
                 document.getElementById('pixel').src = "/logger-explanationOpen?c=" + logger_str;
                 break;
             }
@@ -466,11 +740,18 @@ function show_explanation(tags){
             html += exp_html;
            
             if(feedback_yes != null){
-                html += "<div class='feedback-request col-12 right' style='padding-top:15px;'><span class='font-12'>Was this helpful?</span><span onclick='explanation_feedback(\"" + feedback_yes + "\")' class='mouseover-link font-12'>Yes</span><span onclick='explanation_feedback(\"" + feedback_no + "\")' class='mouseover-link font-12 '>No</span></div>    ";
-                html += "<div class='feedback-request-thanks hidden col-12 right' style='padding-top:15px;'><span class='font-12 contents' style='color:blue;'>Thank you. Feedback is greatly appreciated.</span></div>    ";
+                if(feedback_type == "helpful"){
+                    html += "<div class='helpful-request col-12 right' style='padding-top:15px;'><span class='font-12'>Was this helpful?</span><span onclick='explanation_feedback(\"" + feedback_yes + "\")' class='mouseover-link font-12'>Yes</span><span onclick='explanation_feedback(\"" + feedback_no + "\")' class='mouseover-link font-12 '>No</span></div>    ";
+                    html += "<div class='helpful-request-thanks hidden col-12 right' style='padding-top:15px;'><span class='font-12 contents' style='color:blue;'>Thank you. Feedback is greatly appreciated.</span></div>    ";
+                }
+                
+                if(feedback_type == "moreClear"){
+                    html += "<div class='helpful-request col-12 right' style='padding-top:15px;'><span class='font-12'>Could this have been more clear?</span><span onclick='explanation_feedback(\"" + moreClear_yes + "\")' class='mouseover-link font-12'>Yes</span><span onclick='explanation_feedback(\"" + moreClear_no + "\")' class='mouseover-link font-12 '>No</span></div>    ";
+                    html += "<div class='helpful-request-thanks hidden col-12 right' style='padding-top:15px;'><span class='font-12 contents' style='color:blue;'>Thank you. Feedback is greatly appreciated.</span></div>    ";
+                }
             }
             
-            html += '<div class="col-12 centered" style="padding-top:15px;"><button class="action-button" onclick="hide_overlay();" class="close"><span class="">Close</span></button></div>    ';
+            html += '<div class="col-12 centered" style="padding-top:15px;"><button class="action-button" onclick="hide_overlay();" class="close"><span class="">Close</span></button></div>';
             html += '</div>';
             html += '<div class="col-1"></div>';
         html += '</div>';
@@ -529,13 +810,28 @@ function title(str) {
   );
 }
 
-function update_settings(id, val){
+function update_settings(id, val, post=null){
     
     var bar = $("#settings-bar");
     var class_list = document.getElementById("settings-bar").className.split(/\s+/);
+    var post_method = false;
     if(id != null){
-        console.log("Changed " + id + " to " + val + " on " + misc.target_template);
-        
+        if(post == null){
+            console.log("Changed " + id + " to " + val + " on " + misc.target_template);
+        }
+        else{
+            post_method = true;
+            console.log("Changed " + id + " to " + val + " on " + misc.target_template + " w/ post = " + post);
+            tmp = post.split("|"); tokens = [];
+            for(var a = 0;a<tmp.length;a++){
+                tokens.push({'name': tmp[a].split("~")[0], 'value': tmp[a].split("~")[1]});
+            }
+                    
+            console.log("tokens"); console.log(tokens)
+            for(var a = 0;a<tokens.length;a++){ token = tokens[a]; 
+                $("#settings_form_" + token.name).val(token.value);
+            }
+        }
         
         logger_str = [misc.target_template, misc.nhca, id, val].join("|");
                 
@@ -555,9 +851,12 @@ function update_settings(id, val){
             
             $("#refreshing-bar").removeClass("not-shown");
             $("#settings-bar").addClass("not-shown");
-            
-            setTimeout(() => {  window.location= "/" + misc.target_template.split(".html")[0]; }, 3000);
-
+            if(post_method){
+                setTimeout(() => {  document.getElementById('settings_form').submit()}, 3000);
+            }
+            else{
+                setTimeout(() => {  window.location= "/" + misc.target_template.split(".html")[0]; }, 3000);
+            }
         }
         
     }
@@ -674,6 +973,10 @@ function apply_user_settings(){
                 if(uos[k].val != mds[k]){ is_default = false; }
                 
                 if(['general_focus_year'].indexOf(k) > -1){ // Select object
+                    html += "<span class='font-13'>Set " + k + " select to " + uos[k].val + "</span>";
+                    $("#" + k).val(uos[k].val);
+                }
+                else if(['player_focus_year'].indexOf(k) > -1){ // Select object
                     html += "<span class='font-13'>Set " + k + " select to " + uos[k].val + "</span>";
                     $("#" + k).val(uos[k].val);
                 }
@@ -876,6 +1179,29 @@ function menu_toggle(only_if_open=false){
         }
         else{
             console.log("Menu objects have not been created correctly...");
+        }
+    }
+}
+
+
+function explore_toggle(only_if_open=false){
+
+    tags = {'explore': ''}; // 'dtop': 1, 'mob': 1};
+    for(t in tags){
+        var elem_name = 'menu_modal_' + t;
+        if(document.getElementById(elem_name) != null){
+            var cur = document.getElementById(elem_name).style.display;
+            if(["none",""].indexOf(cur) > -1){
+                if(!only_if_open){
+                    document.getElementById(elem_name).style.display = "block";
+                }
+            }
+            else{
+                document.getElementById(elem_name).style.display = "none";    
+            }
+        }
+        else{
+            console.log("Explore objects have not been created correctly...");
         }
     }
 }

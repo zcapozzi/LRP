@@ -7,7 +7,7 @@ div.block-flex { display:block; }
 div.inline-flex { display:inline-flex; vertical-align: middle; padding: 10px; }
 div.inline { display:inline; padding: 5px; }
 div.inline-block { display:inline-block; padding: 5px; }
-
+div.inline-flex.no-padding{ padding:0; }
 
 
 .centered{ text-align:center; }

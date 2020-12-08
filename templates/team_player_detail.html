@@ -5,11 +5,12 @@
 {% block body %}
 
         <div class='col-12 dtop flex menu-header-bar'>
-            <div class='col-12'>
-                <a href='/' class='menu-link'><span class='menu-link' style='padding-left:10px;'><span class='font-15'>Home</span></span></a>
-                <a href='/team_my_career' class='menu-link'><span class='menu-link' style='padding-left:10px;'><span class='font-15'>My career</span></span></a>
-                <a href='/team_my_stats' class='menu-link'><span class='menu-link' style=''><span class='font-15'>My Stats</span></span></a>
-                <a href='/team_my_rankings' class='menu-link'><span class='menu-link' style=''><span class='font-15'>My Rankings</span></span></a>
+            <div class='col-12 inline-flex'>
+                <div class='no-padding'> <a href='/' class='menu-link'><span class='menu-link font-15'>Home</span></span></a></div>
+                <div class='no-padding'> <a href='/team_my_schedule' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Schedule</span></a></div>
+                <div class='no-padding'> <a href='/team_my_stats' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Stats</span></a></div>
+                <div class='no-padding'> <a href='/team_my_rankings' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Rankings</span></a></div>
+                <div class='no-padding' id='explore_menu_item'><div class='no-padding'><a class='menu-link'><span class='menu-link font-15 pointer'>Explore</span></a></div></div>
             </div>
         </div>
 
@@ -35,18 +36,25 @@
                 <div class='no-padding col-3 right'>
                     <div class='no-padding col-12 right'>
                         <div class='gear-settings'>
-                            <img onclick='toggle_settings_bar();' id='settings-icon' class='icon-15 settings' src='/static/img/blue_gear15.png' />
+                            <img onclick='toggle_settings_bar("settings-bar");' id='settings-icon' class='icon-15 settings' src='/static/img/blue_gear15.png' />
                         </div>
                     </div>
                 </div>
                 
             </div>
+            <div style='display:none'>
+                <FORM action='/team_player_detail' id='settings_form' method=POST>
+                    <input type=hidden id='settings_form_player_ID' name='ID' value='' />
+                    <input type=hidden name='came_from' value='{{misc.came_from}}' />
+                </FORM>
+            </div>
             <div class='settings-bar single-row not-shown no-padding right' id='settings-bar'>
                 <div class='' style='padding-right:10px;'>
                     <span class='font-13' style='padding-right:10px;'>Year</span>
-                    <select class='settings-bar' id='general_focus_year' onchange='update_settings(this.id, this.value);'>
-                        <option value=2020>2020</option>
-                        <option value=2019>2019</option>
+                    <select class='settings-bar' id='player_focus_year' onchange='update_settings(this.id, this.value, "player_ID~{{misc.data.ID}}");'>
+                        {% for y in misc.year_select_options %}
+                            <option value={{y.year}}>{{y.year}}</option>
+                        {% endfor %}
                     </select>
                 </div>
             </div>
@@ -74,16 +82,50 @@
                             <div class='col-12'>
                                 <div class='non-dashboard-section card col-12' id='season_ranks_container_div'>
                                     <div class='non-dashboard-section-header'>
-                                        <div onclick='drill_down_header(this.id, 1);' id='season_label' route="|season" class='col-11-10 no-padding non-dashboard-label'>{{misc.data.player}} Rankings</div>
+                                        <div onclick='drill_down_header(this.id, 1);' id='season_ranks_label' route="|season_ranks" class='col-11-10 no-padding non-dashboard-label'>{{misc.data.player}} Rankings</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='season_ranks_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|season_ranks" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='season_ranks_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_player_detail.html|season_ranks" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='season_ranks_img' class='icon-15 toggle' onclick='toggle_tile_visibility("season_ranks");' src="static/img/Gray_Minus150.png" /></div>
                                                 
                                                     
                                         
                                     </div>
                                     <div class='non-dashboard-tile-content visible' id='season_ranks_div'>
-                                        
+                                        <div class='no-padding'>
+                                            <div class='mob no-padding' style=''>
+                                                <div class='settings-bar rounded not-shown no-padding' id='season-ranks-settings-bar'>
+                                                    <div class='' style='margin-bottom:25px;'>
+                                                        <div class='no-padding col-12 flex'>
+                                                            <div class='col-12 margin white'>
+                                                                <div class='light col-12 no-padding'><span class=' no-padding font-15'>Metric</span></div>
+                                                                <div id='season_ranks_stat_select_mob' class='stat-select'> </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>
+                                            <div class='flex no-padding'>
+                                                <div class='col-2 dtop non-dashboard-tile-section' id='season_detail'>
+                                                    
+                                                </div>
+                                                
+                                                <div class='col-8-12 non-dashboard-tile-section' id='season_ranks_graph_div' style=''>
+                                                
+                                                </div>
+                                            
+                                              
+                                                <div class='col-2 dtop non-dashboard-tile-section' style=''>
+                                                    <div class='col-12 no-padding'><span class='no-padding font-15 bold'>Select a Stat</span></div>
+                                                    <div id='ranks_stat_tags_dtop' class='stat-tags'> </div>
+                                                    <div id='season_ranks_stat_select_dtop' class='stat-select'> </div>
+                                                </div>
+                                            
+                                              
+                                                
+                                                
+                                            </div>
+                                        </div>
                                     </div>
 
                                 </div>
@@ -91,9 +133,9 @@
                             <div class='col-12'>
                                 <div class='non-dashboard-section card col-12' id='season_games_container_div'>
                                     <div class='non-dashboard-section-header'>
-                                        <div onclick='drill_down_header(this.id, 1);' id='season_label' route="|season" class='col-11-10 no-padding non-dashboard-label'>Game Log</div>
+                                        <div onclick='drill_down_header(this.id, 1);' id='season_games_label' route="|season_games" class='col-11-10 no-padding non-dashboard-label'>Game Log</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='season_games_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|season_games" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='season_games_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_player_detail.html|season_games" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='season_games_img' class='icon-15 toggle' onclick='toggle_tile_visibility("season_games");' src="static/img/Gray_Minus150.png" /></div>
                                                 
                                                     
@@ -111,9 +153,9 @@
                             <div class='col-12 flex-block no-padding'>
                                 <div class='non-dashboard-section card col-6-12' id='career_EGA_container_div'>
                                     <div class='non-dashboard-section-header'>
-                                        <div onclick='drill_down_header(this.id, 1);' id='career_EGA_label' route="|career_EGA" class='col-11-10 no-padding non-dashboard-label'>Expected Goals</div>
+                                        <div onclick='drill_down_header(this.id, 1);' id='career_EGA_label' route="|career_EGA" class='col-11-10 no-padding non-dashboard-label'>Career EGA</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='career_EGA_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|career_EGA" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' id='career_EGA_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_player_detail.html|career_EGA" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='career_EGA_img' class='icon-15 toggle' onclick='toggle_tile_visibility("career_EGA");' src="static/img/Gray_Minus150.png" /></div>
                                                 
                                                     
@@ -143,19 +185,57 @@
                             
                             
                             <div class='col-12'>
-                                <div class='non-dashboard-section card col-12' id='career_trends_container_div'>
+                                <div class='non-dashboard-section card col-12' id='career_movement_container_div'>
                                     <div class='non-dashboard-section-header'>
-                                        <div onclick='drill_down_header(this.id, 1);' id='career_trends_label' route="|career_trends" class='col-11-10 no-padding non-dashboard-label'>Career Trends</div>
+                                        <div onclick='drill_down_header(this.id, 1);' id='career_movement_label' route="|career_movement" class='col-11-9 no-padding non-dashboard-label'>Performance Trends</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' id='career_trends_helpicon' style='margin-top:2px;'><img class='icon-15 explanation' value="team_my_rankings.html|career_trends" src="static/img/Gray_Info150.png" /></div>
-                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='career_trends_img' class='icon-15 toggle' onclick='toggle_tile_visibility("career_trends");' src="static/img/Gray_Plus150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon mob' id='career_movement_filtericon' style='margin-top:2px;'><img onclick='toggle_settings_bar("offensive-movement-settings-bar");' class='icon-15 settings'  src="static/img/gray_Filter150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='career_movement_helpicon' class='icon-15 explanation' value="team_my_stats.html|career_movement" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='career_movement_img' class='icon-15 toggle' onclick='toggle_tile_visibility("career_movement");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
                                         
                                     </div>
-                                    <div class='non-dashboard-tile-content' id='career_trends_div'>
+                                    <div class='non-dashboard-tile-content bigger' id='career_movement_div'>
+                                        <div class='no-padding'>
+                                            <div class='mob no-padding' style=''>
+                                               
+                                                <div class='settings-bar rounded not-shown no-padding' id='career-movement-settings-bar'>
+                                                    <div class='' style='margin-bottom:25px;'>
+                                                        <div class='no-padding col-12 flex'>
+                                                            <div class='col-4 margin white'>
+                                                                <div class='light col-12 no-padding'><span class=' no-padding font-15'>Metric</span></div>
+                                                                <div id='career_movement_stat_select_mob' class='stat-select'> </div>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        
+                                                    
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>
+                                    
+                                        <div class='flex no-padding'>
+                                            <div class='col-10-12 non-dashboard-tile-section' id='career_movement_graph_div' style=''>
+                                                
+                                            </div>
                                         
+                                          
+                                            <div class='col-2 dtop non-dashboard-tile-section' style=''>
+                                                <div class='col-12 no-padding'><span class='no-padding font-15 bold'>Select a Stat</span></div>
+                                                <div id='career_movement_stat_tags_dtop' class='stat-tags'> </div>
+                                                <div id='career_movement_stat_select_dtop' class='stat-select'> </div>
+                                                
+                                            </div>
+                                        
+                                            
+                                            
+                                        </div>
+
                                     </div>
+                                </div>
+                            
 
                                 </div>
                             </div>
@@ -167,135 +247,11 @@
         </div>
     
 
-<script src="static/js/d3.v4.min.js"></script><script src="static/js/laxrefpro_graphing.js?dt=200"></script>
+<script src="static/js/d3.v4.min.js"></script><script src="static/js/laxrefpro_graphing.js?dt=203"></script>
 <script>
     var on_mobile = null;
     var console_log = []; var success = null;
     var time_log = JSON.parse({{misc.time_log|to_json2}});
-    
-    function process_season_trends_history(misc){
-        raw = misc.extra_data.all_teams_season_trends_history;
-        start_x = misc.season_trends_movement_start_date;
-        
-        time_log.push({'tag': "process_season_trends_history", 'start': new Date().getTime()});
-        var history = [];
-        var change_history = [];
-        var conf_ID = null;
-        var team_entry = null;
-        var conf = {'add': 1, 'stroke': "maroon", 'stroke-dasharray': null, 'stroke-width': 1, 't': {'display_name': 'Conf Avg'}, 'n': 0.0};
-        var rows = []
-        for(var a = 0;a<raw.length;a++){
-            var row = JSON.parse(JSON.stringify(raw[a]));
-            row.add = 0; row.team = 0;
-            
-            row.conf_agg = false;
-            tokens = row.t.split("|")
-                
-            row.t = {'years': [], 'change_years': [], 'team_ID': parseInt(tokens[0]), 'conf_ID': parseInt(tokens[1]), 'display_name': tokens[2]}
-            years = row.d.split("*");
-            for(var b = 0;b<years.length;b++){
-                yr = {};
-                year_value = parseInt(years[b].substring(0,4));
-                yr.points = years[b].substring(4).split("~");
-                for(var c = 0;c<yr.points.length;c++){
-                    tokens = yr.points[c].split("|")
-                    yr.points[c] = {'label': tokens[0], 'x': parseInt(tokens[1]), 'y': parseInt(tokens[2]), 'dt': parseInt(tokens[3])};
-                    //if(row.t.team_ID == 1){ console.log(  yr.points[c].dt , start_x, yr.points[c].dt == start_x ); }
-                    if(yr.points[c].dt == start_x){
-                        row.start_y = yr.points[c].y;
-                    }
-                }
-                row.t.years.push(yr);
-            }
-            for(var b = 0;b<years.length;b++){
-                change_yr = {};
-                year_value = parseInt(years[b].substring(0,4));
-                change_yr.points = years[b].substring(4).split("~");
-                for(var c = 0;c<change_yr.points.length;c++){
-                    tokens = change_yr.points[c].split("|")
-                    change_yr.points[c] = {'label': tokens[0], 'x': parseInt(tokens[1]), 'y': (parseInt(tokens[2])/row.start_y)* 100.0, 'dt': parseInt(tokens[3])};
-                }
-                change_yr.points = change_yr.points.filter( d => d.dt >= start_x);
-                row.t.change_years.push(change_yr);
-            }
-            //console.log(row.t.display_name, row.start_y);
-            if(row.t.team_ID == misc.active_team_ID){
-                row.stroke = "#77F"; row['stroke-dasharray'] = null; row['stroke-width'] = 2; 
-                conf_ID = row.t.conf_ID;
-                conf.n = 1.0;
-                conf.t.years = JSON.parse(JSON.stringify(row.t.years));
-                conf.t.change_years = JSON.parse(JSON.stringify(row.t.change_years));
-                row.team = 1;
-                team_entry = row;
-            }
-            rows.push(row);
-        }
-        
-        
-        for(var a = 0;a<rows.length;a++){
-            var row = rows[a];
-            if(row.t.team_ID != misc.active_team_ID && row.t.conf_ID == conf_ID){
-                row.stroke = "#DDD"; row['stroke-width'] = 1; row['stroke-dasharray'] = null; row.add = 1;
-                //history.push(row)
-                conf.n += 1.0;
-                
-                for(var c = 0;c<conf.t.years.length;c++){
-                    for(var b = 0;b<conf.t.years[c].points.length;b++){
-                        conf.t.years[c].points[b].y += row.t.years[c].points[b].y;
-                    }
-                }
-                for(var c = 0;c<conf.t.change_years.length;c++){
-                    for(var b = 0;b<conf.t.change_years[c].points.length;b++){
-                        conf.t.change_years[c].points[b].y += row.t.change_years[c].points[b].y;
-                    }
-                }
-            }
-        }
-        for(var c = 0;c<conf.t.years.length;c++){
-            for(var b = 0;b<conf.t.years[c].points.length;b++){
-                conf.t.years[c].points[b].y /= conf.n;
-            }
-        }
-        for(var c = 0;c<conf.t.change_years.length;c++){
-            for(var b = 0;b<conf.t.change_years[c].points.length;b++){
-                conf.t.change_years[c].points[b].y /= conf.n;
-            }
-        }
-        rows.push(conf);
-        for(var a = 0;a<rows.length;a++){
-            var row = rows[a];
-            if(row.add){
-                for(var b = 0;b<row.t.years.length;b++){
-                    yr = row.t.years[b];
-                    d = {'stroke': row.stroke, 'stroke-width': row['stroke-width'], 'stroke-dasharray': row['stroke-dasharray'], 'display_name': row.display_name, 'points': yr.points}
-                    history.push(d);
-                    
-                    change_yr = row.t.change_years[b];
-                    change_d = {'stroke': row.stroke, 'stroke-width': row['stroke-width'], 'stroke-dasharray': row['stroke-dasharray'], 'display_name': row.display_name, 'points': change_yr.points}
-                    change_history.push(change_d);
-                }
-            }
-        }
-        for(var a = 0;a<rows.length;a++){
-            var row = rows[a];
-            if(row.team){
-                for(var b = 0;b<row.t.years.length;b++){
-                    yr = row.t.years[b];
-                    d = {'stroke': row.stroke, 'stroke-width': row['stroke-width'], 'stroke-dasharray': row['stroke-dasharray'], 'display_name': row.display_name, 'points': yr.points}
-                    history.push(d);
-                    
-                    change_yr = row.t.change_years[b];
-                    change_d = {'stroke': row.stroke, 'stroke-width': row['stroke-width'], 'stroke-dasharray': row['stroke-dasharray'], 'display_name': row.display_name, 'points': change_yr.points}
-                    change_history.push(change_d);
-                }
-            }
-        }
-        
-        time_log[time_log.length-1].end = new Date().getTime();
-        misc.all_teams_season_trends_history = history;
-        misc.all_teams_season_trends_change_history = change_history;
-        return misc;
-    }
     
     var single_stat = "<div class='col-12'><span class='lightish contents font-20'>[header]</span></div>";
     single_stat += "<div class='col-12 centered ' style='padding-top:65px;'><span class='tile-message font-18'>[stat]</span></div>";
@@ -303,468 +259,394 @@
     console_log.push({'msg': 'Loaded misc...'});
     var user_obj = {'settings': {{user_obj.settings|to_json2}}};
     console_log.push({'msg': 'Loaded user settings...'});
-    //console.log(misc);
+    
+    console.log("misc.data");
+    console.log(misc.data);
     var explanations = {{user_obj.explanations|to_json2}};
     
-    function display_overview(panel){ 
-        if([null, 'overview', 'conditional_rpi', 'rpi_distribution', 'deconstructed_rpi'].indexOf(panel) == -1){ return; }
+    console.log("misc.data.player_career_stats");
+    console.log(misc.data.player_career_stats);
+    console.log("misc.data.season_log");
+    console.log(misc.data.season_log);
     
-        id = 'rpi_distribution_div'; success = false;
-        try{
-            if(typeof misc.data.RPI_ranks_histogram != "undefined" && misc.data.RPI_ranks_histogram.length > 0){
-                specs = {'margin_left': 30, 'chart_size': 'small', 'flip': 0};
+    var ranks_stat_tag = {'season': 'EGA_per_game', 'career': 'EGA_per_game'};
+    for(k in ranks_stat_tag){
+        
+        if(misc.stat_keys.filter( r => r.tag == ranks_stat_tag.season)[0].exclude){
+            for(var a = 0;a<misc.stat_keys.length;a++){
+                mk = misc.stat_keys[a];
+                if(!mk.exclude){ ranks_stat_tag[k] = mk.tag; break; }
+            }
+        }
+    }
+    function click_tag(panel, tag){ 
+        console.log(panel, tag);
+        if(panel == "season"){ ranks_stat_tag[panel] = tag; display_overview(panel, panel); }
+        if(panel == "career"){ ranks_stat_tag[panel] = tag; display_career(panel, panel); }
+    }
+    function display_overview(panel){ 
+        if([null, 'season', '', '', ''].indexOf(panel) == -1){ return; }
+        unit = "season";
+        if(misc.data.current_season != null){
+            id = 'season_ranks'; success = false;
+            try{
+                // Data
                 
-                data = {'axis_labels': {'y': '% of Simulations', 'x': 'Final RPI Rank'}, 'data': []};
-                tmp = {'stroke-dasharray': '3-3', 'stroke': "#666", 'points': []}
-                tmp.points = misc.data.RPI_ranks_histogram;
-                data.data.push(tmp)
+                    stat_key = misc.stat_keys.filter( r => r.tag == ranks_stat_tag.season)[0];
+                    console.log("stat_key");
+                    console.log(stat_key);
                 
-                x_ticks = create_game_x_ticks(data.data);
-                data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
-                y_ticks = create_pct_y_ticks(data.data, {})
-                data['y_ticks'] = y_ticks.ticks;
-                data['max_y'] = y_ticks.max;  data['min_y'] = 0;
-                specs.width = $('#rpi_distribution_container_div').width()-20;
+                    // Print the summary detail section
+                    detail_elem = $("#" + unit + "_detail"); detail_elem.empty();
+                    
+                    html = "";
+                    html += "<div class='' style='padding-top:15px;'><span class='no-padding font-12 light'>" + stat_key.display + "</span></div>";
+                    html += "<div class='centered'><span class='no-padding font-18 bold'>" + stat_key.me_str + "</span></div>";
+                    if( stat_key.percentile != null){
+                        html += "<div class='' style='padding-top:15px;'><span class='no-padding font-12 light'>Percentile</span></div>";
+                        html += "<div class='centered'><span class='no-padding font-18 bold'>" + stat_key.percentile_str + "</span></div>";
+                    }
+                    
+                    detail_elem.append(html);
+                    /* visualization */
+                    
+                    if(stat_key.insufficient_data){
+                        $("#" + id + '_graph_div').empty();
+                        $("#" + id + '_graph_div').append("<div class='centered' style='padding-top:30px;'><span class='font-18 error contents'>There is insufficient_data to calculate a league-wide distribution.</span></div>");
+                    }
+                    else{
+                        
+                        specs = {'highlight': 1, 'margin_left': 35, 'chart_size': 'bigger', 'flip': 0};
+                    
+                        data = {'axis_labels': {'y': 'Number of players grouped by ' + stat_key.display, 'x': stat_key.display}, 'data': []};
+                        tmp = {'stroke-dasharray': '3-3', 'stroke': "#666", 'points': []}
+
+                        tmp.points = stat_key.points;
+                        data.data.push(tmp)
+                        console.log(data);
+                        x_ticks = create_game_x_ticks(data.data);
+                        data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
+                        y_ticks = create_numeric_y_ticks(data.data)
+                        data['y_ticks'] = y_ticks.ticks;
+                        data['max_y'] = y_ticks.max;  data['min_y'] = 0;
+                        if(on_mobile){
+                            specs.width = $('#season_ranks_container_div').width()-20;
+                        }
+                        else{
+                            specs.width = $('#season_ranks_container_div').width()*.66667-20;
+                        }
+                        
+                        data['legend'] = {'items': [], 'layout': 'horizontal'}
+                        data.legend.items.push({'icon_type': 'rect', 'fill': 'orange', 'label': "Player Bucket"})
+                        
+                        vertical_bars(data, id + '_graph_div', specs);
+                    }
+                    // Add the stat labels
+                    
+                    stat_tags_ranks = $("#ranks_stat_tags_dtop"); stat_tags_ranks.empty();
+                    
+                    html = "";
+                    
+                    misc.stat_keys.sort(function(first, second) {
+                        return !(second.seq - first.seq);
+                    });
+                    
+                    //console.log("filtered_stats");
+                    //console.log(filtered_stats);
+                    
+                    subset = filtered_stats.slice(0,6);
+                    active_tag = false;
+                    for(var a = 0 ;a<subset.length;a++){
+                        var key = subset[a];
+                        
+                        html += "<div onclick='click_tag(\"season\", \"" + key.tag + "\");' class='tag" + ((key.tag == ranks_stat_tag[unit]) ? " active" : "") + "'>";
+                        html += "<span class='no-padding font-11'>" + key.short + "</span>";
+                        html += "</div>"
+                        if(key.tag == ranks_stat_tag[unit]){ active_tag = true; }
+                    }
+                    stat_tags_ranks.append(html);
+                    
+                    
+                    stat_select_ranks_dtop = $("#season_ranks_stat_select_dtop"); stat_select_ranks_dtop.empty();
+                    stat_select_ranks_mob = $("#season_ranks_stat_select_mob"); stat_select_ranks_mob.empty();
+                    
+
+                    if (filtered_stats.length > 6){
+                        html = "";
+                        
+                        html += "<div class='no-padding centered'><span class='font-12'>- OR -</span></div>";
+                        html += "<select onchange='click_tag(\"season\",this.value);' class='stat-select font-12'>";
+                        html += "<option ></option>";
+                        
+                        for(var a = 0 ;a<filtered_stats.length;a++){
+                            var key = filtered_stats[a];
+                            html += "<option " + ((key.tag == ranks_stat_tag[unit] && (on_mobile || !active_tag)) ? " selected" : "") + " value='" + key.tag + "'>" + key.short + "</option>";
+                        }
+                        html += "</select>";
+                        stat_select_ranks_dtop.append(html); stat_select_ranks_mob.append(html);
+                    }
                 
-                vertical_bars(data, id, specs);
+                success = true;
+            }
+            catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+            
+            if(!success){
+                $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+                report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+            }
+            
+            id = 'season_games'; success = false;
+            try{
+                // Data
+                js_data = {'no_row_count': 1, 'data': [], 'cell_size': 'small-cell-holder'}
                 
+                js_data.data = misc.data.game_log.filter(r=> r.this_year).sort(function(a,b){ return a.game_epoch-b.game_epoch; });
+                
+                for(var a = 0;a<js_data.data.length;a++){ gm = js_data.data[a];
+                    gm.seq = a;
+                    gm.short_code_html = "<FORM id='schedule_opp_form" + gm.seq + "' action='/team_detail' style='padding:0;' method=POST><input type=hidden name='detail_team_ID' value='" + gm.opponentID + "'><input type=hidden name='came_from' value='team_player_detail' /><span class='mouseover-link pointer font-12 contents' onclick=\"document.getElementById('schedule_opp_form" + gm.seq + "').submit();\">" + gm.short_code + "</span></FORM>";
+                 
+                    gm.game_date_html = "<FORM id='schedule_game_form" + gm.seq + "' action='/team_game_detail' method=POST><input type=hidden name='ID' value='" + gm.ID + "'><input type=hidden name='came_from' value='team_player_detail' />";
+                    gm.game_date_html += "<span class='no-padding mouseover-link pointer font-12' onclick=\"document.getElementById('schedule_game_form" + gm.seq + "').submit();\">" + gm.game_date + "</span>";
+                    gm.game_date_html += "</FORM>";
+                }
+                
+                
+                // Visualization
+                console.log(js_data.data);
+                js_data.fields = [];
+                outer_class = {'outer_class': 'col-8-9', 'classes': []}
+                js_data.classes = [{'class': 'col-2-1 mouseover-link'}, {'class': 'col-2 mouseover-link'}];
+                js_data.fmt = [{'fmt': ""}, {'fmt': ""}];
+                js_data.fields.push({'sort_by': 'short_code', 'tag': 'short_code_html', 'display': 'Opp'});
+                js_data.fields.push({'sort_by': 'game_epoch', 'tag': 'game_date_html', 'display': 'Date'});
+                if(misc.data.current_season.role == "faceoff"){ // Assume it's a FOGO
+                    
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'faceoff_win_rate', 'tag': 'faceoff_record', 'display': 'Faceoffs'});
+                    js_data.fmt.push({'fmt': ""})
+                    
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'faceoff_win_rate', 'tag': 'faceoff_win_rate', 'display': 'Win %'});
+                    js_data.fmt.push({'fmt': "1%"})
+                    
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'faceoff_EGA', 'tag': 'faceoff_EGA', 'display': 'fEGA'});
+                    js_data.fmt.push({'fmt': "2"})
+                    
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'shots', 'tag': 'shots', 'display': 'Shots'});
+                    js_data.fmt.push({'fmt': "0"})
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'sog', 'tag': 'sog', 'display': 'SOG'});
+                    js_data.fmt.push({'fmt': "0"})
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'goals', 'tag': 'goals', 'display': 'Goals'});
+                    js_data.fmt.push({'fmt': "0"})
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'assists', 'tag': 'assists', 'display': 'Assists'});
+                    js_data.fmt.push({'fmt': "0"})
+                }
+                else if(misc.data.current_season.role == "offensive"){ // Assume it's a field player
+                    
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'EGA', 'tag': 'EGA', 'display': 'EGA'});
+                    js_data.fmt.push({'fmt': "2"})
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'shots', 'tag': 'shots', 'display': 'Shots'});
+                    js_data.fmt.push({'fmt': "0"})
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'sog', 'tag': 'sog', 'display': 'SOG'});
+                    js_data.fmt.push({'fmt': "0"})
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'goals', 'tag': 'goals', 'display': 'Goals'});
+                    js_data.fmt.push({'fmt': "0"})
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'assists', 'tag': 'assists', 'display': 'Assists'});
+                    js_data.fmt.push({'fmt': "0"})
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'shooting_pct', 'tag': 'shooting_pct', 'display': 'Shot%'});
+                    js_data.fmt.push({'fmt': "0%"})
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'sog_rate', 'tag': 'sog_rate', 'display': 'SOG%'});
+                    js_data.fmt.push({'fmt': "0%"})
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'turnovers', 'tag': 'turnovers', 'display': 'TO'});
+                    js_data.fmt.push({'fmt': "0"})
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'gbs', 'tag': 'gbs', 'display': 'GBs'});
+                    js_data.fmt.push({'fmt': "0"})
+                    
+                }
+                else if(misc.data.current_season.role == "defensive"){ // Assume it's a defensive player
+                    
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'EGA', 'tag': 'EGA', 'display': 'EGA'});
+                    js_data.fmt.push({'fmt': "2"})
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'caused_turnovers', 'tag': 'caused_turnovers', 'display': 'CT'});
+                    js_data.fmt.push({'fmt': "0"})
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'gbs', 'tag': 'gbs', 'display': 'GBs'});
+                    js_data.fmt.push({'fmt': "0"})
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'penalties', 'tag': 'penalties', 'display': 'Pen'});
+                    js_data.fmt.push({'fmt': "0"})
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'shots', 'tag': 'shots', 'display': 'Shots'});
+                    js_data.fmt.push({'fmt': "0"})
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'goals', 'tag': 'goals', 'display': 'Goals'});
+                    js_data.fmt.push({'fmt': "0"})
+                    outer_class.classes.push({'class': 'centered'});
+                    js_data.fields.push({'sort_by': 'assists', 'tag': 'assists', 'display': 'Assists'});
+                    js_data.fmt.push({'fmt': "0"})
+                    
+                }
+                
+                js_data.classes.push(outer_class);
+                if(js_data.data.length == 0){
+                    $("#" + id + "_div").empty(); 
+                    $("#" + id + "_div").append("<div class='col-12 centered' style='padding-top:20px;'><span class='font-18 error'>There are no " + misc.year + " games to display.</span></div>");
+                }
+                else{
+                    generic_create_table(js_data, {'id': 'season_game_log', 'target_elem': 'season_games_div'});
+                }
+                // Mark Success
+                success = true;
             }
-            else{
-                $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Could not calculate RPI distribution."));
+            catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+            
+            if(!success){
+                $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+                report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
             }
-            success = true;
-        }
-        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+            
+            id = ''; success = false;
+            try{
+                
+                success = true;
+            }
+            catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+            
+            if(!success){
+                $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+                report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+            }
         
-        if(!success){
-            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
-            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
-        }
-        
-        id = 'conditional_rpi_div'; success = false;
-        try{
-            if(typeof misc.data.future_games != "undefined" && misc.data.future_games != null && misc.data.future_games.length > 0){
-                custom_specs = {'chart_size': 'small', 'margin_top': 0, 'margin_right': 0, 'margin_bottom': 0, 'margin_left': 0};
-                custom_specs.width = $('#conditional_rpi_container_div').width() - 20;
-                custom_conditional_RPI_tile(misc, id, custom_specs);
-            }
-            else{
-                $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "No careerd games"));
-            }
-            success = true;
-        }
-        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
-        
-        if(!success){
-            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
-            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
-        }
-        
-        id = 'deconstructed_rpi_div'; success = false;
-        try{
-            if(typeof misc.data.RPI_factors != "undefined" && misc.data.RPI_factors.length > 0){
-                generic_create_table(JSON.parse(misc.data.RPI_factors), {'id': id, 'target_elem': id});
-            }
-            else{
-                $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Could not calculate deconstructed RPI."));
-            }
-            success = true;
-        }
-        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
-        
-        if(!success){
-            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
-            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
         }
     }
     
     
     //misc = process_season_trends_history(misc);
     var season_trends_dates = []
-    function display_season_trends(panel){
-        //console.log("display_season_trends: " + panel);
-        if([null, 'season_trends', 'season_trends_history', 'season_trends_game_results', 'season_trends_movement'].indexOf(panel) == -1){ return; }
+    function display_career(panel){
+        //console.log("display_career: " + panel);
+        if([null, 'career', 'career_movement', 'career_EGA', 'career_rankings'].indexOf(panel) == -1){ return; }
         
-        
-        id = 'season_trends_game_results'; success = false;
+        unit_desc = "career"; unit = "career";
+        id = 'career_EGA'; success = false;
         try{
-            // Print the history
-            if(misc.data.completed_games_cnt == 0){ // Print Last Year
+            //Data
+            EGA_stat_key = misc.stat_keys.filter( r => r.tag == "EGA")[0];
+            EGA_per_game_stat_key = misc.stat_keys.filter( r => r.tag == "EGA_per_game")[0];
+            console.log('EGA_per_game_stat_key'); console.log(EGA_per_game_stat_key);
+            //Visualization
+            elem = $("#career_EGA_div"); elem.empty();
+            html = ""
+            
+            html += "<div class='no-padding'>"
+            
+                // Add the top/left EGA per game block
                 
-                games = misc.data.completed_games.filter( gm => gm.last_year == 1);
-                document.getElementById('season_trends_game_results_helpicon').setAttribute( "onclick", "show_explanation('team_my_rankings.html|season_trends_game_results_last_year')");
+                html += "<div class='no-padding flex' style='padding-top:20px;'>";
+                    html += "<div class='no-padding col-6'>";
+                        html += "<div class='col-12 centered bbottom light'><span class='light font-12'>Career EGA/gm</span></div>";
+                        html += "<div class='col-12 centered'><span class='font-24 bold'>" + jsformat(misc.data.player_career_stats.EGA_per_game, "2") + "</span></div>";
+                    html += "</div>";
+                    
+                    
+                    html += "<div class='no-padding col-6'>";
+                        html += "<div class='col-12 centered bbottom light'><span class='light font-12'>Percentile</span></div>";
+                        html += "<div class='col-12 centered'><span class='font-24 bold'>" + EGA_per_game_stat_key.career_percentile_str + "</span></div>";
+                    html += "</div>";
+                    
+                html += "</div>"; 
+                html += "<div class='no-padding flex' style='padding-top:20px;'>";
+                    html += "<div class='no-padding col-6'>";
+                        html += "<div class='col-12 centered bbottom light'><span class='light font-12'>Career EGA</span></div>";
+                        html += "<div class='col-12 centered'><span class='font-24 bold'>" + jsformat(misc.data.player_career_stats.EGA, "1") + "</span></div>";
+                    html += "</div>";
+                    
+                    
+                    html += "<div class='no-padding col-6'>";
+                        html += "<div class='col-12 centered bbottom light'><span class='light font-12'>Percentile</span></div>";
+                        html += "<div class='col-12 centered'><span class='font-24 bold'>" + EGA_stat_key.career_percentile_str + "</span></div>";
+                    html += "</div>";
+                    
+                html += "</div>";    
             
-            }
-            else{ // Print this year
+            
+            html += "</div>";
+            
+            elem.append(html);
+            
+            //Mark success
+            success = true;
+        }
+        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+        
+        if(!success){
+            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+        }
                 
-                games = misc.data.completed_games.filter( gm => gm.this_year == 1);
-                document.getElementById('season_trends_game_results_helpicon').setAttribute( "onclick", "show_explanation('team_my_rankings.html|season_trends_game_results_this_year')");
+        
+        id = "career_ranks"; success = false;
+        try{
+            //Data
+            
+            js_data = {'no_row_count': 1, 'data': [], 'cell_size': 'cell-holder'}
+            
+            js_data.data = []
+            for(var a = 0 ;a<filtered_stats.length;a++){
+                var key = filtered_stats[a];
+                if(['EGA_per_game', 'EGA'].indexOf(key.tag) == -1){
+                    console.log(key);
+                    val = (typeof misc.data.player_career_stats[key.tag] == "undefined") ? null : misc.data.player_career_stats[key.tag];
+                    val_str = val == null ? "N/A" : jsformat(val, key.jsfmt);
+                    val = (typeof misc.data.player_career_stats[key.tag] == "undefined") ? null : misc.data.player_career_stats[key.tag];
+                    val_str = val == null ? "N/A" : jsformat(val, key.jsfmt);
+                    
+                    js_data.data.push({'display': key.display, 'tag': key.tag, 'val': val, 'val_str': val_str, 'percentile': key.career_percentile, 'percentile_str': key.career_percentile_str, 'rank': key.career_rank, 'rank_str': key.career_rank_str});
+                }
             }
             
+            //misc.data.game_log.filter(r=> r.this_year).sort(function(a,b){ return a.game_epoch-b.game_epoch; });
             
-            var js_data = {'no_row_count': 1}
-            js_data.classes = [{'class': 'col-3'}, {'class': 'col-3 centered'}, {'class': 'col-3 centered'}, {'class': 'col-3 centered'}];
+            
+            
+            // Visualization
+            console.log(js_data.data);
+            js_data.fields = [];
+            js_data.classes = [{'class': 'col-6'}, {'class': 'col-2-3 centered'}, {'class': 'col-2-3 centered'}, {'class': 'col-2-3 centered dtop'}];
             js_data.fmt = [{'fmt': ""}, {'fmt': ""}, {'fmt': ""}, {'fmt': ""}];
-            js_data.fields = [{'sort_by': 'game_date_YYYYmmdd', 'tag': 'opp_short_code', 'display': 'Game'}
-            , {'sort_by': 'game_date_YYYYmmdd', 'tag': 'score_str_html', 'display': 'Result'}
-            , {'sort_by': 'this_team_elo_transfer', 'tag': 'this_team_elo_transfer_html', 'display': 'Change'}
-            , {'sort_by': 'end_elo', 'tag': 'end_elo', 'display': 'Lax-ELO'}
-            ];
+            js_data.fields.push({'sort_by': 'display', 'tag': 'display', 'display': 'Stat'});
+            js_data.fields.push({'sort_by': 'val', 'tag': 'val_str', 'display': 'Value'});
+            js_data.fields.push({'sort_by': 'percentile', 'tag': 'percentile_str', 'display': 'Percentile'});
+            js_data.fields.push({'sort_by': 'rank', 'tag': 'rank_str', 'display': 'Ranking'});
             
             
-            js_data.data = games;
-            generic_create_table(js_data, {'id': id, 'target_elem': 'season_trends_game_results_div'});
-            //console.log("misc.extra_data")
-            //console.log(misc.extra_data)
-            success = true;
-        }
-        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
-        
-        if(!success){
-            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
-            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
-        }
-                
-        
-        id = "season_trends_history_div"; success = false;
-        try{
-            specs = {'margin_bottom': 40, 'chart_size': 'small', 'flip': 0};
-            
-            misc = process_season_trends_history(misc);
-            data = {'axis_labels': {'y': 'Lax-ELO Rating', 'x': ''}, 'data': []};
-            data.data = misc.all_teams_season_trends_history;
-            
-            x_ticks = create_game_x_ticks(data.data);
-            data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
-            
-            for(var a = 0;a<misc.all_teams_season_trends_history.length;a++){
-                var tmp_data = data.data[a];
-                
-                for(var c = 0;c<tmp_data.points.length;c++){
-                    pt = tmp_data.points[c];
-                    if(season_trends_dates.indexOf(pt.dt) == -1){
-                        season_trends_dates.push(pt.dt);
-                    }
-                    
-                }
-            }
-        
-            season_trends_dates = season_trends_dates.sort(function(first, second) {
-                    return first - second;
-            });
-            var slider_start = null;
-            for(var a = 0;a<season_trends_dates.length;a++){
-                
-                if(season_trends_dates[a] >= misc.season_trends_movement_start_date){
-                    
-                    slider_start = a/season_trends_dates.length;
-                    break;
-                }
-            }
-            if(slider_start == null){ slider_start = 1; }
-            
-            
-            y_ticks = create_numeric_y_ticks(data.data)
-            
-            data['y_ticks'] = y_ticks.ticks;
-            data['max_y'] = y_ticks.max;  data['min_y'] = y_ticks.min;
-            
-            specs.width = $('#season_trends_history_container_div').width() - 20;
-            specs.height = 200;
-            data['legend'] = {'items': [], 'layout': 'horizontal'}
-            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': '#88F', 'label': 'Your Rating'})
-            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': 'maroon', 'label': 'Conf Avg.'})
-            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': '#DDD', 'label': 'Conf Team'}) 
-            
-            horizontal_line(data, id, specs);
-            success = true;
-        }
-        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
-        
-        if(!success){
-            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
-            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
-        }
-            
-            
-        id = "season_trends_movement_div"; success = false;
-        
-        try{
-            data = {'axis_labels': {'y': 'Change in Lax-ELO Rating; 100 = Rating on ' + days_to_date(misc.season_trends_movement_start_date, '%b %d %Y'), 'x': ''}, 'data': []};
-            data.data = misc.all_teams_season_trends_change_history;
-
-            x_ticks = create_game_x_ticks(data.data);
-            data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
-            y_ticks = create_numeric_y_ticks(data.data)
-            data['y_ticks'] = y_ticks.ticks;
-            data['max_y'] = y_ticks.max;  data['min_y'] = y_ticks.min;
-            
-            specs.width = $('#season_trends_movement_container_div').width() - 20;
-            specs.height = 200; specs.margin_top= 30;
-            
-            data['legend'] = {'items': [], 'layout': 'horizontal'}
-            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': '#88F', 'label': 'Your Rating'})
-            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': 'maroon', 'label': 'Conf Avg.'})
-            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': '#DDD', 'label': 'Conf Team'}) 
-            
-            slider_width = $('#season_trends_movement_container_div').width() - 200
-            
-            data.slider = {'pct_loc': slider_start,'loc_x': $('#season_trends_movement_container_div').width() - slider_width - 125, 'loc_y': -20, 'orientation': 'horizontal', 'dragStarted': null, 'drag': show_season_trends_date, 'dragEnded': redraw_season_trends_movement, 'id': id, 'text_align': 'right', 'width': slider_width, 'height': 10, 'svg_stops': 10, 'show_value_on_drag': 1};
-            data.slider.start_label = days_to_date(season_trends_dates[0], '%b %Y')
-            data.slider.end_label = days_to_date(season_trends_dates[season_trends_dates.length-1], '%b %Y')
-            
-            horizontal_line(data, id, specs);
-            success = true;
-        }
-        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
-        
-        if(!success){
-            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
-            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
-        }
-        
-    }
-    function redraw_season_trends_movement(){ 
-        
-        slider_obj = d3.select(this);
-        overlay = d3.select("#" + slider_obj.attr('id') + "-overlay");
-        overlay.attr("class", "slider-overlay hidden");
-        overlay_text = d3.select("#" + slider_obj.attr('id') + "-overlay-text");
-        overlay_text.attr("class", "label lightish chart-tick-label small hidden");
-        
-        loc = {'x': slider_obj.attr("offset_x"), 'y': slider_obj.attr("offset_y")}; 
-        
-        if(slider_obj.attr("orientation") == "horizontal"){
-            loc = Math.min(slider_obj.attr("width")-1, Math.max(0, d3.event.x - loc.x));
-            pct = loc / slider_obj.attr("width");
-        }
-        else{
-            loc =  Math.min(slider_obj.attr("height"), Math.max(d3.event.y - loc.y));
-            pct = loc / slider_obj.attr("height");
-        }
-        
-        //pct = Math.min(Math.max(0, d3.event.loc/slider_obj.attr("slider_height")), 1);
-        index = parseInt(pct * season_trends_dates.length);
-        misc.season_trends_movement_start_date = season_trends_dates[index];
-        
-        
-        display_season_trends('season_trends_movement');
-        
-        // Write to the DB that the value of the setting has changed
-        logger_str = [null, misc.nhca, 'season_trends_movement_start_date', misc.season_trends_movement_start_date].join("|");
-        document.getElementById('pixel').src = "/logger-editSettings?c=" + logger_str;
-        
-    }
-    
-    function show_season_trends_date(){ 
-        
-        slider_obj = d3.select(this);
-        overlay = d3.select("#" + slider_obj.attr('id') + "-overlay");
-        overlay.attr("class", "slider-overlay");
-        overlay_text = d3.select("#" + slider_obj.attr('id') + "-overlay-text");
-        overlay_text.attr("class", "label lightish chart-tick-label small");
-        orig_loc = {'x': parseInt(slider_obj.attr("offset_x")), 'y': parseInt(slider_obj.attr("offset_y"))}; 
-        
-        if(slider_obj.attr("orientation") == "horizontal"){
-            loc = Math.min(slider_obj.attr("width")-1, Math.max(0, d3.event.x - orig_loc.x));
-            pct = loc / slider_obj.attr("width");
-            overlay.attr("x", loc + orig_loc.x - 30);
-            overlay_text.attr("x", loc + orig_loc.x);
-            slider_obj.attr("cx", loc + orig_loc.x);
-        }
-        else{
-            loc =  Math.min(slider_obj.attr("height"), Math.max(d3.event.y - orig_loc.y));
-            pct = loc / slider_obj.attr("height");
-            overlay.attr("y", loc + orig_loc.y -15);
-            slider_obj.attr("cy", loc + orig_loc.y);
-            overlay_text.attr("y", loc + orig_loc.y);
-        }
-        
-        
-        //pct = Math.min(Math.max(0, d3.event.loc/slider_obj.attr("slider_height")), 1);
-        index = parseInt(pct * season_trends_dates.length);
-        txt = days_to_date(season_trends_dates[index], '%b %d \'%y')
-        overlay_text.text(txt);
-        
-    }
-    
-    function display_post_season_odds(panel){
-        if([null, 'career', 'record_scenarios', 'bubble_watch', 'conf_seed_probabilities', 'selection_rivals'].indexOf(panel) == -1){ return; }
-        
-        id = 'record_scenarios'; success = false;
-        try{
-            var cur_wins = parseInt(misc.data.record.split("-")[0].trim());
-            var cur_losses = parseInt(misc.data.record.split("-")[1].trim());
-            
-            var likely = misc.data.win_loss_records.filter(gm => gm.frequency > 0);
-            n_likely = likely.length;
-            if(n_likely <= 8){ // Just show the win-loss scenarios
-            
-                document.getElementById('record_scenarios_helpicon').setAttribute( "onclick", "show_explanation('team_my_rankings.html|record_scenarios_records')");
-                    
-                    
-                likely.sort(function(first, second) {
-                        return second.pct_in - first.pct_in;
-                });
-                likely = likely.slice(0,8);
-                var record_scenarios_js_data = {'no_row_count': 1}
-                record_scenarios_js_data.classes = [{'class': 'col-4'}, {'class': 'col-4 centered'}, {'class': 'col-4 centered'}];
-                record_scenarios_js_data.fmt = [{'fmt': ""}, {'fmt': "0%"}, {'fmt': "0%"}];
-                record_scenarios_js_data.fields = [{'sort_by': 'win_pct', 'tag': 'rec', 'display': 'Final Record'}
-                , {'sort_by': 'frequency', 'tag': 'frequency', 'display': 'Likelihood'}
-                , {'sort_by': 'pct_in', 'tag': 'pct_in', 'display': 'NCAA %'}
-                ];
-                
-                
-                record_scenarios_js_data.data = likely;
-                generic_create_table(record_scenarios_js_data, {'id': 'record_scenarios', 'target_elem': 'record_scenarios_div'});
-            }
-            else{ // Show the overall win total scenarios
-                document.getElementById('record_scenarios_helpicon').setAttribute( "onclick", "show_explanation('team_my_rankings.html|record_scenarios_wins')");
-                
-                misc.data.future_wins.sort(function(first, second) {
-                    return first.future_wins - second.future_wins;
-                });
-                wins = misc.data.future_wins;
-                
-                last_zero_index = null; last_zero_wins = null;
-                first_100_index = null; first_100_wins = null;
-                for(var a = 0;a<wins.length;a++){
-                    var rec = wins[a];
-                    if(rec.pct_in == 0){ last_zero_index = a; last_zero_wins = rec.future_wins; }
-                    if(rec.pct_in == 1 && first_100_index == null){ first_100_index = a; first_100_wins = rec.future_wins; }
-                }
-                var cum_0 = 0; var cum_100 = 0;
-                for(var a = 0;a<=last_zero_index;a++){ 
-                    cum_0 += wins[a].frequency;
-                }
-                if(first_100_index != null){
-                    for(var a = first_100_index;a<wins.length;a++){
-                        cum_100 += wins[a].frequency;
-                    }
-                }
-                else{
-                    first_100_index = wins.length;
-                    cum_100 = null;
-                }
-                
-                //console.log("First non zero: " + last_zero_wins);
-                //console.log("Last sub 100: " + first_100_wins);
-                table_data = [];
-                table_data.push({'wins_str': (cur_wins + last_zero_wins) + " or less", 'wins': cur_wins + last_zero_wins, 'frequency': cum_0, 'pct_in': 0.0});
-                for(var a =last_zero_index + 1;a<first_100_index;a++){
-                    var rec = wins[a];
-                    table_data.push({'wins_str': cur_wins + rec.future_wins, 'wins': cur_wins + rec.future_wins, 'frequency': rec.frequency, 'pct_in': rec.pct_in});
-                }
-                if(cum_100 != null){
-                    table_data.push({'wins_str': (cur_wins + first_100_wins) + " or more", 'wins': cur_wins + first_100_wins, 'frequency': cum_100, 'pct_in': 1.0});
-                }
-                
-                var record_scenarios_js_data = {'no_row_count': 1}
-                record_scenarios_js_data.classes = [{'class': 'col-4'}, {'class': 'col-4 centered'}, {'class': 'col-4 centered'}];
-                record_scenarios_js_data.fmt = [{'fmt': ""}, {'fmt': "0%"}, {'fmt': "0%"}];
-                record_scenarios_js_data.fields = [{'sort_by': 'wins', 'tag': 'wins_str', 'display': 'Final Wins'}
-                , {'sort_by': 'frequency', 'tag': 'frequency', 'display': 'Likelihood'}
-                , {'sort_by': 'pct_in', 'tag': 'pct_in', 'display': 'NCAA %'}
-                ];
-                
-                
-                record_scenarios_js_data.data = table_data;
-                generic_create_table(record_scenarios_js_data, {'id': 'record_scenarios', 'target_elem': 'record_scenarios_div'});
-
-            }
-            success = true;
-        }
-        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
-        
-        if(!success){
-            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
-            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
-        }
-            
-    
-        id =  'selection_rivals_div'; success = false;
-        try{
-            misc.data.selection_rivals.bubble_rivals.sort(function(first, second) {
-                return -(first.diff - second.diff);
-            });
-            rivals = misc.data.selection_rivals.bubble_rivals.slice(0, 8);
-        
-            var js_data = {'no_row_count': 1}
-            js_data.classes = [{'class': 'col-4'}, {'outer_class': 'col-8', 'classes': [{'class': 'col-3 centered'}, {'class': 'col-3 centered'}, {'class': 'col-3 centered'}]}];
-            js_data.fmt = [{'fmt': ""}, {'fmt': "0%"}, {'fmt': "0%"}, {'fmt': "0%"}];
-            js_data.fields = [{'sort_by': 'display_name', 'tag': 'display_name', 'display': 'Team'}
-            , {'sort_by': 'in_pct_val', 'tag': 'in_pct_val', 'display': 'In when In'}
-            , {'sort_by': 'out_pct_val', 'tag': 'out_pct_val', 'display': 'In when Out'}
-            , {'sort_by': 'diff', 'tag': 'diff', 'display': 'Net'}
-            ];
-            
-            js_data.data = rivals;
-            generic_create_table(js_data, {'id':id, 'target_elem': 'selection_rivals_div'});
-            
-            success = true;
-        }
-        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
-        
-        if(!success){
-            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
-            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
-        }
-            
-        
-        
-        id = 'conf_seed_probabilities_div'; success = false;
-        try{
-            misc.data.seed_instances;
-            seed_data = []
-            
-            var total = 0; var total_positive = 0;
-            si = misc.data.seed_instances
-            for(var a = 0;a<si.length;a++){
-                var seed = si[a];
-                if(typeof seed == "number"){
-                    total += seed;
-                    if(seed > 0){ total_positive += 1; }
-                }
-            }
-            si = si.slice(0, misc.data.num_conf_tournament_teams);
-            if(total_positive == 1){ // Just tell them what they've won
-                var seed = null;
-                for(var b = 0;b<si.length;b++){ if(si[b] > 0){ seed = b + 1; } }
-                
-                var msg = "<div class='centered' style='padding-top:30px;'><span class='font-18 contents'>You are locked in as the #" + seed + " seed.</span></div>";
-                $("#" + id).empty(); $("#" + id).append(msg);
-            }
-            else if(total_positive > 1){ // Show the graph of the remaining possibilities
-                if(total > 0){
-                    for(var a = 0;a<si.length;a++){
-                        var seed = si[a];
-                        
-                        d = {'label': (a+1), 'x': a, 'y': seed/total};
-                        
-                        seed_data.push(d);
-                    }
-                    specs = {'chart_size': 'small', 'flip': 0, 'margin_right': 20};
-                        
-                    data = {'axis_labels': {'y': 'Chance of each seed in Conf. Tournament', 'x': 'Conference Tournament Seed'}, 'data': []};
-                    tmp = {'stroke-dasharray': '3-3', 'stroke': "#666", 'points': []}
-                    tmp.points = seed_data;
-                    data.data.push(tmp)
-                    
-                    x_ticks = create_game_x_ticks(data.data);
-                    data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
-                    y_ticks = create_pct_y_ticks(data.data,{})
-                    data['y_ticks'] = y_ticks.ticks;
-                    data['max_y'] = y_ticks.max;  data['min_y'] = 0;
-                    specs.width = $('#conf_seed_probabilities_container_div').width() - 20;
-                    
-                    vertical_bars(data, id, specs);
-                }
+            if(js_data.data.length == 0){
+                $("#" + id + "_div").empty(); 
+                $("#" + id + "_div").append("<div class='col-12 centered' style='padding-top:20px;'><span class='font-18 error'>Insufficient data to calculate career ranks.</span></div>");
             }
             else{
-                $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Could not calculate seed distribution."));
-
-            }  
+                generic_create_table(js_data, {'id': 'career_ranks', 'target_elem': 'career_ranks_div'});
+            }
+            
+            
+            //Mark Success
             success = true;
         }
         catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
@@ -773,63 +655,133 @@
             $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
             report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
         }
-
-        id = 'bubble_watch_div'; success = false;
+            
+            
+        id = 'career_movement'; success = false;
         try{
-            if(typeof misc.data.bubble_watch_games != "undefined" && misc.data.bubble_watch_games.length > 0){
-                specs = {'margin_left': 30, 'chart_size': 'small', 'flip': 0};
+            //  This is the 1st shot profile graph
+            /* data */
+            
+            seasons = misc.data.season_log;
+            stat_key = misc.stat_keys.filter( r => r.tag == ranks_stat_tag.career)[0];
+            
+            stat_tags_movement = $("#career_movement_stat_tags_dtop"); stat_tags_movement.empty();
+            subset = filtered_stats.slice(0,6);
+            active_tag = false;
+            html = "";
+            for(var a = 0 ;a<subset.length;a++){
+                var key = subset[a];
                 
-                data = {'axis_labels': {'y': '% of Simulations', 'x': 'Final RPI Rank'}, 'data': []};
-                tmp = {'stroke-dasharray': '3-3', 'stroke': "#666", 'points': []}
-                tmp.points = misc.data.RPI_ranks_histogram;
+                html += "<div onclick='click_tag(\"career\", \"" + key.tag + "\");' class='tag" + ((key.tag == ranks_stat_tag[unit]) ? " active" : "") + "'>";
+                html += "<span class='no-padding font-11'>" + key.short + "</span>";
+                html += "</div>"
+                if(key.tag == ranks_stat_tag[unit]){ active_tag = true; }
+            }
+            stat_tags_movement.append(html);
+            
+            
+            stat_select_movement_dtop = $("#career_movement_stat_select_dtop"); stat_select_movement_dtop.empty();
+            stat_select_movement_mob = $("#career_movement_stat_select_mob"); stat_select_movement_mob.empty();
+            
+            
+            
+            if (filtered_stats.length > 6){
+                html = "";
+                
+                html += "<div class='no-padding centered'><span class='font-12'>- OR -</span></div>";
+                html += "<select onchange='click_tag(\"career\",this.value);' class='stat-select font-12'>";
+                html += "<option ></option>";
+                
+                for(var a = 0 ;a<filtered_stats.length;a++){
+                    var key = filtered_stats[a];
+                    html += "<option " + ((key.tag == ranks_stat_tag[unit] && (on_mobile || !active_tag)) ? " selected" : "") + " value='" + key.tag + "'>" + key.short + "</option>";
+                }
+                html += "</select>";
+                stat_select_movement_dtop.append(html); stat_select_movement_mob.append(html);
+            }
+            
+            
+            /* visualization */
+            if(seasons.length == 1){
+                $("#" + unit_desc + '_movement_graph_div').empty();
+                $("#" + unit_desc + '_movement_graph_div').append("<div class='centered' style='padding-top:30px;'><span class='font-18 error contents'>With a single season of data, there are no trends to show.</span></div>");
+            }
+            else {
+                specs = {'highlight': 1, 'margin_left': 35, 'chart_size': 'bigger', 'flip': 0};
+                
+                data = {'axis_labels': {'y': 'Performance by Season: ' + stat_key.display, 'x': "Season"}, 'data': []};
+                
+                no_adj = false;
+                points = [];
+                
+                for(var a = 0;a<seasons.length;a++){ season = seasons[a];
+                    pt = {'x': a, 'label': season.year, 'y': season[stat_key.tag]};
+                    points.push(pt);
+                }
+
+                tmp = {'ball_r': 4, 'ball_fill': "#33F", 'stroke': "#ccc", 'points': []}
+                tmp.points = points;
                 data.data.push(tmp)
+                data['legend'] = {'items': [], 'layout': 'horizontal'}
+           
+                
+                
                 
                 x_ticks = create_game_x_ticks(data.data);
                 data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
-                y_ticks = create_pct_y_ticks(data.data,{})
+
+                if('fmt' in stat_key && stat_key.fmt != null && stat_key.fmt.indexOf("%") > -1){
+                    y_ticks = create_pct_y_ticks(data.data, {})
+                }
+                else{
+                    y_ticks = create_numeric_y_ticks(data.data);
+                }
+                
                 data['y_ticks'] = y_ticks.ticks;
-                data['max_y'] = y_ticks.max;  data['min_y'] = 0;
-                specs.width = $('#bubble_watch_container_div').width() - 20;
-                
-                vertical_bars(data, id, specs);
-                
+                data['max_y'] = y_ticks.max;  data['min_y'] = y_ticks.min;
+                if(on_mobile){
+                    specs.width = $('#' + unit_desc + '_movement_container_div').width()-20;
+                }
+                else{
+                    specs.width = $('#' + unit_desc + '_movement_container_div').width()*.83333-20;
+                }
+               
+                horizontal_line(data, unit_desc + '_movement_graph_div', specs);
             }
-            else{
-                $("#" + id).empty();
-                $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "No relevant (to you) bubble watch games have been identified."));
-            }
+            /* mark complete */
             success = true;
         }
         catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
-        
         if(!success){
             $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
             report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
         }
-
         
     }
     
+    var filtered_stats = null;
     function redraw(panel=null){
         on_mobile = $("#main_logo").css('display') == "none";
         
+        filtered_stats = misc.stat_keys.filter(r => !r.exclude);
         if(typeof panel == "object"){ panel = null; }
         
         console_log.push({'msg': 'Check misc.data...'});
         if('data' in misc && [{}, null].indexOf(misc.data) == -1){
-            console_log.push({'msg': 'projected rpi...'});
+            console_log.push({'msg': 'season...'});
             display_overview(panel);
-            console_log.push({'msg': 'projected season_trends...'});
-            display_season_trends(panel);
-            console_log.push({'msg': 'post season...'});
-            display_post_season_odds(panel);
+            console_log.push({'msg': 'career...'});
+            display_career(panel);
+            if('observe' in misc && misc.observe){ report_user_view(misc.handler + "|" + panel + "|" + misc.nhca); }
             
         }
         
     }
     
+    if(misc.data.current_season == null){ misc.active_element = "career"; }
+    
     // Select the appropriate panel to display
-    if('active_element' in misc){ choose_left_menu_item(misc.active_element); }
+    if('active_element' in misc && ["None", null, -1, ' ', ''].indexOf(misc.active_element) == -1){ choose_left_menu_item(misc.active_element); }
     else{ choose_left_menu_item("season"); }
     
     console_log.push({'msg': 'Start finish load...'});

@@ -1,0 +1,192 @@
+
+{% extends "layout_admin.html" %}
+
+
+{% block body %}
+
+        <div class='col-12 centered' id='banner'></div>
+        {% if misc.breadcrumbs %}
+            <div class='col-12 centered'>
+                {{misc.breadcrumbs}}
+            </div>
+        {% endif %}
+
+
+        {% if misc.error %}
+            <div class='col-12 error centered'><span class='error' >{{misc.error}}</span></div>
+        {% endif %}
+        {% if misc.msg %}
+            <div class='col-12 centered'><span class='msg' style='color:blue;' >{{misc.msg}}</span></div>
+        {% endif %}
+        <div class='col-12 block'>
+            <div class='col-12' style='background-color: #EEE;'>
+                <div class='bbottom flex'>
+                    <div class='no-padding col-10'><span class='font-18 bold pointer'>{{misc.group.group_name}}</span></div>
+                    <div class='no-padding col-2 right'><a href='/admin?c=admin_groups' class=''><span>Back to Groups</span></a></div>
+                </div>
+
+                <div class='col-12 flex'>
+                    <div class='col-6 margin white'>
+                        <div class='col-12'><span class='font-18 bold light'>Users</span></div>
+                        <div class='col-12 bbottom no-padding'>
+                            <div class='flex'>
+                                <div class='col-2 no-padding'><span class='font-12 bold'>ID</span></div>
+                                <div class='col-5 no-padding'><span class='font-12 bold'>Email</span></div>
+                                <div class='col-5 no-padding'><span class='font-12 bold'>Username</span></div>
+                            </div>
+                            {% for u in misc.group.users %}
+                                <div class='table-row flex'>
+                                    <div class='col-2'><span class='font-12'>{{u.ID}}</span></div>
+                                    <div class='col-5'><span class='font-12'>{{u.email}}</span></div>
+                                    <div class='col-5'><span class='font-12'>{{u.username}}</span></div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                    </div>
+                    
+                    <div class='col-6 margin white'>
+                        <div class='col-12'><span class='font-18 bold light'>Add a User</span></div>
+                        <div class='flex' style='padding-top:20px;'>
+                            <div class='col-6'><span class='font-15 light'>Existing User</span></div>
+                            <div class='col-6 right'><input id='search_users_input' type=text onkeyup='search_users(this.value)' /></div>
+                        </div>
+                        <div class='col-12' id='existing_user_list'>
+                        
+                        </div>
+                    </div>
+                </div>
+                
+                <div class='col-12 flex'>
+                    <div class='col-6 margin white'>
+                        <div class='col-12'><span class='font-18 bold light'>Subscription</span></div>
+                        <div class='no-padding' id='sub_div'>
+                        
+                        </div>
+                </div>
+            </div>
+            
+
+<script>
+
+    var on_mobile = null;
+    var console_log = []; var success = null;
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
+    
+    var misc = parse_misc({{misc|to_json2}});
+    
+    function search_users(s){
+        console.log(s);
+        s = s.toLowerCase()
+        
+        selected_users = misc.users.filter(r=> r.username_decrypted.indexOf(s) > -1 || r.email_decrypted.indexOf(s) > -1);
+        n = selected_users.length;
+        console.log("Found " + n + " users");
+        
+        
+        
+        user_list.empty();
+        if(n > 5){
+            user_list.append("<div class='error centered'><span class='font-15'>Search returned " + zFormat(n, 0) + " users; refine search.</span></div>");
+        }
+        else{
+            
+            
+            for(var a = 0;a<n;a++){ p = selected_users[a];
+   
+                html = "<div class='table-row' id='row" + p.ID + "'>";
+                
+                html += "<div class='test-2 flex pointer' onclick='choose_existing_user(" + p.ID + ");'>";
+                    html += "<div class='col-2 no-padding'><span class='font-12'>ID: " + p.ID + "</span></div>";
+                    html += "<div class='col-5 no-padding'><span class='font-12'>" + p.username_decrypted + "</span></div>";
+                    html += "<div class='col-5 no-padding'><span class='font-12'>" + p.email_decrypted + "</span></div>";
+                    
+                html += "</div>";
+                html += "</div>";
+                
+                user_list.append(html);
+            }
+            
+        }
+    
+    }
+    var user_list = $("#existing_user_list");
+    
+    function choose_existing_user(ID){
+        u = misc.users.filter(r=> r.ID==ID)[0];
+        console.log("Add " + u.email_decrypted + " to group: " + misc.group.group_name);
+        $(".table-row").addClass("hidden");
+        $("#row" + ID).removeClass("hidden");
+        $("#button" + ID).removeClass("hidden");
+        var form_html = "";
+        
+        
+        form_html += "<FORM action='/admin?c=admin_group' method=POST><input type=hidden name='group_ID' value='" + misc.group.ID + "' /><input type=hidden name='user_ID' value='" + ID + "' /><input type=hidden name='action' value='add_to_group' />";
+        
+        form_html += "<div class='flex'>";
+        form_html += "<div class='col-9 no-padding'><span class='font-15'>Admin?</span><input id='is_admin' class='' style='margin-left:15px;' type=checkbox name='is_admin' /></div>";
+        form_html += "<div class='col-3 right no-padding'><button id='button" + p.ID + "' class='test-1 small action-button blue'>ADD</button></div>";
+        form_html += "</div>";
+        form_html += "</FORM>";
+        user_list.append(form_html);
+        
+    }
+    
+    function create_sub_div(){
+        console.log(misc.group);
+        elem = $("#sub_div"); elem.empty();
+        if(misc.group.subscription == null){ // No subscription exists for this team, so create one
+            html = "";
+            html += "<div class='no-padding'><FORM action='/admin?c=admin_group' method=POST><input type=hidden name='group_type' value='" + misc.group.group_type + "' /><input type=hidden name='group_ID' value='" + misc.group.ID + "' />";
+            html += "<div class='col-12' style='padding-bottom:20px;'><input id='trial' type=checkbox name='trial'  style='margin-right:15px;' /><span class='font-15 contents'>Trial?</span></div>";
+            
+            html += "<div class='col-12 flex'>";
+                html += "<div class='col-8-6'><span class='font-15 bold'>Product Tier</span></div>";
+                html += "<div class='col-4-6'><input class='large' type=number value='' id='product_tier' name='product_tier' /></div>";
+            html += "</div>";
+            
+            html += "<div class='col-12 flex'>";
+                html += "<div class='col-8-6'><span class='font-15 bold'>Subscription Ends (Y-m-d)</span></div>";
+                html += "<div class='col-4-6'><input class='large' type=text value='' id='end_date' name='end_date' /></div>";
+            html += "</div>";
+
+
+            html += "<div class='col-12 centered action-button'><button id='action_button_create' type=submit name='action' value='create_subscription' class='action-button blue font-15'>CREATE</button></div>";
+            html += "</FORM></div>";
+            elem.append(html);
+        }
+        else{
+            html = "";
+            html += "<div class='no-padding'><FORM action='/admin?c=admin_group' method=POST><input type=hidden name='group_ID' value='" + misc.group.ID + "' /><input type=hidden name='subscription_ID' value='" + misc.group.subscription.ID + "' />";
+
+            html += "<div class='flex'>";
+                html += "<div class='col-3'>";
+                    html += "<div class='col-12'><span class='font-15 light'>Trial</span></div>";
+                    html += "<div class='col-12'><span class='font-15'>" + (misc.group.subscription.trial ? "Yes": "No") + "</span></div>";
+                html += "</div>";
+                
+                html += "<div class='col-3'>";
+                    html += "<div class='col-12'><span class='font-15 light'>Product Tier</span></div>";
+                    html += "<div class='col-12'><span class='font-15'>" + misc.group.subscription.product_tier + "</span></div>";
+                html += "</div>";
+                
+                html += "<div class='col-3'>";
+                    html += "<div class='col-12'><span class='font-15 light'>End Date</span></div>";
+                    html += "<div class='col-12'><span class='font-15'>" + misc.group.subscription.end_date_str + "</span></div>";
+                html += "</div>";
+            html += "</div>";
+            
+
+            html += "<div class='col-12 centered action-button'><button id='action_button_delete' type=submit name='action' value='delete_subscription' class='action-button blue font-15'>DELETE</button></div>";
+            html += "</FORM></div>";
+            elem.append(html);
+        }
+    }
+    
+    function redraw(){
+        create_sub_div();
+    }
+    redraw();
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+</script>
+{% endblock %}

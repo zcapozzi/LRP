@@ -5,11 +5,12 @@
 {% block body %}
 
         <div class='col-12 dtop flex menu-header-bar'>
-            <div class='col-12'>
-                <a href='/' class='menu-link'><span class='menu-link' style='padding-left:10px;'><span class='font-15'>Home</span></span></a>
-                <a href='/team_my_career' class='menu-link'><span class='menu-link' style='padding-left:10px;'><span class='font-15'>My Schedule</span></span></a>
-                <a href='/team_my_stats' class='menu-link'><span class='menu-link' style=''><span class='font-15'>My Stats</span></span></a>
-                <a href='/team_my_rankings' class='menu-link'><span class='menu-link' style=''><span class='font-15'>My Rankings</span></span></a>
+            <div class='col-12 inline-flex'>
+                <div class='no-padding'> <a href='/' class='menu-link'><span class='menu-link font-15'>Home</span></span></a></div>
+                <div class='no-padding'> <a href='/team_my_schedule' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Schedule</span></a></div>
+                <div class='no-padding'> <a href='/team_my_stats' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Stats</span></a></div>
+                <div class='no-padding'> <a href='/team_my_rankings' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Rankings</span></a></div>
+                <div class='no-padding' id='explore_menu_item'><div class='no-padding'><a class='menu-link'><span class='menu-link font-15 pointer'>Explore</span></a></div></div>
             </div>
         </div>
 
@@ -32,24 +33,25 @@
                     </div>
                 {% endif %}
                 </div>
-                <div class='no-padding col-3 right'>
+                <!--div class='no-padding col-3 right'>
                     <div class='no-padding col-12 right'>
                         <div class='gear-settings'>
-                            <img onclick='toggle_settings_bar();' id='settings-icon' class='icon-15 settings' src='/static/img/blue_gear15.png' />
+                            <img onclick='toggle_settings_bar("settings-bar");' id='settings-icon' class='icon-15 settings' src='/static/img/blue_gear15.png' />
                         </div>
                     </div>
-                </div>
+                </div-->
                 
             </div>
-            <div class='settings-bar single-row not-shown no-padding right' id='settings-bar'>
+            <!--div class='settings-bar single-row not-shown no-padding right' id='settings-bar'>
                 <div class='' style='padding-right:10px;'>
                     <span class='font-13' style='padding-right:10px;'>Year</span>
                     <select class='settings-bar' id='general_focus_year' onchange='update_settings(this.id, this.value);'>
-                        <option value=2020>2020</option>
-                        <option value=2019>2019</option>
+                        {% for y in misc.year_select_options %}
+                            <option value={{y.year}}>{{y.year}}</option>
+                        {% endfor %}
                     </select>
                 </div>
-            </div>
+            </div-->
             <div class='refreshing-bar not-shown no-padding right' id='refreshing-bar'>
                 <div class='centered' style=''>
                     <span class='font-18 bold' style=''>Refreshing content...</span>
@@ -60,48 +62,55 @@
             <div id='' class='non-dashboard-landing'>
                 <div class='col-12 mob centered no-padding'>
                     <select style='width:80%; margin: 0% 10%;' id='top_menu_select' onChange='choose_left_menu_item(this.value);'>
-                        <option id='overview_option' value='overview'>Summary</option>
-                        <option id='season_trends_option' value='season_trends'>Season Trends</option>
-                        <option id='career_option' value='career'>Career</option>
+                        <option id='overview_option' value='overview'>Topline</option>
+                        <option id='lrpro_option' value='lrpro'>LR Pro View</option>
+                        <!--option id='postseason_option' value='postseason'>Implications</option-->
                     </select>
                 </div>
                 <div class='flex col-12 no-padding'>
                     <div class='left-menu col-2-12 dtop'>
-                        <div id='overview_menu_item' onclick='choose_left_menu_item(this.id);' class='active left-menu-item'><span class='mouseover-link pointer font-15'>Summary</span></div>
-                        <div id='win_probability_menu_item' onclick='choose_left_menu_item(this.id);' class='left-menu-item'><span class='mouseover-link pointer font-15'>Win Probability</span></div>
-                        <div id='postseason_menu_item' onclick='choose_left_menu_item(this.id);' class='left-menu-item'><span class='mouseover-link pointer font-15'>Post-Season</span></div>
+                        <div id='overview_menu_item' onclick='choose_left_menu_item(this.id);' class='active left-menu-item'><span class='mouseover-link pointer font-15'>Topline</span></div>
+                        <div id='lrpro_menu_item' onclick='choose_left_menu_item(this.id);' class='left-menu-item'><span class='mouseover-link pointer font-15'>LR Pro View</span></div>
+                        <!--div id='postseason_menu_item' onclick='choose_left_menu_item(this.id);' class='left-menu-item'><span class='mouseover-link pointer font-15'>Implications</span></div-->
                     </div>
                     <div class='right-content col-10-12' id='right-content-panel'>
                         <div class='right-content-panel' id='overview_panel'>
                             <div class='col-12 no-padding'>
-                                <div class='non-dashboard-section card col-12' id='overview_team_breakdown_container_div'>
+                                <div class='non-dashboard-section card col-12' id='overview_team_comparison_container_div'>
                                     <div class='non-dashboard-section-header'>
                                         <div onclick='drill_down_header(this.id, 1);' id='overview_label' route="|overview" class='col-11-10 no-padding non-dashboard-label'>Team Comparison</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' style='margin-top:2px;'><img id='overview_team_breakdown_helpicon' class='icon-15 explanation' value="team_my_rankings.html|overview_team_breakdown" src="static/img/Gray_Info150.png" /></div>
-                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='overview_team_breakdown_img' class='icon-15 toggle' onclick='toggle_tile_visibility("overview_team_breakdown");' src="static/img/Gray_Minus150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' style='margin-top:2px;'><img id='overview_team_comparison_helpicon' class='icon-15 explanation' value="team_game_detail.html|overview_team_comparison" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='overview_team_comparison_img' class='icon-15 toggle' onclick='toggle_tile_visibility("overview_team_comparison");' src="static/img/Gray_Minus150.png" /></div>
                                                 
                                                     
                                         
                                     </div>
-                                    <div class='non-dashboard-tile-content visible' id='overview_team_breakdown_div'>
-                                        
+                                    <div class='non-dashboard-tile-content visible' id='overview_team_comparison_div'>
+                                        <div class='no-padding flex-block col-12'>
+                                            <div class='col-6-12 no-padding' id='overview_team_comparison_basic_summary'>
+                                            
+                                            </div>
+                                            <div class='col-6-12 no-padding' id='overview_team_comparison_rate_summary'>
+                                            
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             <div class='col-12 no-padding'>
                                
-                                <div class='non-dashboard-section card col-12' id='overview_box_score_container_div'>
+                                <div class='non-dashboard-section card col-12' id='overview_boxscore_container_div'>
                                     <div class='non-dashboard-section-header'>
-                                        <div onclick='drill_down_header(this.id, 1);' id='overview_box_score_label' route="|overview_box_score" class='col-11-10 no-padding non-dashboard-label'>Box Score</div>
+                                        <div onclick='drill_down_header(this.id, 1);' id='overview_boxscore_label' route="|overview_boxscore" class='col-11-10 no-padding non-dashboard-label'>Box Score</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='overview_box_score_helpicon' class='icon-15 explanation' value="team_my_rankings.html|overview_box_score" src="static/img/Gray_Info150.png" /></div>
-                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='overview_box_score_img' class='icon-15 toggle' onclick='toggle_tile_visibility("overview_box_score");' src="static/img/Gray_Plus150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='overview_boxscore_helpicon' class='icon-15 explanation' value="team_game_detail.html|overview_boxscore" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='overview_boxscore_img' class='icon-15 toggle' onclick='toggle_tile_visibility("overview_boxscore");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
                                         
                                     </div>
-                                    <div class='non-dashboard-tile-content' id='overview_box_score_div'>
+                                    <div class='non-dashboard-tile-content' id='overview_boxscore_div'>
                                         
                                     </div>
 
@@ -111,7 +120,7 @@
                             
                             
                         </div>
-                        <div class='right-content-panel' id='win_probability_panel'>
+                        <div class='right-content-panel' id='lrpro_panel'>
                             <div class='col-12 no-padding'>
                             
                                     <div class='non-dashboard-section card col-12' style='margin-right:5px;' id='wp_chart_container_div'>
@@ -132,12 +141,12 @@
                           
                             </div>
                             
-                            <div class='col-12 no-padding'>
+                            <!--div class='col-12 no-padding'>
                                 <div class='non-dashboard-section card col-12' style='margin-left:5px;' id='wp_stretches_container_div'>
                                     <div class='non-dashboard-section-header'>
                                         <div onclick='drill_down_header(this.id, 1);' id='wp_stretches_label' route="|wp_stretches" class='col-11-10 no-padding non-dashboard-label'>Key Stretches</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='wp_stretches_helpicon' class='icon-15 explanation' value="team_my_rankings.html|wp_stretches" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='wp_stretches_helpicon' class='icon-15 explanation' value="team_game_detail.html|wp_stretches" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='wp_stretches_img' class='icon-15 toggle' onclick='toggle_tile_visibility("wp_stretches");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
@@ -151,16 +160,16 @@
                             
                          
                             
-                            </div>
+                            </div-->
                         
                         </div>
-                        <div class='right-content-panel' id='postseason_panel'>
+                        <div class='right-content-panel hidden' id='postseason_panel'>
                             <div class='col-12 flex-block no-padding'>
                                 <div class='non-dashboard-section card col-6-12' id='postseason_laxelo_container_div'>
                                     <div class='non-dashboard-section-header'>
                                         <div onclick='drill_down_header(this.id, 1);' id='postseason_laxelo_label' route="|postseason_laxelo" class='col-11-10 no-padding non-dashboard-label'>Lax-ELO Movement</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' style='margin-top:2px;'><img id='postseason_laxelo_helpicon' class='icon-15 explanation' value="team_my_rankings.html|postseason_laxelo" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon icon-visible' style='margin-top:2px;'><img id='postseason_laxelo_helpicon' class='icon-15 explanation' value="team_game_detail.html|postseason_laxelo" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='postseason_laxelo_img' class='icon-15 toggle' onclick='toggle_tile_visibility("postseason_laxelo");' src="static/img/Gray_Minus150.png" /></div>
                                                 
                                                     
@@ -192,7 +201,7 @@
                                     <div class='non-dashboard-section-header'>
                                         <div onclick='drill_down_header(this.id, 1);' id='postseason_probabilities_label' route="|postseason_probabilities" class='col-11-10 no-padding non-dashboard-label'>NCAA Probabilties</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='postseason_probabilities_helpicon' class='icon-15 explanation' value="team_my_rankings.html|postseason_probabilities" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='postseason_probabilities_helpicon' class='icon-15 explanation' value="team_game_detail.html|postseason_probabilities" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='postseason_probabilities_img' class='icon-15 toggle' onclick='toggle_tile_visibility("postseason_probabilities");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
@@ -207,7 +216,7 @@
                                     <div class='non-dashboard-section-header'>
                                         <div onclick='drill_down_header(this.id, 1);' id='postseason_conf_seeding_label' route="|postseason_conf_seeding" class='col-11-10 no-padding non-dashboard-label'>Conference Seeding</div>
                                                     
-                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='postseason_conf_seeding_helpicon' class='icon-15 explanation' value="team_my_rankings.html|postseason_conf_seeding" src="static/img/Gray_Info150.png" /></div>
+                                        <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='postseason_conf_seeding_helpicon' class='icon-15 explanation' value="team_game_detail.html|postseason_conf_seeding" src="static/img/Gray_Info150.png" /></div>
                                         <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='postseason_conf_seeding_img' class='icon-15 toggle' onclick='toggle_tile_visibility("postseason_conf_seeding");' src="static/img/Gray_Plus150.png" /></div>
                                                 
                                                     
@@ -234,165 +243,117 @@
     var console_log = []; var success = null;
     var time_log = JSON.parse({{misc.time_log|to_json2}});
     
-    function process_season_trends_history(misc){
-        raw = misc.extra_data.all_teams_season_trends_history;
-        start_x = misc.season_trends_movement_start_date;
-        
-        time_log.push({'tag': "process_season_trends_history", 'start': new Date().getTime()});
-        var history = [];
-        var change_history = [];
-        var conf_ID = null;
-        var team_entry = null;
-        var conf = {'add': 1, 'stroke': "maroon", 'stroke-dasharray': null, 'stroke-width': 1, 't': {'display_name': 'Conf Avg'}, 'n': 0.0};
-        var rows = []
-        for(var a = 0;a<raw.length;a++){
-            var row = JSON.parse(JSON.stringify(raw[a]));
-            row.add = 0; row.team = 0;
-            
-            row.conf_agg = false;
-            tokens = row.t.split("|")
-                
-            row.t = {'years': [], 'change_years': [], 'team_ID': parseInt(tokens[0]), 'conf_ID': parseInt(tokens[1]), 'display_name': tokens[2]}
-            years = row.d.split("*");
-            for(var b = 0;b<years.length;b++){
-                yr = {};
-                year_value = parseInt(years[b].substring(0,4));
-                yr.points = years[b].substring(4).split("~");
-                for(var c = 0;c<yr.points.length;c++){
-                    tokens = yr.points[c].split("|")
-                    yr.points[c] = {'label': tokens[0], 'x': parseInt(tokens[1]), 'y': parseInt(tokens[2]), 'dt': parseInt(tokens[3])};
-                    //if(row.t.team_ID == 1){ console.log(  yr.points[c].dt , start_x, yr.points[c].dt == start_x ); }
-                    if(yr.points[c].dt == start_x){
-                        row.start_y = yr.points[c].y;
-                    }
-                }
-                row.t.years.push(yr);
-            }
-            for(var b = 0;b<years.length;b++){
-                change_yr = {};
-                year_value = parseInt(years[b].substring(0,4));
-                change_yr.points = years[b].substring(4).split("~");
-                for(var c = 0;c<change_yr.points.length;c++){
-                    tokens = change_yr.points[c].split("|")
-                    change_yr.points[c] = {'label': tokens[0], 'x': parseInt(tokens[1]), 'y': (parseInt(tokens[2])/row.start_y)* 100.0, 'dt': parseInt(tokens[3])};
-                }
-                change_yr.points = change_yr.points.filter( d => d.dt >= start_x);
-                row.t.change_years.push(change_yr);
-            }
-            //console.log(row.t.display_name, row.start_y);
-            if(row.t.team_ID == misc.active_team_ID){
-                row.stroke = "#77F"; row['stroke-dasharray'] = null; row['stroke-width'] = 2; 
-                conf_ID = row.t.conf_ID;
-                conf.n = 1.0;
-                conf.t.years = JSON.parse(JSON.stringify(row.t.years));
-                conf.t.change_years = JSON.parse(JSON.stringify(row.t.change_years));
-                row.team = 1;
-                team_entry = row;
-            }
-            rows.push(row);
-        }
-        
-        
-        for(var a = 0;a<rows.length;a++){
-            var row = rows[a];
-            if(row.t.team_ID != misc.active_team_ID && row.t.conf_ID == conf_ID){
-                row.stroke = "#DDD"; row['stroke-width'] = 1; row['stroke-dasharray'] = null; row.add = 1;
-                //history.push(row)
-                conf.n += 1.0;
-                
-                for(var c = 0;c<conf.t.years.length;c++){
-                    for(var b = 0;b<conf.t.years[c].points.length;b++){
-                        conf.t.years[c].points[b].y += row.t.years[c].points[b].y;
-                    }
-                }
-                for(var c = 0;c<conf.t.change_years.length;c++){
-                    for(var b = 0;b<conf.t.change_years[c].points.length;b++){
-                        conf.t.change_years[c].points[b].y += row.t.change_years[c].points[b].y;
-                    }
-                }
-            }
-        }
-        for(var c = 0;c<conf.t.years.length;c++){
-            for(var b = 0;b<conf.t.years[c].points.length;b++){
-                conf.t.years[c].points[b].y /= conf.n;
-            }
-        }
-        for(var c = 0;c<conf.t.change_years.length;c++){
-            for(var b = 0;b<conf.t.change_years[c].points.length;b++){
-                conf.t.change_years[c].points[b].y /= conf.n;
-            }
-        }
-        rows.push(conf);
-        for(var a = 0;a<rows.length;a++){
-            var row = rows[a];
-            if(row.add){
-                for(var b = 0;b<row.t.years.length;b++){
-                    yr = row.t.years[b];
-                    d = {'stroke': row.stroke, 'stroke-width': row['stroke-width'], 'stroke-dasharray': row['stroke-dasharray'], 'display_name': row.display_name, 'points': yr.points}
-                    history.push(d);
-                    
-                    change_yr = row.t.change_years[b];
-                    change_d = {'stroke': row.stroke, 'stroke-width': row['stroke-width'], 'stroke-dasharray': row['stroke-dasharray'], 'display_name': row.display_name, 'points': change_yr.points}
-                    change_history.push(change_d);
-                }
-            }
-        }
-        for(var a = 0;a<rows.length;a++){
-            var row = rows[a];
-            if(row.team){
-                for(var b = 0;b<row.t.years.length;b++){
-                    yr = row.t.years[b];
-                    d = {'stroke': row.stroke, 'stroke-width': row['stroke-width'], 'stroke-dasharray': row['stroke-dasharray'], 'display_name': row.display_name, 'points': yr.points}
-                    history.push(d);
-                    
-                    change_yr = row.t.change_years[b];
-                    change_d = {'stroke': row.stroke, 'stroke-width': row['stroke-width'], 'stroke-dasharray': row['stroke-dasharray'], 'display_name': row.display_name, 'points': change_yr.points}
-                    change_history.push(change_d);
-                }
-            }
-        }
-        
-        time_log[time_log.length-1].end = new Date().getTime();
-        misc.all_teams_season_trends_history = history;
-        misc.all_teams_season_trends_change_history = change_history;
-        return misc;
-    }
-    
     var single_stat = "<div class='col-12'><span class='lightish contents font-20'>[header]</span></div>";
     single_stat += "<div class='col-12 centered ' style='padding-top:65px;'><span class='tile-message font-18'>[stat]</span></div>";
     var misc = parse_misc({{misc|to_json2}});
     console_log.push({'msg': 'Loaded misc...'});
     var user_obj = {'settings': {{user_obj.settings|to_json2}}};
     console_log.push({'msg': 'Loaded user settings...'});
-    //console.log(misc);
+    console.log(misc);
     var explanations = {{user_obj.explanations|to_json2}};
     
-    function display_overview(panel){ 
-        if([null, 'overview', 'conditional_rpi', 'rpi_distribution', 'deconstructed_rpi'].indexOf(panel) == -1){ return; }
     
-        id = 'rpi_distribution_div'; success = false;
+    function display_overview(panel){ 
+        if([null, 'overview', 'overview_team_comparison', 'overview_boxscore', ''].indexOf(panel) == -1){ return; }
+    
+        id = 'overview_team_comparison'; success = false;
         try{
-            if(typeof misc.data.RPI_ranks_histogram != "undefined" && misc.data.RPI_ranks_histogram.length > 0){
-                specs = {'margin_left': 30, 'chart_size': 'small', 'flip': 0};
+            // Data
+            data = misc.data.results.BasicSummaryCounting;
+            //console.log("misc.data.results.BasicSummaryCounting")
+            //console.log(data);
+            
+            id = 'overview_team_comparison_basic_summary'
+            // Visualization
+            html = ""; $("#" + id).empty();
+            html += "<div class='no-padding' style='padding-bottom:10px; padding-right:20px;'>"; 
+                html += "<div class='no-padding' style='padding-top:20px;padding-bottom:20px;'><span class='no-padding font-18 bold'>Summary Stats</span></div>";
+                html += "<div class='flex no-padding bbottom light' style='margin-bottom:10px;'>"; 
+                        html += "<div class='col-3 no-padding'><span class='light font-11'></span></div>";
+                        html += "<div class='col-9 no-padding' id='split_bar_header'></div>";  
+                        
+                    html += "</div>";
+            for(var a = 0;a<data.length;a++){
+                stat = data[a];
                 
-                data = {'axis_labels': {'y': '% of Simulations', 'x': 'Final RPI Rank'}, 'data': []};
-                tmp = {'stroke-dasharray': '3-3', 'stroke': "#666", 'points': []}
-                tmp.points = misc.data.RPI_ranks_histogram;
-                data.data.push(tmp)
                 
-                x_ticks = create_game_x_ticks(data.data);
-                data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
-                y_ticks = create_pct_y_ticks(data.data, {})
-                data['y_ticks'] = y_ticks.ticks;
-                data['max_y'] = y_ticks.max;  data['min_y'] = 0;
-                specs.width = $('#rpi_distribution_container_div').width()-20;
+                    html += "<div class='flex no-padding' style='padding-top:7px;'>"; 
+                        html += "<div class='col-3 no-padding'><span class='no-padding light font-11'>" + stat.display + "</span></div>";
+                        html += "<div class='col-9 no-padding' id='split_bar" + a + "'></div>";  
+                        
+                    html += "</div>";
                 
-                vertical_bars(data, id, specs);
                 
+            }
+            html += "</div>"; 
+            $("#" + id).append(html)
+            if(on_mobile){
+                w = $('#overview_team_comparison_container_div').width() * .75 * .95 - 5;
             }
             else{
-                $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Could not calculate RPI distribution."));
+                w = $('#overview_team_comparison_container_div').width() * .75 * .50 * .95 - 5;
             }
+            split_bar("split_bar_header", {'width': w, 'chart_size': 'small', 'label1': misc.data.away_alt_team, 'label2': misc.data.home_alt_team, 'margin_left': 0, 'margin_top': 0, 'margin_bottom': 0, 'margin_right': 0, 'height': 20, 'split_point': .5, 'bar_fill': "#EEE", 'fill': "#88F"});
+            
+            for(var a = 0;a<data.length;a++){
+                    stat = data[a];
+                    split_bar_id = "split_bar" + a;
+                    
+                    
+                    split_bar(split_bar_id, {'width': w, 'chart_size': 'small', 'label1': stat.away_val_str, 'label2': stat.home_val_str, 'margin_left': 0, 'margin_top': 0, 'margin_bottom': 0, 'margin_right': 0, 'height': 20, 'split_point': stat.pct, 'bar_fill': "#E8E8E8", 'fill': "#88F"});
+                
+            }
+            
+            id = 'overview_team_comparison_rate_summary'
+            
+            
+            data = misc.data.results.BasicSummaryRate;
+            console.log("misc.data.results.BasicSummaryRate")
+            console.log(data);
+            
+            // Visualization
+            html = ""; $("#" + id).empty();
+            html += "<div class='no-padding' style='padding-bottom:10px;'>"; 
+                html += "<div class='no-padding' style='padding-top:20px;padding-bottom:20px;'><span class='no-padding font-18 bold'>Pace/Rate Stats</span></div>";
+            for(var a = 0;a<data.length;a++){
+                stat = data[a];
+                
+                
+                    html += "<div class='flex card' style='padding:5px;  margin-bottom:4px;'>"; 
+                        html += "<div class='col-3 no-padding'><span class='no-padding light font-12'>" + stat.display + "</span></div>";
+                        html += "<div class='col-9 no-padding'>"
+                            html += "<div class='flex no-padding'>";
+                                html += "<div class='col-3 no-padding'><span class='no-padding light font-12'>" + misc.data.away_alt_team + "</span></div>";
+                                html += "<div class='col-9 no-padding' id='away_rate" + a + "'></div>";
+                            html += "</div>";
+                            html += "<div class='flex no-padding'>";
+                                html += "<div class='col-3 no-padding'><span class='no-padding light font-12'>" + misc.data.home_alt_team + "</span></div>";
+                                html += "<div class='col-9 no-padding' id='home_rate" + a + "'></div>";
+                            html += "</div>";
+                        html += "</div>";
+                    html += "</div>";
+                
+                
+            }
+            html += "</div>"; 
+            $("#" + id).append(html)
+            if(on_mobile){
+                w = $('#overview_team_comparison_container_div').width() * .75 * .75 * .95;
+            }
+            else{
+                w = $('#overview_team_comparison_container_div').width() * .75 * .75 * .50 * .95;
+            }          
+            for(var a = 0;a<data.length;a++){
+                    stat = data[a];
+                    spark_bar_id = "away_rate" + a;
+                    spark_bar(spark_bar_id, {'width': w, 'chart_size': 'small', 'label': stat.away_val_str, 'margin_left': 0, 'margin_top': 0, 'margin_bottom': 0, 'margin_right': 0, 'height': 18, 'bar_width': stat.away_pct, 'bar_fill': "#E8E8E8", 'fill': "#88F"});
+                    
+                    spark_bar_id = "home_rate" + a;
+                    spark_bar(spark_bar_id, {'width': w, 'chart_size': 'small', 'label': stat.home_val_str, 'margin_left': 0, 'margin_top': 0, 'margin_bottom': 0, 'margin_right': 0, 'height': 18, 'bar_width': stat.home_pct, 'color': "#88F", 'fill': "#E8E8E8", 'bar_fill': "#88F"});
+                
+            }
+            
+            // Mark Complete
             success = true;
         }
         catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
@@ -402,16 +363,55 @@
             report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
         }
         
-        id = 'conditional_rpi_div'; success = false;
+        id = 'overview_boxscore'; success = false;
         try{
-            if(typeof misc.data.future_games != "undefined" && misc.data.future_games != null && misc.data.future_games.length > 0){
-                custom_specs = {'chart_size': 'small', 'margin_top': 0, 'margin_right': 0, 'margin_bottom': 0, 'margin_left': 0};
-                custom_specs.width = $('#conditional_rpi_container_div').width() - 20;
-                custom_conditional_RPI_tile(misc, id, custom_specs);
+            
+            // Data
+            data = misc.data.results.TopStars.sort(function(a,b){return b.goals_added - a.goals_added; });
+            //console.log("misc.data.results.TopStars");
+            //console.log(data);
+            for(var a = 0;a<data.length;a++){ player = data[a];
+                player.goals_added_str = jsformat(player.goals_added, "2");
+                player.name_str = player.player;
+                if('player_ID' in player && [null, '', -1].indexOf(player.player_ID) == -1){
+                    player.name_str = "<FORM id='player" + player.player_ID + "form' action='/team_player_detail' method=POST><input type=hidden name='ID' value='" + player.player_ID+ "'><input type=hidden name='came_from' value='{{misc.came_from}}'><span onclick=\"document.getElementById(\'player" + player.player_ID + "form\').submit();\" class='no-padding mouseover-link pointer'>" + player.player+ "</span></FORM>";
+                }
+                console.log(player);
             }
-            else{
-                $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "No careerd games"));
+            
+            // Visualization
+            $("#" + id + "_div").empty();
+            html = ""
+            html += '<div class="col-12 centered">'
+            html += '<span id="away_view_tag" class="pointer tag-on panel_tag font-15" onclick=\'set_panel(&quot;away&quot;);\'>';
+            html += '<span class="bold font-15">' + misc.data.teams[0].short_name + '</span></span>'
+            html += '<span id="home_view_tag" class="pointer tag-off panel_tag font-15" onclick=\'set_panel(&quot;home&quot;);\'>';
+            html += '<span class="bold font-15">' + misc.data.teams[1].short_name + '</span></span>'
+            html += '</div>';
+            
+            html += '<div class="col-12 visible panel" id ="away_view"></div>';
+            html += '<div class="col-12 hidden panel" id ="home_view"></div>';
+            $("#" + id + "_div").append(html);
+                
+            for(var a = 0;a<misc.data.teams.length;a++){ team_ID = misc.data.teams[a]['ID'];
+                players = data.filter(r=> r.team_ID==team_ID);
+                
+                var js_data = {'no_row_count': 1}
+                js_data.classes = [{'class': 'col-2-4'}, {'outer_class': 'col-10-8', 'classes': [{'class': 'centered'}, {'class': 'centered'}, {'class': 'centered'}, {'class': 'centered'}, {'class': 'centered'}]}];
+                js_data.fmt = [{'fmt': ""}, {'fmt': "2"}, {'fmt': "0"}, {'fmt': "0"}, {'fmt': "0"}, {'fmt': "0"}];
+                js_data.fields = [{'sort_by': 'player', 'tag': 'name_str', 'display': 'Player'}
+                , {'sort_by': 'goals_added', 'tag': 'goals_added', 'display': 'EGA'}
+                , {'sort_by': 'shots', 'tag': 'shots', 'display': 'Shots'}
+                , {'sort_by': 'goals', 'tag': 'goals', 'display': 'Goals'}
+                , {'sort_by': 'tos', 'tag': 'gbs', 'display': 'Ground balls'}
+                , {'sort_by': 'tos', 'tag': 'tos', 'display': 'Turnovers'}
+                ];
+                
+                js_data.data = players;
+                generic_create_table(js_data, {'id':(a==0 ? "away" : "home") + "_view", 'target_elem': (a==0 ? "away" : "home") + "_view"});
+                
             }
+            // Mark Complete
             success = true;
         }
         catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
@@ -421,160 +421,88 @@
             report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
         }
         
-        id = 'deconstructed_rpi_div'; success = false;
-        try{
-            if(typeof misc.data.RPI_factors != "undefined" && misc.data.RPI_factors.length > 0){
-                generic_create_table(JSON.parse(misc.data.RPI_factors), {'id': id, 'target_elem': id});
-            }
-            else{
-                $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Could not calculate deconstructed RPI."));
-            }
-            success = true;
-        }
-        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
-        
-        if(!success){
-            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
-            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
-        }
     }
     
     
     //misc = process_season_trends_history(misc);
     var season_trends_dates = []
-    function display_season_trends(panel){
-        //console.log("display_season_trends: " + panel);
-        if([null, 'season_trends', 'season_trends_history', 'season_trends_game_results', 'season_trends_movement'].indexOf(panel) == -1){ return; }
+    function display_lrpro(panel){
+        //console.log("display_lrpro: " + panel);
+        if([null, 'lrpro', 'wp_chart', 'season_trends_game_results', 'season_trends_movement'].indexOf(panel) == -1){ return; }
         
         
-        id = 'season_trends_game_results'; success = false;
+        id = 'wp_chart'; success = false;
         try{
-            // Print the history
-            if(misc.data.completed_games_cnt == 0){ // Print Last Year
+            // Data
+            wp_data = misc.data.results.WinProbabilityChart;
+            console.log("misc.data.results.WinProbabilityChart");
+            console.log(wp_data);
+            
+            if(wp_data.points.length > 0){
+                // Visualization
+                specs = {'highlight': 1, 'margin_left': 35, 'chart_size': 'bigger', 'flip': 0};
                 
-                games = misc.data.completed_games.filter( gm => gm.last_year == 1);
-                document.getElementById('season_trends_game_results_helpicon').setAttribute( "onclick", "show_explanation('team_my_rankings.html|season_trends_game_results_last_year')");
-            
-            }
-            else{ // Print this year
+                data = {'axis_labels': {'y': misc.data.teams[1].short_name + ' Win Probability', 'x': ""}, 'data': [{'stroke-width': 3, 'stroke': "#00F", 'points': wp_data.points}]};
                 
-                games = misc.data.completed_games.filter( gm => gm.this_year == 1);
-                document.getElementById('season_trends_game_results_helpicon').setAttribute( "onclick", "show_explanation('team_my_rankings.html|season_trends_game_results_this_year')");
-            }
-            
-            
-            var js_data = {'no_row_count': 1}
-            js_data.classes = [{'class': 'col-3'}, {'class': 'col-3 centered'}, {'class': 'col-3 centered'}, {'class': 'col-3 centered'}];
-            js_data.fmt = [{'fmt': ""}, {'fmt': ""}, {'fmt': ""}, {'fmt': ""}];
-            js_data.fields = [{'sort_by': 'game_date_YYYYmmdd', 'tag': 'opp_short_code', 'display': 'Game'}
-            , {'sort_by': 'game_date_YYYYmmdd', 'tag': 'score_str_html', 'display': 'Result'}
-            , {'sort_by': 'this_team_elo_transfer', 'tag': 'this_team_elo_transfer_html', 'display': 'Change'}
-            , {'sort_by': 'end_elo', 'tag': 'end_elo', 'display': 'Lax-ELO'}
-            ];
-            
-            
-            js_data.data = games;
-            generic_create_table(js_data, {'id': id, 'target_elem': 'season_trends_game_results_div'});
-            //console.log("misc.extra_data")
-            //console.log(misc.extra_data)
-            success = true;
-        }
-        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
-        
-        if(!success){
-            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
-            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
-        }
                 
-        
-        id = "season_trends_history_div"; success = false;
-        try{
-            specs = {'margin_bottom': 40, 'chart_size': 'small', 'flip': 0};
-            
-            misc = process_season_trends_history(misc);
-            data = {'axis_labels': {'y': 'Lax-ELO Rating', 'x': ''}, 'data': []};
-            data.data = misc.all_teams_season_trends_history;
-            
-            x_ticks = create_game_x_ticks(data.data);
-            data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
-            
-            for(var a = 0;a<misc.all_teams_season_trends_history.length;a++){
-                var tmp_data = data.data[a];
-                
-                for(var c = 0;c<tmp_data.points.length;c++){
-                    pt = tmp_data.points[c];
-                    if(season_trends_dates.indexOf(pt.dt) == -1){
-                        season_trends_dates.push(pt.dt);
-                    }
-                    
-                }
-            }
-        
-            season_trends_dates = season_trends_dates.sort(function(first, second) {
-                    return first - second;
-            });
-            var slider_start = null;
-            for(var a = 0;a<season_trends_dates.length;a++){
-                
-                if(season_trends_dates[a] >= misc.season_trends_movement_start_date){
-                    
-                    slider_start = a/season_trends_dates.length;
-                    break;
-                }
-            }
-            if(slider_start == null){ slider_start = 1; }
-            
-            
-            y_ticks = create_numeric_y_ticks(data.data)
-            
-            data['y_ticks'] = y_ticks.ticks;
-            data['max_y'] = y_ticks.max;  data['min_y'] = y_ticks.min;
-            
-            specs.width = $('#season_trends_history_container_div').width() - 20;
-            specs.height = 200;
-            data['legend'] = {'items': [], 'layout': 'horizontal'}
-            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': '#88F', 'label': 'Your Rating'})
-            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': 'maroon', 'label': 'Conf Avg.'})
-            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': '#DDD', 'label': 'Conf Team'}) 
-            
-            horizontal_line(data, id, specs);
-            success = true;
-        }
-        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
-        
-        if(!success){
-            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
-            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
-        }
-            
-            
-        id = "season_trends_movement_div"; success = false;
-        
-        try{
-            data = {'axis_labels': {'y': 'Change in Lax-ELO Rating; 100 = Rating on ' + days_to_date(misc.season_trends_movement_start_date, '%b %d %Y'), 'x': ''}, 'data': []};
-            data.data = misc.all_teams_season_trends_change_history;
+                x_ticks = create_game_x_ticks(data.data);
+                data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
+                y_ticks = create_pct_y_ticks(data.data, {'min': 0.0, 'max': 1.0});
 
-            x_ticks = create_game_x_ticks(data.data);
-            data['x_ticks'] = x_ticks.ticks; data['max_x'] = x_ticks.max; data['min_x'] = x_ticks.min;
-            y_ticks = create_numeric_y_ticks(data.data)
-            data['y_ticks'] = y_ticks.ticks;
-            data['max_y'] = y_ticks.max;  data['min_y'] = y_ticks.min;
+                data['y_ticks'] = y_ticks.ticks;
+                data['max_y'] = 1.0;  data['min_y'] = 0.0;
+         
+                specs.width = $('#wp_chart_container_div').width() - 15;          
+               
+                specs.vertical_lines = [{'x': 25}, {'x': 50}, {'x': 75}]
+                specs.height = 230;
+                x_h = 175;
+                data.text = [{'x_scaled': 12.5, 'y': x_h, 'align': 'middle', 'text': "Q1"}, {'x_scaled': 37.5, 'y': x_h, 'align': 'middle', 'text': "Q2"}, {'x_scaled': 62.5, 'y': x_h, 'align': 'middle', 'text': "Q3"}, {'x_scaled': 87.5, 'y': x_h, 'align': 'middle', 'text': "Q4"}]
+                wp_chart(data, id + '_div', specs);
+            }
+            else{
+                elem = $("#" + id + '_div'); elem.empty();
+                
+                elem.append("<div class='col-12 centered' style='padding-top:20px;'><span class='font-18 error'>The win probability chart for this game is not available.</span></div>");
+                report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+            }            
+            // Mark Success
+            success = true;
+        }
+        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+        
+        if(!success){
+            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+        }
+                
+        
+        id = ""; success = false;
+        try{
             
-            specs.width = $('#season_trends_movement_container_div').width() - 20;
-            specs.height = 200; specs.margin_top= 30;
+            // Data
             
-            data['legend'] = {'items': [], 'layout': 'horizontal'}
-            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': '#88F', 'label': 'Your Rating'})
-            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': 'maroon', 'label': 'Conf Avg.'})
-            data.legend.items.push({'stroke-dasharray': null, 'icon_type': 'line', 'stroke-width': 2, 'color': '#DDD', 'label': 'Conf Team'}) 
+            // Visualization
             
-            slider_width = $('#season_trends_movement_container_div').width() - 200
+            // Mark Complete
+            success = true;
+        }
+        catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
+        
+        if(!success){
+            $("#" + id).empty(); $("#" + id).append(single_stat.split("</div>")[1].replace('[stat]', "Data could not be displayed."));
+            report_js_visualization_issue(misc.target_template + "|" + id + "|" + misc.nhca);
+        }
             
-            data.slider = {'pct_loc': slider_start,'loc_x': $('#season_trends_movement_container_div').width() - slider_width - 125, 'loc_y': -20, 'orientation': 'horizontal', 'dragStarted': null, 'drag': show_season_trends_date, 'dragEnded': redraw_season_trends_movement, 'id': id, 'text_align': 'right', 'width': slider_width, 'height': 10, 'svg_stops': 10, 'show_value_on_drag': 1};
-            data.slider.start_label = days_to_date(season_trends_dates[0], '%b %Y')
-            data.slider.end_label = days_to_date(season_trends_dates[season_trends_dates.length-1], '%b %Y')
             
-            horizontal_line(data, id, specs);
+        id = ""; success = false;
+        
+        try{
+            // Data
+            
+            // Visualization
+            
+            // Mark Complete
             success = true;
         }
         catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
@@ -609,7 +537,7 @@
         misc.season_trends_movement_start_date = season_trends_dates[index];
         
         
-        display_season_trends('season_trends_movement');
+        display_lrpro('season_trends_movement');
         
         // Write to the DB that the value of the setting has changed
         logger_str = [null, misc.nhca, 'season_trends_movement_start_date', misc.season_trends_movement_start_date].join("|");
@@ -649,91 +577,16 @@
         
     }
     
-    function display_post_season_odds(panel){
+    function display_postseason(panel){
         if([null, 'career', 'record_scenarios', 'bubble_watch', 'conf_seed_probabilities', 'selection_rivals'].indexOf(panel) == -1){ return; }
         
-        id = 'record_scenarios'; success = false;
+        id = ''; success = false;
         try{
-            var cur_wins = parseInt(misc.data.record.split("-")[0].trim());
-            var cur_losses = parseInt(misc.data.record.split("-")[1].trim());
+            // Data
             
-            var likely = misc.data.win_loss_records.filter(gm => gm.frequency > 0);
-            n_likely = likely.length;
-            if(n_likely <= 8){ // Just show the win-loss scenarios
+            //  Visualization
             
-                document.getElementById('record_scenarios_helpicon').setAttribute( "onclick", "show_explanation('team_my_rankings.html|record_scenarios_records')");
-                    
-                    
-                likely.sort(function(first, second) {
-                        return second.pct_in - first.pct_in;
-                });
-                likely = likely.slice(0,8);
-                var record_scenarios_js_data = {'no_row_count': 1}
-                record_scenarios_js_data.classes = [{'class': 'col-4'}, {'class': 'col-4 centered'}, {'class': 'col-4 centered'}];
-                record_scenarios_js_data.fmt = [{'fmt': ""}, {'fmt': "0%"}, {'fmt': "0%"}];
-                record_scenarios_js_data.fields = [{'sort_by': 'win_pct', 'tag': 'rec', 'display': 'Final Record'}
-                , {'sort_by': 'frequency', 'tag': 'frequency', 'display': 'Likelihood'}
-                , {'sort_by': 'pct_in', 'tag': 'pct_in', 'display': 'NCAA %'}
-                ];
-                
-                
-                record_scenarios_js_data.data = likely;
-                generic_create_table(record_scenarios_js_data, {'id': 'record_scenarios', 'target_elem': 'record_scenarios_div'});
-            }
-            else{ // Show the overall win total scenarios
-                document.getElementById('record_scenarios_helpicon').setAttribute( "onclick", "show_explanation('team_my_rankings.html|record_scenarios_wins')");
-                
-                misc.data.future_wins.sort(function(first, second) {
-                    return first.future_wins - second.future_wins;
-                });
-                wins = misc.data.future_wins;
-                
-                last_zero_index = null; last_zero_wins = null;
-                first_100_index = null; first_100_wins = null;
-                for(var a = 0;a<wins.length;a++){
-                    var rec = wins[a];
-                    if(rec.pct_in == 0){ last_zero_index = a; last_zero_wins = rec.future_wins; }
-                    if(rec.pct_in == 1 && first_100_index == null){ first_100_index = a; first_100_wins = rec.future_wins; }
-                }
-                var cum_0 = 0; var cum_100 = 0;
-                for(var a = 0;a<=last_zero_index;a++){ 
-                    cum_0 += wins[a].frequency;
-                }
-                if(first_100_index != null){
-                    for(var a = first_100_index;a<wins.length;a++){
-                        cum_100 += wins[a].frequency;
-                    }
-                }
-                else{
-                    first_100_index = wins.length;
-                    cum_100 = null;
-                }
-                
-                //console.log("First non zero: " + last_zero_wins);
-                //console.log("Last sub 100: " + first_100_wins);
-                table_data = [];
-                table_data.push({'wins_str': (cur_wins + last_zero_wins) + " or less", 'wins': cur_wins + last_zero_wins, 'frequency': cum_0, 'pct_in': 0.0});
-                for(var a =last_zero_index + 1;a<first_100_index;a++){
-                    var rec = wins[a];
-                    table_data.push({'wins_str': cur_wins + rec.future_wins, 'wins': cur_wins + rec.future_wins, 'frequency': rec.frequency, 'pct_in': rec.pct_in});
-                }
-                if(cum_100 != null){
-                    table_data.push({'wins_str': (cur_wins + first_100_wins) + " or more", 'wins': cur_wins + first_100_wins, 'frequency': cum_100, 'pct_in': 1.0});
-                }
-                
-                var record_scenarios_js_data = {'no_row_count': 1}
-                record_scenarios_js_data.classes = [{'class': 'col-4'}, {'class': 'col-4 centered'}, {'class': 'col-4 centered'}];
-                record_scenarios_js_data.fmt = [{'fmt': ""}, {'fmt': "0%"}, {'fmt': "0%"}];
-                record_scenarios_js_data.fields = [{'sort_by': 'wins', 'tag': 'wins_str', 'display': 'Final Wins'}
-                , {'sort_by': 'frequency', 'tag': 'frequency', 'display': 'Likelihood'}
-                , {'sort_by': 'pct_in', 'tag': 'pct_in', 'display': 'NCAA %'}
-                ];
-                
-                
-                record_scenarios_js_data.data = table_data;
-                generic_create_table(record_scenarios_js_data, {'id': 'record_scenarios', 'target_elem': 'record_scenarios_div'});
-
-            }
+            // Mark Success
             success = true;
         }
         catch(err){ console.log("Error caught: " + id); if(!misc.on_server){ console.error(err.stack); } }
@@ -878,19 +731,23 @@
         
         console_log.push({'msg': 'Check misc.data...'});
         if('data' in misc && [{}, null].indexOf(misc.data) == -1){
-            console_log.push({'msg': 'projected rpi...'});
+            console_log.push({'msg': 'overview...'});
             display_overview(panel);
-            console_log.push({'msg': 'projected season_trends...'});
-            display_season_trends(panel);
-            console_log.push({'msg': 'post season...'});
-            display_post_season_odds(panel);
+            console_log.push({'msg': 'lrpro...'});
+            display_lrpro(panel);
+            console_log.push({'msg': 'postseason...'});
+            display_postseason(panel);
+            
+            
+            
+            if('observe' in misc && misc.observe){ report_user_view(misc.handler + "|" + panel + "|" + misc.nhca); }
             
         }
         
     }
     
     // Select the appropriate panel to display
-    if('active_element' in misc){ choose_left_menu_item(misc.active_element); }
+    if('active_element' in misc && ["None", null, -1, ' ', ''].indexOf(misc.active_element) == -1){ choose_left_menu_item(misc.active_element); }
     else{ choose_left_menu_item("overview"); }
     
     console_log.push({'msg': 'Start finish load...'});

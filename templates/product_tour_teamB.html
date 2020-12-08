@@ -13,53 +13,30 @@
 
     
 
-    <div class='col-12'>
+
 
     
-    <div class='col-12 flex-block'>
+    <div class='col-12'>       
+        {% if misc.product.status != "available" %}
+            <div class='col-12 flex' style='border: solid 2px #AAA; border-radius:10px;'>
         
-        <div class='col-9-12 flex'>
-            <div class='col-1'></div>
-            <div class='col-10 centered' style='padding-top:60px; padding-bottom:40px;'>
-                <div class='col-12'>
-                    <span class='font-36 bold' style='color:#008;'>Your lacrosse prep assistant.</span>
-                </div>
-                <div class='col-12' style='padding-top: 40px;'>
-                    <span class='font-15 light'>Match-up histories. Player and team trends. Research access to our database.</span>
-                </div>
-
-            </div>
-            <div class='col-1'></div>
-        </div>
- 
-        <div class='col-3-12 flex' style='border: solid 2px #AAA; border-radius:10px;'>
+        {% else %}
+            <div class='col-12 flex' style=''>
+        {% endif %}
             
                 <div class='col-1'></div>
                 <div class='col-10'>
-                    <FORM action='/product-summary-media' method=POST>
+                    <FORM action='/product-tour-team' method=POST>
                     <input type=hidden name='user_ID' value={{misc.user_ID}} />
                     <input type=hidden name='AB_group' value={{misc.AB_group}} />
                     <input type=hidden name='hash' value={{misc.hash}} />
                     <input type=hidden name='request_type' value='pre-product-notification' />
                     <input type=hidden name='tracking_tag' value='{{misc.tracking_tag}}' />
                     
-                    <div class='col-12 centered' style='border-bottom: solid 2px #88F;'>
-                        {% if misc.product.status == "quotable" %}
-                            <span class='font-15 contents bold'>Request a {{misc.product.product_name}} Trial</span>  
-                        {% endif %}
-                        {% if misc.product.status == "available" %}
-                            <span class='font-15 contents bold'>LRP {{misc.product.product_name}}</span>  
-                        {% endif %}
-                        {% if misc.product.status == "pre-register" %}
-                            <span class='font-15 contents bold'>Pre-Register: {{misc.product.product_name}}</span>  
-                        {% endif %}
-                    </div>
+                    
                     <div class='col-12' style='padding-top:20px'>
                         {% if misc.product.status == "quotable" %}
                             <span class='font-15 contents'>Use the form to enter your specifics. I will reach out within 24 hours to coordinate a trial account.</span>    
-                        {% endif %}
-                        {% if misc.product.status == "available" %}
-                            <div class='centered'><span class='font-15 contents'>{{misc.product.buy_nudge}}</span></div>
                         {% endif %}
                         {% if misc.product.status == "pre-register" %}
                             <span class='font-15 contents'>This product is not quite ready yet, but enter your email to get notified when it is.</span>
@@ -72,9 +49,9 @@
                             <div class='col-12'>
                                 <input type=text value='{{misc.email_decrypted}}'  placeholder="Enter Email" name='email' id='email'class='font-15 col-12' />
                             </div>
-                            
                         </div>
                     {% endif %}
+                    
                     {% if misc.error %}
                         <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
                     {% endif %}
@@ -83,9 +60,9 @@
                     {% else %}
                         <div class='col-12 centered' style='padding-top:20px;'>
                             {%if misc.product.call_to_action != "BUY IT" %}
-                                <button id='action_button' type=submit class='action-button small blue' name='action' value='{{misc.product.status}}'><span class='pointer font-15'>{{misc.product.call_to_action}}</span></button>
+                                <button id='action_button' type=submit class='action-button blue' name='action' value='{{misc.product.status}}'><span class='pointer'>{{misc.product.call_to_action}}</span></button>
                             {% else %}
-                                <button id='buy_button' class='action-button small blue' onclick="window.location='/product-pricing-media?t={{misc.tracking_tag}}'"><span class='pointer font-15'>{{misc.product.call_to_action}}</span></button>
+                                <button type=button id='buy_button' class='action-button large blue' onclick="window.location='/product-pricing-team?t={{misc.tracking_tag}}'"><span class='pointer'>{{misc.product.call_to_action}}</span></button>
                             {% endif %}
                         </div>
                     {% endif %}
@@ -98,8 +75,6 @@
         
     </div>
     
-
-    </div>
 
     
 <script>

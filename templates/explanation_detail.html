@@ -21,7 +21,9 @@
             <div class='col-12 centered'><span class='msg' style='color:blue;' >{{misc.msg}}</span></div>
         {% endif %}
         <div class='col-12 right' style='padding-bottom:10px;'>
-            <a class='action-button' href='/explanations'><span class='font-15'>Back to List</span></a>
+            <FORM action='/explanations' method=POST><input type=hidden name='ID' value='{{misc.explanation.ID}}' /><input name='filter_page' type=hidden value='{{misc.filter_page}}'>
+            <button class='action-button' ><span class='font-15'>Back to List</span></button>
+            </FORM>
         </div>
               
               
@@ -30,7 +32,8 @@
         </div>
         
         
-        <FORM action='/explanations' method=POST><input type=hidden name='ID' value='{{misc.explanation.ID}}' />
+        <FORM action='/explanations' method=POST><input type=hidden name='ID' value='{{misc.explanation.ID}}' /><input name='filter_page' type=hidden value='{{misc.filter_page}}'>
+        <input type=hidden name='confirmed' value='{{misc.confirmed}}' />
         <div class='flex'>
             <div class='col-6'><span class='font-15 bold'>HTML Page</span></div>
             <div class='col-6'><input class='font-15' type=text name='html_page' value='{{misc.explanation.html_page}}' /></div>
@@ -50,8 +53,14 @@
             <textarea onchange='edit_html(this.value);' style='width:100%;' rows=10 name='explanation_html'>{{misc.explanation.explanation_html}}</textarea>
         </div>
             
-        <div class=' centered col-12'>
-            <button name='action' value='{{misc.action}}' class='action-button'><span class='font-12'>EDIT</span></button>
+        {% if misc.delete_msg %}
+            <div class='col-12 centered'><span class='error' style='' >{{misc.delete_msg}}</span></div>
+        {% endif %}
+        <div class=' flex col-12'>
+            <div class='col-4'></div>
+            <div class='col-4 centered'><button name='action' value='{{misc.action}}' class='action-button'><span class='font-12'>EDIT</span></button></div>
+            
+            <div class='col-4 right'><button name='delete_action' value='delete_explanation' class='action-button'><span class='font-12'>DELETE</span></button></div>
         </div>
             
         </FORM>      

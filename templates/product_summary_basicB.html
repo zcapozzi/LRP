@@ -16,89 +16,137 @@
     <div class='col-12'>
 
     
-    <div class='col-12 flex-block'>
-        
-        <div class='col-9-12 flex'>
-            <div class='col-1'></div>
-            <div class='col-10 centered' style='padding-top:60px; padding-bottom:40px;'>
-                <div class='col-12'>
-                    <span class='font-36 bold' style='color:#008;'>Follow your team at a whole new level.</span>
+        <div class='col-12 flex-block'>
+            
+            <div class='col-9-12 flex'>
+                <div class='col-1'></div>
+                <div class='col-10 centered' style='padding-top:60px; padding-bottom:40px;'>
+                    <div class='col-12'>
+                        <span class='font-36 bold' style='color:#008;'>Your team just won.</span>
+                    </div>
+                    <div class='col-12' style='padding-top:20px;'>
+                        <span class='font-18 lh-30' style='color:#008;'>You can spend your time in the forums until the next game. Or you can try something new...</span>
+                    </div>
                 </div>
-                <div class='col-12' style='padding-top: 40px;'>
-                    <span class='font-15 light'>More advanced stats. Favorite player features. Rapid game reports.</span>
-                </div>
-
+                <div class='col-1'></div>
             </div>
-            <div class='col-1'></div>
-        </div>
- 
-        <div class='col-3-12 flex' style='border: solid 2px #AAA; border-radius:10px;'>
-            
-                <div class='col-1'></div>
-                <div class='col-10'>
-                    <FORM action='/product-summary-basic' method=POST>
-                    <input type=hidden name='user_ID' value={{misc.user_ID}} />
-                    <input type=hidden name='AB_group' value={{misc.AB_group}} />
-                    <input type=hidden name='hash' value={{misc.hash}} />
-                    <input type=hidden name='request_type' value='pre-product-notification' />
-                    <div class='col-12 centered' style='border-bottom: solid 2px #88F;'>
-                        {% if misc.product.status == "quotable" %}
-                            <span class='font-15 contents bold'>Request a {{misc.product.product_name}} Trial</span>  
-                        {% endif %}
-                        {% if misc.product.status == "available" %}
-                            <span class='font-15 contents bold'>LRP {{misc.product.product_name}}</span>  
-                        {% endif %}
-                        {% if misc.product.status == "pre-register" %}
-                            <span class='font-15 contents bold'>Pre-Register: {{misc.product.product_name}}</span>  
-                        {% endif %}
-                    </div>
-                    <div class='col-12' style='padding-top:20px'>
-                        {% if misc.product.status == "quotable" %}
-                            <span class='font-15 contents'>Use the form to enter your specifics. I will reach out within 24 hours to coordinate a trial account.</span>    
-                        {% endif %}
-                        {% if misc.product.status == "available" %}
-                            <div class='centered'><span class='font-15 contents'>{{misc.product.buy_nudge}}</span></div>
-                        {% endif %}
-                        {% if misc.product.status == "pre-register" %}
-                            <span class='font-15 contents'>This product is not quite ready yet, but enter your email to get notified when it is.</span>
-                        {% endif %}
-                    </div>
-
-                    {% if misc.product.status != "available" %}
-                        <div class='col-12'>
-                            <div class='col-12'><span class='font-13 light'>Email</div>
-                            <div class='col-12'>
-                                <input type=text value='{{misc.email_decrypted}}'  placeholder="Enter Email" name='email' id='email'class='font-15 col-12' />
-                            </div>
+     
+            <div class='col-3-12 flex' style='border: solid 2px #AAA; border-radius:10px;'>
+                
+                    <div class='col-1'></div>
+                    <div class='col-10'>
+                        <FORM action='/product-summary-basic' method=POST>
+                            <input type=hidden name='user_ID' value={{misc.user_ID}} />
+                            <input type=hidden name='AB_group' value={{misc.AB_group}} />
+                            <input type=hidden name='hash' value={{misc.hash}} />
+                            <input type=hidden name='request_type' value='pre-product-notification' />
+                            <input type=hidden name='tracking_tag' value='{{misc.tracking_tag}}' />
                             
-                        </div>
-                    {% endif %}
-                    {% if misc.error %}
-                        <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
-                    {% endif %}
-                    {% if misc.msg %}
-                        <div class='col-12 centered'><span style='color:blue;' class='font-15'>{{misc.msg|safe}}</span></div>
-                    {% else %}
-                        <div class='col-12 centered' style='padding-top:20px;'>
-                            {%if misc.product.call_to_action != "BUY IT" %}
-                                <button id='action_button' type=submit class='action-button small blue' name='action' value='{{misc.product.status}}'><span class='pointer font-15'>{{misc.product.call_to_action}}</span></button>
-                            {% else %}
-                                <button type=button id='buy_button' class='action-button small blue' onclick="window.location='/product-pricing-basic'"><span class='pointer font-15'>{{misc.product.call_to_action}}</span></button>
+                            <div class='col-12 centered' style='border-bottom: solid 2px #88F;'>
+                                {% if misc.product.status == "quotable" %}
+                                    <span class='font-15 contents bold'>Request a {{misc.product.product_name}} Trial</span>  
+                                {% endif %}
+                                {% if misc.product.status == "available" %}
+                                    <span class='font-15 contents bold'>LRP {{misc.product.product_name}}</span>  
+                                {% endif %}
+                                {% if misc.product.status == "pre-register" %}
+                                    <span class='font-15 contents bold'>Pre-Register: {{misc.product.product_name}}</span>  
+                                {% endif %}
+                            </div>
+                            <div class='col-12' style='padding-top:20px'>
+                                {% if misc.product.status == "quotable" %}
+                                    <span class='font-15 contents'>Use the form to enter your specifics. I will reach out within 24 hours to coordinate a trial account.</span>    
+                                {% endif %}
+                                {% if misc.product.status == "available" %}
+                                    <div class='centered'><span class='font-15 contents'>{{misc.product.buy_nudge}}</span></div>
+                                {% endif %}
+                                {% if misc.product.status == "pre-register" %}
+                                    <span class='font-15 contents'>This product is not quite ready yet, but enter your email to get notified when it is.</span>
+                                {% endif %}
+                            </div>
+
+                            {% if misc.product.status != "available" %}
+                                <div class='col-12'>
+                                    <div class='col-12'><span class='font-13 light'>Email</span></div>
+                                    <div class='col-12'>
+                                        <input type=text value='{{misc.email_decrypted}}'  placeholder="Enter Email" name='email' id='email'class='font-15 col-12' />
+                                    </div>
+                                    
+                                </div>
                             {% endif %}
-                        </div>
-                    {% endif %}
-                    </FORM>
-                </div>
-                <div class='col-1'></div>
+                            {% if misc.error %}
+                                <div class='col-12 error'><span class='error' >{{misc.error}}</span></div>
+                            {% endif %}
+                            {% if misc.msg %}
+                                <div class='col-12 centered'><span style='color:blue;' class='font-15'>{{misc.msg|safe}}</span></div>
+                            {% else %}
+                                <div class='col-12 centered' style='padding-top:20px;'>
+                                    {%if misc.product.call_to_action != "BUY IT" %}
+                                        <button id='action_button' type=submit class='action-button small blue' name='action' value='{{misc.product.status}}'><span class='pointer font-15'>{{misc.product.call_to_action}}</span></button>
+                                    {% else %}
+                                        <button type=button id='buy_button' class='action-button small blue' onclick="window.location='/product-pricing-basic?t={{misc.tracking_tag}}'"><span class='pointer font-15'>{{misc.product.call_to_action}}</span></button>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </FORM>
+                    </div>
+                    <div class='col-1'></div>
+                
             
-        
+            </div>
+            
         </div>
-        
-    </div>
     
 
     </div>
 
+    <div class='col-12 flex-block'>
+        <div class='col-4-12'>
+            <div class='tier card'>
+                <div class='col-12 tier-header centered' style=''><span class='font-18 bold'><span class='dtop'>More Advanced Stats</span><span class='mob'>Deeper Stats</span></span></div>
+                <div class='centered text-container medium'><span class='font-15 contents'>
+                    The public site has always been about introducing a broad array of statistics to a general audience. The goal of PRO is to get into the nuts and bolts for users that want that extra layer of content.
+                </span></div>
+            </div>
+            
+        </div>
+        <div class='col-4-12 flex'>
+            <div class='tier card'>
+                <div class='col-12 tier-header centered' style=''><span class='font-18 bold'><span class='dtop'>Favorite Players</span><span class='mob'>Favorite Players</span></span></div>
+                <div class='centered text-container medium'><span class='font-15 contents'>
+                    Have a favorite player, or two? Specify up to 3 players and get extra analyses around their usage patterns, offensive or defensive profiles, and evolution over time.
+                </span></div>
+            </div>
+        </div>
+        <div class='col-4-12 flex'>
+            <div class='tier card'>
+                <div class='col-12 tier-header centered' style=''><span class='font-18 bold'><span class='dtop'>Rapid Reports</span><span class='mob'>Rapid Reports</span></span></div>
+                <div class='centered text-container medium'><span class='font-15 contents'>
+                    Get the LacrosseReference perspective sent straight to your phone or email at within minutes of halftime and/or the final whistle. You'll know, what happened, as soon as it happened.
+                </span></div>
+            </div>
+        </div>
+    </div>
+    <div class='flex'>
+        <div class='col-2 dtop'></div>
+        <div class='col-8-12'>
+            <div class='col-12 centered'><img class='' style=' ' src='/static/img/fan_icon.png'></div>
+            <div class='col-12 centered'>
+                <div class=''><span class='contents font-18 lh-30'>LacrosseReference PRO is for college lacrosse fans who want a new way to follow the sport. Basketball, football, even baseball. Pick almost any other sport and there are dozens of ways to follow. To date, college lacrosse fans have been less fortunate. Outside of watching games your choices are a) read IL or b) hang out in forums. LacrosseReference PRO is for fans who want more.</span></div>
+                <div class='' style='padding-bottom:25px;'><span class='contents font-18 lh-30'>With PRO, you'll have access to my most cutting edge statistics and deeper level of customization over the lacrosse content you see. And with my no-questions-asked money-back guarantee, you'll never have to worry whether it's worth the money. If it's not, just cancel any time before your subscription ends and get a full-refund.</span></div>
+            </div>
+        </div>
+        <div class='col-2 dtop'></div>
+    </div>
+    
+    <div class='flex' style='padding-bottom:20px;'>
+        <div class='col-2 no-padding dtop'></div>
+        <div class='col-8-12 no-padding'>
+            <div class='col-12 no-padding centered'><button type=button id='tour_button' class='action-button medium blue' onclick="window.location='/product-tour-basic?t={{misc.tracking_tag}}'"><span class='pointer font-15'>TAKE THE TOUR</span></button></div>
+        </div>
+        <div class='col-2 no-padding dtop'></div>
+    </div>
+    
     
 <script> 
     var on_mobile = null;

@@ -30,23 +30,32 @@
                 <div class='col-12'><textarea rows=1 style='font-family:Arial; width:100%;' id='subject' name='subject'>{{misc.subject}}</textarea></div>
                 <div class='col-12'><span class='light font-18 bold'>Send As</span></div>
                 
-                <div class='col-12'><textarea rows=1 style='font-family:Arial; width:100%;' id='send_as' name='send_as'>{{misc.send_as}}</textarea></div>
+                <div class='col-12'><textarea placeholder='zack@lacrossereference.com' rows=1 style='font-family:Arial; width:100%;' id='send_as' name='send_as'>{{misc.send_as}}</textarea></div>
                 
                 
-                <div class='col-12'><span class='light font-18 bold'>Recipients
-                {% if misc.num_recipients %}
-                 ({{misc.num_recipients}})
+                <div class='col-12'><span class='light font-18 bold'>Individual Recipients
+                {% if misc.num_individual_recipients %}
+                 ({{misc.num_individual_recipients}})
                 {% endif %}
                 </span></div>
                 
-                <div class='col-12'><textarea rows=2 style='font-family:Arial; width:100%;' id='recipients' name='recipients'>{{misc.recipients}}</textarea></div>
+                <div class='col-12'><textarea rows=2 style='font-family:Arial; width:100%;' id='individual_recipients' name='individual_recipients'>{{misc.individual_recipients}}</textarea></div>
+                
+                
+                <div class='col-12'><span class='light font-18 bold'>Group Recipients (use [email1,email2,email3] notation)
+                {% if misc.num_group_recipients %}
+                 ({{misc.num_group_recipients}} group)
+                {% endif %}
+                </span></div>
+                
+                <div class='col-12'><textarea rows=2 style='font-family:Arial; width:100%;' id='group_recipients' name='group_recipients'>{{misc.group_recipients}}</textarea></div>
                 
                 
                 <div class='col-12 flex'>
                     <div class='col-9'><span class='light font-18 bold'>Email Message</span></div>
                     <div class='col-3 right'><span class='light font-18 bold'>Edit</span> <input id='edit_checkbox' type=checkbox onclick='toggle_edit();'/></div>
                 </div>
-                <div class='col-12 msg' id='msg_edit'><textarea onchange='preview()' rows=10 style='font-family:Arial; width:100%;' id='msg_body' name='msg_body'>{{misc.msg_body}}</textarea></div>
+                <div class='col-12 msg' id='msg_edit'><textarea onchange='preview()' rows=10 style='font-family:Arial; font-size:13px; line-height:21px; width:100%;' id='msg_body' name='msg_body'>{{misc.msg_body}}</textarea></div>
                 <div class='col-12 msg' id='msg_preview'>{{misc.msg_body|safe}}</div>
                 
                 

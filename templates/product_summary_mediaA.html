@@ -38,6 +38,7 @@
                     <input type=hidden name='AB_group' value={{misc.AB_group}} />
                     <input type=hidden name='hash' value={{misc.hash}} />
                     <input type=hidden name='request_type' value='pre-product-notification' />
+                    <input type=hidden name='tracking_tag' value='{{misc.tracking_tag}}' />
                     
                     <div class='col-12 centered' style='border-bottom: solid 2px #88F;'>
                         {% if misc.product.status == "quotable" %}
@@ -64,7 +65,7 @@
 
                     {% if misc.product.status != "available" %}
                         <div class='col-12'>
-                            <div class='col-12'><span class='font-13 light'>Email</div>
+                            <div class='col-12'><span class='font-13 light'>Email</span></div>
                             <div class='col-12'>
                                 <input type=text value='{{misc.email_decrypted}}'  placeholder="Enter Email" name='email' id='email'class='font-15 col-12' />
                             </div>
@@ -81,7 +82,7 @@
                             {%if misc.product.call_to_action != "BUY IT" %}
                                 <button id='action_button' type=submit class='action-button small blue' name='action' value='{{misc.product.status}}'><span class='pointer font-15'>{{misc.product.call_to_action}}</span></button>
                             {% else %}
-                                <button id='buy_button' class='action-button small blue' onclick="window.location='/product-pricing-media'"><span class='pointer font-15'>{{misc.product.call_to_action}}</span></button>
+                                <button id='buy_button' class='action-button small blue' onclick="window.location='/product-pricing-media?t={{misc.tracking_tag}}'"><span class='pointer font-15'>{{misc.product.call_to_action}}</span></button>
                             {% endif %}
                         </div>
                     {% endif %}

@@ -1,0 +1,127 @@
+
+{% extends layout %}
+
+
+{% block body %}
+
+        <div class='col-12 dtop flex menu-header-bar'>
+            <div class='col-12 inline-flex'>
+                <div class='no-padding'> <a href='/' class='menu-link'><span class='menu-link font-15'>Home</span></span></a></div>
+                <div class='no-padding'> <a href='/team_my_schedule' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Schedule</span></a></div>
+                <div class='no-padding'> <a href='/team_my_stats' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Stats</span></a></div>
+                <div class='no-padding'> <a href='/team_my_rankings' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Rankings</span></a></div>
+                <div class='no-padding' id='explore_menu_item'><div class='no-padding'><a class='menu-link'><span class='menu-link font-15 pointer'>Explore</span></a></div></div>
+            </div>
+        </div>
+
+        <div class='col-12 centered' id='banner'></div>
+        
+        
+        
+        {% if misc.error %}
+            <div class='col-12 error centered'><span class='error' >{{misc.error|safe}}</span></div>
+        {% endif %}
+        {% if misc.msg %}
+            <div class='col-12 error centered'><span class='' >{{misc.msg}}</span></div>
+        {% endif %}
+        <div class=''>
+            <div class='no-padding options-bar col-12 flex'>
+                <div class='no-padding col-9'>
+                {% if misc.breadcrumbs %}
+                    <div class='breadcrumbs'>
+                        {{misc.breadcrumbs|safe}}
+                    </div>
+                {% endif %}
+                </div>
+            </div>
+            
+            
+            <div id='explanation' class='non-dashboard-landing'> </div>
+            
+            <div id='landing' class='non-dashboard-landing'> </div>
+            
+        </div>
+    
+<script src="static/js/d3.v4.min.js"></script><script src="static/js/laxrefpro_graphing.js?dt=203"></script>
+<script>
+    var on_mobile = null;
+    var console_log = []; var success = null;
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
+    
+    var misc = parse_misc({{misc|to_json2}});
+    console_log.push({'msg': 'Loaded misc...'});
+    var user_obj = {'settings': {{user_obj.settings|to_json2}}};
+    console.log(user_obj);
+    console.log(misc);
+    
+    specs = {'league': typeof user_obj.settings != "string" && 'league' in user_obj.settings ? user_obj.settings.league.val : "NCAAD1Men", 'stat_grouping': 'basic', 'link_to_players': 1};
+    if(misc.substat != "active"){ specs.link_to_teams = 0; }
+    else if (misc.product_i == 1 && misc.product_t < 2){ specs.link_to_teams = 0; }
+    else if (misc.product_i == 2 && misc.product_t < 2){ specs.link_to_teams = 0; }
+
+    
+    function search_players(s){
+        console.log(s);
+        s = s.toLowerCase()
+        selected_players = misc.extra_data.db_players.filter(r=> r.lcase_name.indexOf(s) > -1);
+        n = selected_players.length;
+        
+        player_list.empty();
+        if(n > 50){
+            player_list.append("<div class='error centered'><span class='font-15'>Search returned " + zFormat(n, 0) + " players</span></div>");
+        }
+        else{
+            
+            
+            for(var a = 0;a<n;a++){ p = selected_players[a];
+                p_html = "<span class='font-12 contents'>" + p.player + "</span>";
+                if(specs.link_to_players){
+                    p_html = "<FORM id='player" + p.ID + "form' action='/team_player_detail' method=POST><input type=hidden name='ID' value='" + p.ID + "'><input type=hidden name='came_from' value='players'><span onclick=\"document.getElementById(\'player" + p.ID + "form\').submit();\" class='test-player pointer mouseover-link font-12 no-padding'>" + p.player + "</span></FORM>";
+                }
+                html = "";
+                html += "<div class='col-12 table-row flex no-padding'>";
+                    html += "<div class='col-6'>" + p_html + "</div>";
+                html += "</div>";
+                
+                player_list.append(html);
+            }
+            
+        }
+    
+    }
+    var player_list = null;
+    function redraw(){
+        elem = $("#landing"); elem.empty();
+        
+        html = "";
+        
+        html += "<div class='flex' style='padding-top:40px;'>";
+            html += "<div class='col-2-1'></div>";
+            html += "<div class='col-8-10'><div class='no-padding credentials-box '>";
+            
+                html += "<div class='col-12'><span class='light font-15'>Player Search</span></div>";
+                html += "<div class='col-12'><input id='player_search_input' onkeyup='search_players(this.value);' type=text class='text-input' id='player_name'></div>";
+                html += "<div class='col-12' id='player_list'></div>";
+                
+            
+            html += "</div></div>";
+            
+            html += "<div class='col-2-1'></div>";
+        html += "</div>";
+        
+        elem.append(html);
+        player_list = $("#player_list");
+            
+        if('observe' in misc && misc.observe){ report_user_view(misc.handler + "|" + panel + "|" + misc.nhca); }
+    }
+    
+    redraw();
+    
+    console_log.push({'msg': 'Start finish load...'});
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+      
+    window.addEventListener("resize", redraw); 
+        
+</script>
+{% endblock %}
+

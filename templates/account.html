@@ -46,80 +46,8 @@
 
             </div>
             <div class='col-6-12' style='padding-top:20px;'>
-                {% if user_obj.user_type == "team" %}
-                    <div class='col-12 bbottom'><span class='font-18 bold pointer'>Group Account</div>
-                    <div class='col-12'><span class='font-13 light'>Group Members</div>
-                    <div class='col-12 flex'>
-                        <div class='col-6'><div class='' style='vertical-align:middle;'><span class='font-15' style='vertical-align:middle;'>{{user_obj.active_group_num_members}}</span></div></div>
-                        <div class='col-6 right'>
-                            {% if user_obj.active_group_admin %}
-                                <FORM action='/edit_group' method=POST><input type=hidden name='group_ID' value={{user_obj.active_group}} />
-                                <button type=submit id='edit_group_members_button' class='action-button'><span class='action-button font-15'>EDIT GROUP MEMBERS</span></button>
-                                </FORM>
-                            {% endif %}
-                         </div>
-                    </div>
-
-                    {% if user_obj.active_subscription %}
-                        <div class='col-12'><span class='font-13 light'>Subscription</div>
-                        <div class='col-12 flex'>
-                            <div class='col-6'><div class='' style='vertical-align:middle;'><span class='font-15' style='vertical-align:middle;'>
-                                {% if user_obj.active_subscription.trial %}
-                                    Trial - Ends {{user_obj.active_subscription.end_date_str}}
-                                {% else %}
-                                    Active - Expires {{user_obj.active_subscription.end_date_str}}
-                                {% endif %}
-                            </span></div></div>
-                            <div class='col-6 right'>
-                                {% if user_obj.active_group_admin %}
-                                    <FORM action='/subscription' method=POST><input type=hidden name='confirmed' value='no'>
-                                    <button type=submit id='edit_subscription_button_group' class='action-button'><span class='action-button font-15'>EDIT SUBSCRIPTION</span></button>
-                                </FORM>
-                                {% endif %}
-                             </div>
-                        </div>
-                        
-                    {% endif %}
-                    
-                {% endif %}
-                {% if user_obj.user_type == "individual" or user_obj.user_type == "media" %}
-                    
-                    <div class='col-12 bbottom'><span class='font-18 bold pointer'>Subscription</div>
-                    <div class='col-12'><span class='font-13 light'>Status</div>
-                    <div class='col-12 flex'>
-                        {% if user_obj.active_subscription %}
-                            <div class='col-6'><div class='' style='vertical-align:middle;'><span class='font-15' style='vertical-align:middle;'>
-                                {% if user_obj.active_subscription.trial %}
-                                    Trial - Ends {{user_obj.active_subscription.end_date_str}}
-                                {% else %}
-                                    Active - Expires {{user_obj.active_subscription.end_date_str}}
-                                {% endif %}
-                            </span></div></div>
-                            <div class='col-6 right'>
-                              
-                                <FORM action='/subscription' method=POST><input type=hidden name='confirmed' value='no'>
-                                    <button id='edit_subscription_button_individual' type=submit class='action-button'><span class='action-button font-15'>EDIT SUBSCRIPTION</span></button>
-                                </FORM>
-                                
-                             </div>
-                         {% else %}
-                            <div class='col-12'><div class='' style='vertical-align:middle;'><span class='font-15' style='vertical-align:middle;'>
-                                No active subscriptions
-                            </span></div></div>
-                         {% endif %}
-                    </div>
-                {% endif %}
-                {% if not user_obj.user_type %}
-                    <div class='col-12 bbottom'><span class='font-18 bold pointer'>Subscription</div>
-                    <div class='col-12'><span class='font-13 light'>Status</div>
-                    <div class='col-12 flex'>
-                        <div class='col-12'><div class='' style='vertical-align:middle;'><span class='font-15' style='vertical-align:middle;'>
-                            No active subscriptions
-                        </span></div></div>
-                         
-                    </div>
-                {% endif %}
-
+                <div class='col-12 bbottom'><span class='font-18 bold pointer'>Subscription</div>
+                <div class='col-12' id='subscription_div'></div>
             </div>
         </div>
 
@@ -130,6 +58,60 @@
     var on_mobile = null;
     var console_log = []; var success = null;
     var time_log = JSON.parse({{misc.time_log|to_json2}});
+
+    var misc = {{misc|to_json2}};
+    function pop_subscription(){
+        elem = $("#subscription_div"); elem.empty();
+        
+        if(misc.num_subscriptions == 0){
+            elem.append("<div class='centered col-12'><span class='contents font-14'>You have no active subscriptions. I bet you'd enjoy this site more if you signed up for one! And remember, I offer a 100% no-questions-asked refund if you don't end up seeing the value you expected.</span></div>");
+        }
+        else{
+            html = "<div class='flex bbottom'>";
+                html += "<div class='col-3'><span class='bold font-14'>Group</span></div>";
+                html += "<div class='col-3'><span class='bold font-14'>Valid Until</span></div>";
+                html += "<div class='col-6 right'></div>";
+            html += "</div>";
+            elem.append(html);
+            for(var a = 0;a<misc.all_subscriptions.length;a++){
+                sub = misc.all_subscriptions[a];
+                html = "";
+                html += "<div class='bbottom light no-padding'>";
+               
+                    html += "<div class='flex'>";
+                        html += "<div class='col-3'><span class='font-14'>" + sub.group_name + "</span></div>";
+                        html += "<div class='col-3'><span class='font-14'>" + sub.end_date_str + "</span></div>";
+                        
+                        if(sub.is_admin == 1){
+                            html += "<div class='col-3 right'>";
+                            html += "<FORM  action='/edit_group' method=POST><input type=hidden name='group_ID' value='" + sub.group_ID + "'>"
+                            html += "<button id='edit_group_members_button" + a + "' class='light font-14 pointer text-button' type=submit><span class='pointer'>Members</span></button>";
+                            html += "</FORM>";
+                            html += "</div>";
+                            
+                            
+                            html += "<div class='col-3 right'>";
+                            html += "<FORM action='/subscription' method=POST><input type=hidden name='confirmed' value='no' /><input type=hidden name='subscription_ID' value='" + sub.ID + "'>"
+                            html += "<button id='edit_subscription_button" + a + "' class='light font-14 pointer text-button' style=''  type=submit><span class='pointer'>Manage</span></button>";
+                            html += "</FORM>";
+                            html += "</div>";
+                        }
+                        else{
+                            html += "<div class='col-3 right'></div>";
+                            html += "<div class='col-3 right'></div>";
+                        }
+                        
+                    html += "</div>";
+                
+                html += "</div>";
+                elem.append(html);
+            }
+        }
+    }
+    function redraw(){
+        pop_subscription();
+    }
+    redraw();
     
     finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
 </script>

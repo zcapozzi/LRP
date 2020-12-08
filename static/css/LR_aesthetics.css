@@ -5,6 +5,7 @@ img { cursor:pointer; padding:none; margin:none; }
 
 .red{ background-color:red; }
 .pink { background-color: #FEE; color:red; }
+.navy{ color: #008; }
 
 .bold { font-weight:700; } 
 text.white { fill: white; }

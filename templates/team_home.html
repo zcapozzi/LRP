@@ -5,11 +5,12 @@
 {% block body %}
 
         <div class='col-12 dtop flex menu-header-bar'>
-            <div class='col-12'>
-                <a href='/' class='menu-link active'><span class='menu-link' style='padding-left:10px;'><span class='active-link font-15'>Home</span></span></a>
-                <a href='/team_my_schedule' class='menu-link'><span class='menu-link' style='padding-left:10px;'><span class='font-15'>My Schedule</span></span></a>
-                <a href='/team_my_stats' class='menu-link'><span class='menu-link' style=''><span class='font-15'>My Stats</span></span></a>
-                <a href='/team_my_rankings' class='menu-link'><span class='menu-link' style=''><span class='font-15'>My Rankings</span></span></a>
+            <div class='col-12 inline-flex'>
+                <div class='no-padding'> <a href='/' class='menu-link active'><span class='menu-link active-link font-15'>Home</span></span></a></div>
+                <div class='no-padding'> <a href='/team_my_schedule' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Schedule</span></a></div>
+                <div class='no-padding'> <a href='/team_my_stats' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Stats</span></a></div>
+                <div class='no-padding'> <a href='/team_my_rankings' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Rankings</span></a></div>
+                <div class='no-padding' id='explore_menu_item'><div class='no-padding'><a class='menu-link'><span class='menu-link font-15 pointer'>Explore</span></a></div></div>
             </div>
         </div>
 
@@ -49,10 +50,10 @@
                                     <div class='col-11-10 no-padding dashboard-label' id='last_game_header'></div>
                                     
                                     <div class='col-1 right no-padding dashboard-tile-help-icon' style='margin-top:2px;'><img id='last_game_helpicon' class='icon-15 explanation' value="team_home.html|last_game_whiskers" src="static/img/Gray_Info150.png" /></div>
-                                    <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game");' src="static/img/Gray_Plus150.png" /></div>
+                                    <div class='col-1 mob right no-padding' style='margin-top:2px;'><img id='last_game_img' class='icon-15 toggle' onclick='toggle_tile_visibility("last_game");' src="static/img/Gray_Minus150.png" /></div>
                                 
                                 </div>
-                                <div onclick='drill_down_body(this.id);' route="team_my_schedule|last_game"  class='no-padding col-12 small_graph dashboard-tile-content' id='last_game_div'></div>
+                                <div onclick='drill_down_body(this.id);' route="team_my_schedule|last_game"  class='no-padding col-12 small_graph dashboard-tile-content visible' id='last_game_div'></div>
                      
                             
                                 
@@ -97,7 +98,13 @@
                                         {% if g.next == 0 %}
                                             
                                                 <div class='flex no-padding' style='padding: 0px 5px;'>
-                                                    <div class='col-3'><FORM id='game_form{{g.ID}}' action='/team_game_detail' method=POST><input type=hidden name='ID' value='{{g.ID}}' /><input type=hidden name='came_from' value='home' /><span onclick="document.getElementById('game_form{{g.ID}}').submit();" class='mouseover-link pointer font-14 contents'>{{g.date_mmmdd}}</span></FORM></div>
+                                                    <div class='col-3'>
+                                                    
+                                                    <!--FORM id='game_form{{g.ID}}' action='/team_game_detail' method=POST><input type=hidden name='ID' value='{{g.ID}}' /><input type=hidden name='came_from' value='home' /><span onclick="document.getElementById('game_form{{g.ID}}').submit();" class='mouseover-link pointer font-14 contents'>{{g.date_mmmdd}}</span></FORM-->
+                                                    <span class='font-14 contents'>{{g.date_mmmdd}}</span>
+                                                    </div>
+                                                    
+                                                    
                                                     <div class='col-3'><FORM id='future_form{{g.ID}}' action='/team_detail' method=POST><input type=hidden name='detail_team_ID' value='{{g.opponentID}}'><input type=hidden name='came_from' value='home' /><span class='mouseover-link pointer font-14 contents' onclick='document.getElementById("future_form{{g.ID}}").submit();'>{{g.opp_short_code}}</span></FORM></div>
                                                     <div class='col-2 centered'><span class='large-dot' style='background-color: {{g.off_efficiency_color}};'></span></div>
                                                     <div class='col-2 centered'><span class='large-dot' style='background-color: {{g.def_efficiency_inverted_color}};'></span></div>
@@ -502,7 +509,7 @@
     }
     
     function my_rankings_summary(){
-        console.log(misc); 
+        
         var last_sim = misc.data.sim_results[misc.data.sim_results.length-1];
         var prior_sim = null;
         for(var a=0;a<misc.data.sim_results.length;a++){
@@ -605,10 +612,14 @@
     function redraw(){
     
         on_mobile = $("#main_logo").css('display') == "none";
-        my_rankings_summary();
-        my_stats_summary();
-        my_schedule_summary();
+        if('substat' in misc && misc.substat != null){
+            my_rankings_summary();
+            my_stats_summary();
+            my_schedule_summary();
+        }
         
+            
+        if('observe' in misc && misc.observe){ report_user_view(misc.handler + "||" + misc.nhca); }
     }
     redraw();
     finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
@@ -616,8 +627,8 @@
     
     //console.log("misc.data.next_game")
     //console.log(misc.data.next_game);
-    //console.log("misc.data.future_games")
-    //console.log(misc.data.future_games);
+    //console.log("misc.data.season_games")
+    //console.log(misc.data.season_games);
     
 
     //console.log("misc.data.sim_results")

@@ -52,12 +52,13 @@
             tier.tokens = tier.product_bullets.split("|");
             html = "";
             class_str = "col-" + (12/product_tiers.length) + "-12";
-            html += "<div class='" + class_str + " flex'> <div class='tier col-12 card'><FORM action='/product-pricing-basic' method=POST>";
+            html += "<div class='" + class_str + " flex'> <div class='tier col-12 card'><FORM action='/product-pricing-basic?t={{misc.tracking_tag}}' method=POST>";
             
             html += "<input type=hidden name='user_ID' value='{{misc.ncha}}' />";
             html += "<input type=hidden name='AB_group' value='{{misc.AB_group}}' />";
             html += "<input type=hidden name='hash' value='{{misc.hash}}' />";
             html += "<input type=hidden name='product_tier' value='" + tier.product_tier + "' />";
+            html += "<input type=hidden name='tracking_tag' value='{{misc.tracking_tag}}' />";
             
             // Header
             html += "<div class='col-12 tier-header centered' style=''><span class='font-18 bold'>" + tier.product_tier_description + "</span></div>"

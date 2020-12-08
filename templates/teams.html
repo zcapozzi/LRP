@@ -1,0 +1,75 @@
+
+{% extends layout %}
+
+
+{% block body %}
+
+        <div class='col-12 dtop flex menu-header-bar'>
+            <div class='col-12 inline-flex'>
+                <div class='no-padding'> <a href='/' class='menu-link'><span class='menu-link font-15'>Home</span></span></a></div>
+                <div class='no-padding'> <a href='/team_my_schedule' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Schedule</span></a></div>
+                <div class='no-padding'> <a href='/team_my_stats' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Stats</span></a></div>
+                <div class='no-padding'> <a href='/team_my_rankings' class='menu-link'><span class='menu-link font-15'><span class='no-padding dtop'>My </span>Rankings</span></a></div>
+                <div class='no-padding' id='explore_menu_item'><div class='no-padding'><a class='menu-link'><span class='menu-link font-15 pointer'>Explore</span></a></div></div>
+            </div>
+        </div>
+
+        <div class='col-12 centered' id='banner'></div>
+        
+        
+        
+        {% if misc.error %}
+            <div class='col-12 error centered'><span class='error' >{{misc.error|safe}}</span></div>
+        {% endif %}
+        {% if misc.msg %}
+            <div class='col-12 error centered'><span class='' >{{misc.msg}}</span></div>
+        {% endif %}
+        <div class=''>
+            <div class='no-padding options-bar col-12 flex'>
+                <div class='no-padding col-9'>
+                {% if misc.breadcrumbs %}
+                    <div class='breadcrumbs'>
+                        {{misc.breadcrumbs|safe}}
+                    </div>
+                {% endif %}
+                </div>
+            </div>
+            
+            
+            <div id='landing' class='non-dashboard-landing'> </div>
+        </div>
+    
+<script src="static/js/d3.v4.min.js"></script><script src="static/js/laxrefpro_graphing.js?dt=202"></script>
+<script>
+    var on_mobile = null;
+    var console_log = []; var success = null;
+    var time_log = JSON.parse({{misc.time_log|to_json2}});
+    
+    var misc = parse_misc({{misc|to_json2}});
+    console_log.push({'msg': 'Loaded misc...'});
+    
+    console.log(misc);
+    
+
+    function redraw(){
+        elem = $("#landing"); elem.empty();
+        html = "";
+        html += "<div class=''>";
+            
+        html += "</div>";
+        
+
+       
+        elem.append(html);
+    }
+    
+    redraw();
+    
+    console_log.push({'msg': 'Start finish load...'});
+    finish_load(JSON.parse({{user_obj.notifications|to_json2}}));
+      
+    window.addEventListener("resize", redraw); 
+        
+</script>
+{% endblock %}
+
